@@ -1,14 +1,14 @@
 [
  {
-  "minKills": 5,
+  "zone": "SW",
   "name": "Sunblade Protector",
   "npcIds": [
    25507
   ],
-  "zone": "SW"
+  "minKills": 5
  },
  {
-  "minKills": 65,
+  "zone": "SW",
   "name": "Sunblade Arch Mage/Cabalist/Dawn Priest/Dusk Priest/Slayer/Vindicator",
   "npcIds": [
    25363,
@@ -18,18 +18,18 @@
    25370,
    25371
   ],
-  "zone": "SW"
+  "minKills": 65
  },
  {
-  "minKills": 4,
+  "zone": "SW",
   "name": "Sunblade Scout",
   "npcIds": [
    25372
   ],
-  "zone": "SW"
+  "minKills": 4
  },
  {
-  "minKills": 26,
+  "zone": "SW",
   "name": "Shadowsword Commander/Lifeshaper/Manafiend/Soulbinder/Vanquisher",
   "npcIds": [
    25373,
@@ -38,48 +38,48 @@
    25506,
    25837
   ],
-  "zone": "SW"
+  "minKills": 26
  },
  {
-  "minKills": 1,
+  "zone": "SW",
   "name": "Doomfire Destroyer",
   "npcIds": [
    25592
   ],
-  "zone": "SW"
+  "minKills": 1
  },
  {
-  "minKills": 6,
+  "zone": "SW",
   "name": "Oblivion Mage/Painbringer/Priestess of Torment",
   "npcIds": [
    25509,
    25591,
    25597
   ],
-  "zone": "SW"
+  "minKills": 6
  },
  {
-  "minKills": 4,
+  "zone": "SW",
   "name": "Apocalypse Guard",
   "npcIds": [
    25593
   ],
-  "zone": "SW"
+  "minKills": 4
  },
  {
-  "minKills": 2,
+  "zone": "SW",
   "name": "Cataclysm Hound",
   "npcIds": [
    25599
   ],
-  "zone": "SW"
+  "minKills": 2
  },
  {
-  "minKills": 2,
+  "zone": "SW",
   "name": "Shadowsword Guardian",
   "npcIds": [
    25508
   ],
-  "zone": "SW"
+  "minKills": 2
  }
 ]

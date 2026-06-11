@@ -1,682 +1,682 @@
 [
  {
   "enchantId": 927,
-  "name": "Bracers - 7 Str",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 7 Str"
  },
  {
   "enchantId": 856,
-  "name": "Bracers - 5 Str",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 5 Str"
  },
  {
   "enchantId": 823,
-  "name": "Bracers - 3 Str",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 3 Str"
  },
  {
   "enchantId": 248,
-  "name": "Bracers - 1 Str",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 1 Str"
  },
  {
   "enchantId": 929,
-  "name": "Bracers - 7 Sta",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 7 Sta"
  },
  {
   "enchantId": 852,
-  "name": "Bracers - 5 Sta",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 5 Sta"
  },
  {
   "enchantId": 724,
-  "name": "Bracers - 3 Sta",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 3 Sta"
  },
  {
   "enchantId": 66,
-  "name": "Bracers - 1 Sta",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 1 Sta"
  },
  {
   "enchantId": 41,
-  "name": "Bracers - 5 HP",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 5 HP"
  },
  {
   "enchantId": 907,
-  "name": "Bracers - 7 Spi",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 7 Spi"
  },
  {
   "enchantId": 851,
-  "name": "Bracers - 5 Spi",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 5 Spi"
  },
  {
   "enchantId": 255,
-  "name": "Bracers - 3 Spi",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 3 Spi"
  },
  {
   "enchantId": 905,
-  "name": "Bracers - 5 Int",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 5 Int"
  },
  {
   "enchantId": 723,
-  "name": "Bracers - 3 Int",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 3 Int"
  },
  {
   "enchantId": 923,
-  "name": "Bracers - 3 Def",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 3 Def"
  },
  {
   "enchantId": 925,
-  "name": "Bracers - 2 Def",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 2 Def"
  },
  {
   "enchantId": 924,
-  "name": "Bracers - 1 Def",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 1 Def"
  },
  {
   "enchantId": 1887,
-  "name": "Gloves - 7 Agi",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 7 Agi"
  },
  {
   "enchantId": 904,
-  "name": "Gloves - 5 Agi",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 5 Agi"
  },
  {
   "enchantId": 856,
-  "name": "Gloves - 5 Str",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 5 Str"
  },
  {
   "enchantId": 909,
-  "name": "Gloves - 5 Herb",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 5 Herb"
  },
  {
   "enchantId": 845,
-  "name": "Gloves - 3 Herb",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 3 Herb"
  },
  {
   "enchantId": 906,
-  "name": "Gloves - 5 Mining",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 5 Mining"
  },
  {
   "enchantId": 844,
-  "name": "Gloves - 3 Mining",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 3 Mining"
  },
  {
   "enchantId": 865,
-  "name": "Gloves - 5 Skinn",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 5 Skinn"
  },
  {
   "enchantId": 846,
-  "name": "Gloves - 2 Fishing",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 2 Fishing"
  },
  {
   "enchantId": 255,
-  "name": "Boots - 3 Spi",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 3 Spi"
  },
  {
   "enchantId": 904,
-  "name": "Boots - 5 Agi",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 5 Agi"
  },
  {
   "enchantId": 849,
-  "name": "Boots - 3 Agi",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 3 Agi"
  },
  {
   "enchantId": 247,
-  "name": "Boots - 1 Agi",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 1 Agi"
  },
  {
   "enchantId": 852,
-  "name": "Boots - 5 Sta",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 5 Sta"
  },
  {
   "enchantId": 724,
-  "name": "Boots - 3 Sta",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 3 Sta"
  },
  {
   "enchantId": 66,
-  "name": "Boots - 1 Sta",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 1 Sta"
  },
  {
   "enchantId": 908,
-  "name": "Chest - 50 HP",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 50 HP"
  },
  {
   "enchantId": 850,
-  "name": "Chest - 35 HP",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 35 HP"
  },
  {
   "enchantId": 254,
-  "name": "Chest - 25 HP",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 25 HP"
  },
  {
   "enchantId": 242,
-  "name": "Chest - 15 HP",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 15 HP"
  },
  {
   "enchantId": 41,
-  "name": "Chest - 5 HP",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 5 HP"
  },
  {
   "enchantId": 913,
-  "name": "Chest - 65 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 65 Mana"
  },
  {
   "enchantId": 857,
-  "name": "Chest - 50 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 50 Mana"
  },
  {
   "enchantId": 843,
-  "name": "Chest - 30 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 30 Mana"
  },
  {
   "enchantId": 246,
-  "name": "Chest - 20 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 20 Mana"
  },
  {
   "enchantId": 24,
-  "name": "Chest - 5 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 5 Mana"
  },
  {
   "enchantId": 928,
-  "name": "Chest - 3 Stats",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 3 Stats"
  },
  {
   "enchantId": 866,
-  "name": "Chest - 2 Stats",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 2 Stats"
  },
  {
   "enchantId": 847,
-  "name": "Chest - 1 Stats",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 1 Stats"
  },
  {
   "enchantId": 63,
-  "name": "Chest - 25 Absorb",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 25 Absorb"
  },
  {
   "enchantId": 44,
-  "name": "Chest - 10 Absorb",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 10 Absorb"
  },
  {
   "enchantId": 910,
-  "name": "Cloak - Stealth",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - Stealth"
  },
  {
   "enchantId": 903,
-  "name": "Cloak - 3 Res",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 3 Res"
  },
  {
   "enchantId": 65,
-  "name": "Cloak - 1 Res",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 1 Res"
  },
  {
   "enchantId": 2463,
-  "name": "Cloak - 7 FR",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 7 FR"
  },
  {
   "enchantId": 256,
-  "name": "Cloak - 5 FR",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 5 FR"
  },
  {
   "enchantId": 1889,
-  "name": "Cloak - 70 Armor",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 70 Armor"
  },
  {
   "enchantId": 884,
-  "name": "Cloak - 50 Armor",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 50 Armor"
  },
  {
   "enchantId": 848,
-  "name": "Cloak - 30 Armor",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 30 Armor"
  },
  {
   "enchantId": 744,
-  "name": "Cloak - 20 Armor",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 20 Armor"
  },
  {
   "enchantId": 783,
-  "name": "Cloak - 10 Armor",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 10 Armor"
  },
  {
   "enchantId": 247,
-  "name": "Cloak - 1 Agi",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - 1 Agi"
  },
  {
   "enchantId": 852,
-  "name": "Shield - 5 Sta",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 5 Sta"
  },
  {
   "enchantId": 724,
-  "name": "Shield - 3 Sta",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 3 Sta"
  },
  {
   "enchantId": 66,
-  "name": "Shield - 1 Sta",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 1 Sta"
  },
  {
   "enchantId": 907,
-  "name": "Shield - 7 Spi",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 7 Spi"
  },
  {
   "enchantId": 851,
-  "name": "Shield - 5 Spi",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 5 Spi"
  },
  {
   "enchantId": 255,
-  "name": "Shield - 3 Spi",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 3 Spi"
  },
  {
   "enchantId": 848,
-  "name": "Shield - 30 Armor",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 30 Armor"
  },
  {
   "enchantId": 1704,
-  "name": "Shield - Thor Spike",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - Thor Spike"
  },
  {
   "enchantId": 463,
-  "name": "Shield - Mith Spike",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - Mith Spike"
  },
  {
   "enchantId": 43,
-  "name": "Shield - Iron Spike",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - Iron Spike"
  },
  {
   "enchantId": 2503,
-  "name": "3 Def",
-  "slot": null
+  "slot": null,
+  "name": "3 Def"
  },
  {
   "enchantId": 1843,
-  "name": "40 Armor",
-  "slot": null
+  "slot": null,
+  "name": "40 Armor"
  },
  {
   "enchantId": 18,
-  "name": "32 Armor",
-  "slot": null
+  "slot": null,
+  "name": "32 Armor"
  },
  {
   "enchantId": 17,
-  "name": "24 Armor",
-  "slot": null
+  "slot": null,
+  "name": "24 Armor"
  },
  {
   "enchantId": 16,
-  "name": "16 Armor",
-  "slot": null
+  "slot": null,
+  "name": "16 Armor"
  },
  {
   "enchantId": 15,
-  "name": "8 Armor",
-  "slot": null
+  "slot": null,
+  "name": "8 Armor"
  },
  {
   "enchantId": 1903,
-  "name": "Weapon - 9 Spi",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 9 Spi"
  },
  {
   "enchantId": 255,
-  "name": "Weapon - 3 Spi",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 3 Spi"
  },
  {
   "enchantId": 1904,
-  "name": "Weapon - 9 Int",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 9 Int"
  },
  {
   "enchantId": 723,
-  "name": "Weapon - 3 Int",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 3 Int"
  },
  {
   "enchantId": 1896,
-  "name": "Weapon - 9 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 9 Dmg"
  },
  {
   "enchantId": 963,
-  "name": "Weapon - 7 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 7 Dmg"
  },
  {
   "enchantId": 943,
-  "name": "Weapon - 3 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 3 Dmg"
  },
  {
   "enchantId": 241,
-  "name": "Weapon - 2 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 2 Dmg"
  },
  {
   "enchantId": 2443,
-  "name": "Weapon - 7 Frost",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 7 Frost"
  },
  {
   "enchantId": 1899,
-  "name": "Weapon - Unholy",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - Unholy"
  },
  {
   "enchantId": 1898,
-  "name": "Weapon - Lifesteal",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - Lifesteal"
  },
  {
   "enchantId": 803,
-  "name": "Weapon - Fiery",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - Fiery"
  },
  {
   "enchantId": 854,
-  "name": "Weapon - Elemental",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - Elemental"
  },
  {
   "enchantId": 805,
-  "name": "Weapon - 4 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 4 Dmg"
  },
  {
   "enchantId": 943,
-  "name": "Weapon - 3 Dmg",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 3 Dmg"
  },
  {
   "enchantId": 2646,
-  "name": "Weapon - 25 Agi",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 25 Agi"
  },
  {
   "enchantId": 1887,
-  "name": "Boots - 7 Agi",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 7 Agi"
  },
  {
   "enchantId": 929,
-  "name": "Boots - 7 Sta",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - 7 Sta"
  },
  {
   "enchantId": 1886,
-  "name": "Bracers - 9 Sta",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 9 Sta"
  },
  {
   "enchantId": 1885,
-  "name": "Bracers - 9 Str",
-  "slot": 8
+  "slot": 8,
+  "name": "Bracers - 9 Str"
  },
  {
   "enchantId": 1891,
-  "name": "Chest - 4 Stats",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 4 Stats"
  },
  {
   "enchantId": 1893,
-  "name": "Chest - 100 Mana",
-  "slot": 4
+  "slot": 4,
+  "name": "Chest - 100 Mana"
  },
  {
   "enchantId": 2934,
-  "name": "Gloves - Blasting",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - Blasting"
  },
  {
   "enchantId": 927,
-  "name": "Gloves - 7 Str",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - 7 Str"
  },
  {
   "enchantId": 929,
-  "name": "Shield - 7 Sta",
-  "slot": 16
+  "slot": 16,
+  "name": "Shield - 7 Sta"
  },
  {
   "enchantId": 2568,
-  "name": "Weapon - 22 Int",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 22 Int"
  },
  {
   "enchantId": 2938,
-  "name": "Cloak - Spell Pen",
-  "slot": 14
+  "slot": 14,
+  "name": "Cloak - Spell Pen"
  },
  {
   "enchantId": 2745,
-  "name": "Legs - Silver Thread",
-  "slot": null
+  "slot": null,
+  "name": "Legs - Silver Thread"
  },
  {
   "enchantId": 2747,
-  "name": "Legs - Mystic Thread",
-  "slot": null
+  "slot": null,
+  "name": "Legs - Mystic Thread"
  },
  {
   "enchantId": 2606,
-  "name": "Shoulder - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - ZG"
  },
  {
   "enchantId": 2605,
-  "name": "Shoulder - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - ZG"
  },
  {
   "enchantId": 2604,
-  "name": "Shoulder - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - ZG"
  },
  {
   "enchantId": 2996,
-  "name": "Shoulder - Scryer Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Scryer Hon"
  },
  {
   "enchantId": 2990,
-  "name": "Shoulder - Scryer Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Scryer Hon"
  },
  {
   "enchantId": 2992,
-  "name": "Shoulder - Scryer Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Scryer Hon"
  },
  {
   "enchantId": 2994,
-  "name": "Shoulder - Scryer Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Scryer Hon"
  },
  {
   "enchantId": 2981,
-  "name": "Shoulder - Aldor Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Aldor Hon"
  },
  {
   "enchantId": 2979,
-  "name": "Shoulder - Aldor Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Aldor Hon"
  },
  {
   "enchantId": 2983,
-  "name": "Shoulder - Aldor Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Aldor Hon"
  },
  {
   "enchantId": 2977,
-  "name": "Shoulder - Aldor Hon",
-  "slot": null
+  "slot": null,
+  "name": "Shoulder - Aldor Hon"
  },
  {
   "enchantId": 2591,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2586,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2588,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2584,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2590,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2585,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2587,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2589,
-  "name": "Head/Legs - ZG",
-  "slot": null
+  "slot": null,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 2583,
-  "name": "Head/Legs - ZG",
-  "slot": 6
+  "slot": 6,
+  "name": "Head/Legs - ZG"
  },
  {
   "enchantId": 911,
-  "name": "Boots - Minor Speed",
-  "slot": null
+  "slot": null,
+  "name": "Boots - Minor Speed"
  },
  {
   "enchantId": 1900,
-  "name": "Weapon - Crusader",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - Crusader"
  },
  {
   "enchantId": 2841,
-  "name": "Heavy Knothide Kit",
-  "slot": 0
+  "slot": 0,
+  "name": "Heavy Knothide Kit"
  },
  {
   "enchantId": 2792,
-  "name": "Knothide Kit",
-  "slot": null
+  "slot": null,
+  "name": "Knothide Kit"
  },
  {
   "enchantId": 2841,
-  "name": "Heavy Knothide Kit",
-  "slot": 2
+  "slot": 2,
+  "name": "Heavy Knothide Kit"
  },
  {
   "enchantId": 2841,
-  "name": "Heavy Knothide Kit",
-  "slot": 4
+  "slot": 4,
+  "name": "Heavy Knothide Kit"
  },
  {
   "enchantId": 2841,
-  "name": "Heavy Knothide Kit",
-  "slot": 6
+  "slot": 6,
+  "name": "Heavy Knothide Kit"
  },
  {
   "enchantId": 2841,
-  "name": "Heavy Knothide Kit",
-  "slot": 7
+  "slot": 7,
+  "name": "Heavy Knothide Kit"
  },
  {
   "enchantId": 930,
-  "name": "Gloves - Mount Speed",
-  "slot": 9
+  "slot": 9,
+  "name": "Gloves - Mount Speed"
  },
  {
   "enchantId": 464,
-  "name": "Boots - Mount Speed",
-  "slot": 7
+  "slot": 7,
+  "name": "Boots - Mount Speed"
  },
  {
   "enchantId": 3010,
-  "name": "Legs - 40AP/10Crit",
-  "slot": null
+  "slot": null,
+  "name": "Legs - 40AP/10Crit"
  },
  {
   "enchantId": 2669,
-  "name": "Weapon - 40SP",
-  "slot": null
+  "slot": null,
+  "name": "Weapon - 40SP"
  }
 ]
