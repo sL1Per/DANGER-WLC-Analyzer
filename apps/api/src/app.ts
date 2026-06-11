@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
-import type { ReportData } from "@wcl/core";
+import { REPORT_ID_RE, type ReportData } from "@wcl/core";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
 import { WclError, fetchRawReport as realFetchRawReport, fetchToken as realFetchToken } from "./wcl";
@@ -11,8 +11,6 @@ export interface AppDeps {
   fetchRawReport: typeof realFetchRawReport;
   cacheTtlMs: number;
 }
-
-const REPORT_ID_RE = /^[a-zA-Z0-9]{16}$/;
 
 export function createApp(deps: AppDeps = {
   fetchToken: realFetchToken,
@@ -50,13 +48,20 @@ export function createApp(deps: AppDeps = {
     try {
       const data = normalizeReport(id, await deps.fetchRawReport(id, token));
       cache.set(id, data);
-      return c.json({ data, cachedAt: Date.now() });
+      // Read cachedAt from the stored entry so the response matches exactly what was stored.
+      const { cachedAt } = cache.get(id)!;
+      return c.json({ data, cachedAt });
     } catch (e) {
       return toErrorResponse(c, e);
     }
   });
 
+  // Requiring a Bearer token prevents keyless callers from evicting the cache.
+  // We cannot validate the token's authenticity without storing credentials,
+  // but requiring the header is sufficient to keep casual/keyless eviction out (M1 goal).
   app.delete("/api/report/:id", (c) => {
+    const token = c.req.header("Authorization")?.replace(/^Bearer /, "");
+    if (!token) return c.json({ error: "Authorization header required to evict cache." }, 401);
     cache.delete(c.req.param("id"));
     return c.json({ ok: true });
   });

@@ -1714,4 +1714,7 @@ git commit -m "docs: README and CI workflow"
 ## Out of scope for this plan (follow-up plans)
 
 - **M2:** gear issues + gear listing (extends the GraphQL query with combatantInfo events; adds `packages/core/src/gearIssues.ts`, `gearListing.ts`).
-- **M3:** consumables + drums. **M4:** validate + shadow resi + fight timeline (incl. extracting the remaining per-zone trash tables from CLA `trans` W–AA). **M5:** RPB. **M6:** Discord webhook, dark mode, Cloudflare Workers deploy (swap `TtlCache` for KV behind the same interface).
+- **M3:** consumables + drums. 
+- **M4:** validate + shadow resi + fight timeline (incl. extracting the remaining per-zone trash tables from CLA `trans` W–AA). 
+- **M5:** RPB. 
+- **M6:** Discord webhook, dark mode, Cloudflare Workers deploy (swap `TtlCache` for KV behind the same interface).

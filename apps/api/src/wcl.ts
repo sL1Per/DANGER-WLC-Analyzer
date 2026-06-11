@@ -43,7 +43,7 @@ export interface RawReport {
   zone: { name: string } | null;
   fights: { id: number; name: string; encounterID: number; kill: boolean | null;
             startTime: number; endTime: number }[];
-  masterData: { actors: { id: number; name: string; subType: string }[] };
+  masterData: { actors: { id: number; name: string; subType: string }[] } | null;
 }
 
 export async function fetchRawReport(code: string, accessToken: string): Promise<RawReport> {

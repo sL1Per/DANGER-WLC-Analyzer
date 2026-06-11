@@ -42,6 +42,15 @@ export async function fetchReport(reportId: string): Promise<ReportResponse> {
 }
 
 export async function refreshReport(reportId: string): Promise<ReportResponse> {
-  await fetch(`/api/report/${reportId}`, { method: "DELETE" });
+  const token = await ensureToken();
+  const res = await fetch(`/api/report/${reportId}`, {
+    method: "DELETE",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    let message = "Cache eviction failed";
+    try { message = (await res.json()).error ?? message; } catch { /* non-JSON body */ }
+    throw new ApiError(res.status, message);
+  }
   return fetchReport(reportId);
 }

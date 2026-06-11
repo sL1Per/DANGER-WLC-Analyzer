@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, fetchReport, refreshReport, type ReportResponse } from "../lib/api";
+import { loadCredentials } from "../lib/storage";
 import { ReportSummary } from "../components/ReportSummary";
 
 export function ReportPage() {
@@ -34,15 +35,17 @@ export function ReportPage() {
   if (!result) return null;
   return (
     <div>
-      <button
-        onClick={() =>
-          refreshReport(reportId)
-            .then(setResult)
-            .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
-        }
-      >
-        Refresh from WCL
-      </button>
+      {loadCredentials() !== null && (
+        <button
+          onClick={() =>
+            refreshReport(reportId)
+              .then(setResult)
+              .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
+          }
+        >
+          Refresh from WCL
+        </button>
+      )}
       <ReportSummary report={result.data} cachedAt={result.cachedAt} />
     </div>
   );

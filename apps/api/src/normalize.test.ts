@@ -30,4 +30,8 @@ describe("normalizeReport", () => {
   it("throws when zone is missing", () => {
     expect(() => normalizeReport("a1B2c3D4e5F6g7H8", { ...raw, zone: null })).toThrow(/zone/i);
   });
+  it("throws 422 when masterData is null (private/restricted report)", () => {
+    expect(() => normalizeReport("a1B2c3D4e5F6g7H8", { ...raw, masterData: null }))
+      .toThrow(/private or restricted/i);
+  });
 });

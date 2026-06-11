@@ -9,6 +9,9 @@ export function normalizeReport(reportId: string, raw: RawReport): ReportData {
     throw new WclError(422,
       `This is the TBC analyzer; report zone "${raw.zone.name}" is not a TBC raid.`);
   }
+  if (!raw.masterData?.actors) {
+    throw new WclError(422, "Report has no player data (it may be private or restricted).");
+  }
   return {
     reportId,
     title: raw.title,

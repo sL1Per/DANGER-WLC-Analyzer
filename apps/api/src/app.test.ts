@@ -65,7 +65,7 @@ describe("GET /api/report/:id", () => {
     });
     expect(res.status).toBe(400);
   });
-  it("DELETE evicts the cache (manual refresh)", async () => {
+  it("DELETE evicts the cache (manual refresh) when auth header is present", async () => {
     const fetchRawReport = vi.fn().mockResolvedValue(raw);
     const app = makeApp({ fetchRawReport });
     const auth = { headers: { Authorization: "Bearer tok" } };
@@ -73,5 +73,31 @@ describe("GET /api/report/:id", () => {
     await app.request("/api/report/a1B2c3D4e5F6g7H8", { ...auth, method: "DELETE" });
     await app.request("/api/report/a1B2c3D4e5F6g7H8", auth);
     expect(fetchRawReport).toHaveBeenCalledTimes(2);
+  });
+  it("DELETE without Authorization returns 401 and cache entry survives", async () => {
+    const fetchRawReport = vi.fn().mockResolvedValue(raw);
+    const app = makeApp({ fetchRawReport });
+    const auth = { headers: { Authorization: "Bearer tok" } };
+    // seed the cache
+    await app.request("/api/report/a1B2c3D4e5F6g7H8", auth);
+    // attempt keyless eviction
+    const del = await app.request("/api/report/a1B2c3D4e5F6g7H8", { method: "DELETE" });
+    expect(del.status).toBe(401);
+    expect((await del.json()).error).toMatch(/Authorization/i);
+    // cache entry still alive: keyless GET returns 200 without hitting WCL
+    const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
+    expect(r2.status).toBe(200);
+    expect(fetchRawReport).toHaveBeenCalledTimes(1);
+  });
+  it("GET cachedAt matches the stored entry timestamp", async () => {
+    const app = makeApp();
+    const r1 = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
+      headers: { Authorization: "Bearer tok" },
+    });
+    const body1 = await r1.json();
+    // Second (cached) request must return the same cachedAt
+    const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
+    const body2 = await r2.json();
+    expect(body1.cachedAt).toBe(body2.cachedAt);
   });
 });

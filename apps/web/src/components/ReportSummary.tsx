@@ -12,7 +12,7 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
 
   const fights = useMemo(
     () => filterFights(report.fights, { mode, excludeWipes }),
-    [report, mode, excludeWipes],
+    [report.fights, mode, excludeWipes],
   );
 
   return (
