@@ -1,5 +1,5 @@
 const ID_RE = /^[a-zA-Z0-9]{16}$/;
-const URL_RE = /warcraftlogs\.com\/reports\/([a-zA-Z0-9]{16})/;
+const URL_RE = /^(?:https?:\/\/)?(?:[a-z0-9-]+\.)*warcraftlogs\.com\/reports\/([a-zA-Z0-9]{16})/i;
 
 /** Returns the 16-char WCL report code from a raw id or report URL, else null. */
 export function parseReportInput(input: string): string | null {

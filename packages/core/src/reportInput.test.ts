@@ -17,4 +17,7 @@ describe("parseReportInput", () => {
     expect(parseReportInput("not a report")).toBeNull();
     expect(parseReportInput("")).toBeNull();
   });
+  it("rejects lookalike domains", () => {
+    expect(parseReportInput("https://fake-warcraftlogs.com/reports/a1B2c3D4e5F6g7H8")).toBeNull();
+  });
 });
