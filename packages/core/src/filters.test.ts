@@ -28,6 +28,16 @@ describe("filterFights", () => {
     expect(ids(filterFights(fights, { mode: "all", excludeWipes: false, range: { start: 0, end: 100_000 } })))
       .toEqual([1, 2]);
   });
+  it("returns empty when fightId matches nothing", () => {
+    expect(ids(filterFights(fights, { mode: "all", excludeWipes: false, fightId: 99 }))).toEqual([]);
+  });
+  it("'last' on an empty filtered set returns empty", () => {
+    const allWipes = fights.map((f) => (f.isBoss ? { ...f, kill: false } : f));
+    expect(ids(filterFights(allWipes, { mode: "bosses", excludeWipes: true, fightId: "last" }))).toEqual([]);
+  });
+  it("range endpoints are exclusive (touching fights excluded)", () => {
+    expect(ids(filterFights(fights, { mode: "all", excludeWipes: false, range: { start: 60_000, end: 70_000 } }))).toEqual([]);
+  });
 });
 
 describe("validateFilter", () => {

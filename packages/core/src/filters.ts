@@ -8,6 +8,10 @@ export function validateFilter(filter: FightFilter): string | null {
   return null;
 }
 
+/**
+ * Precondition: validateFilter(filter) === null — callers validate before calling;
+ * this function applies fightId/range as given without re-checking exclusivity.
+ */
 export function filterFights(fights: Fight[], filter: FightFilter): Fight[] {
   let result = fights.filter((f) => {
     if (filter.mode === "bosses" && !f.isBoss) return false;
@@ -16,7 +20,8 @@ export function filterFights(fights: Fight[], filter: FightFilter): Fight[] {
     return true;
   });
   if (filter.range) {
-    result = result.filter((f) => f.endTime > filter.range!.start && f.startTime < filter.range!.end);
+    const { start, end } = filter.range;
+    result = result.filter((f) => f.endTime > start && f.startTime < end);
   }
   if (filter.fightId === "last") {
     result = result.length > 0 ? [result[result.length - 1]!] : [];
