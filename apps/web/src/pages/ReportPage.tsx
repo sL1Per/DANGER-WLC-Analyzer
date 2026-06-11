@@ -34,7 +34,15 @@ export function ReportPage() {
   if (!result) return null;
   return (
     <div>
-      <button onClick={() => refreshReport(reportId).then(setResult)}>Refresh from WCL</button>
+      <button
+        onClick={() =>
+          refreshReport(reportId)
+            .then(setResult)
+            .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
+        }
+      >
+        Refresh from WCL
+      </button>
       <ReportSummary report={result.data} cachedAt={result.cachedAt} />
     </div>
   );

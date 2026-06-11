@@ -20,4 +20,9 @@ describe("credentials storage", () => {
     saveToken({ accessToken: "tok", expiresAt: Date.now() + 60_000 });
     expect(loadToken()?.accessToken).toBe("tok");
   });
+  it("drops corrupt credentials", () => {
+    localStorage.setItem("wcl.credentials", "{bad json");
+    expect(loadCredentials()).toBeNull();
+    expect(localStorage.getItem("wcl.credentials")).toBeNull();
+  });
 });

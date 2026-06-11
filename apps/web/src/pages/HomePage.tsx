@@ -26,6 +26,7 @@ export function HomePage() {
         onChange={(e) => setInput(e.target.value)}
         placeholder="https://classic.warcraftlogs.com/reports/…"
         size={60}
+        aria-label="report url or id"
       />
       <button type="submit">Analyze</button>
       {error && <p role="alert">{error}</p>}
