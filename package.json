@@ -1,0 +1,10 @@
+{
+  "name": "wcl-raid-analyzer",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "dev": "pnpm -r --parallel --if-present dev",
+    "build": "pnpm -r --if-present build"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
