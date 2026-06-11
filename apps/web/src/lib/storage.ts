@@ -9,7 +9,13 @@ export function saveCredentials(c: Credentials): void {
 }
 export function loadCredentials(): Credentials | null {
   const raw = localStorage.getItem(CREDS_KEY);
-  return raw ? (JSON.parse(raw) as Credentials) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Credentials;
+  } catch {
+    localStorage.removeItem(CREDS_KEY);
+    return null;
+  }
 }
 export function saveToken(t: StoredToken): void {
   localStorage.setItem(TOKEN_KEY, JSON.stringify(t));
@@ -17,7 +23,13 @@ export function saveToken(t: StoredToken): void {
 export function loadToken(): StoredToken | null {
   const raw = localStorage.getItem(TOKEN_KEY);
   if (!raw) return null;
-  const token = JSON.parse(raw) as StoredToken;
+  let token: StoredToken;
+  try {
+    token = JSON.parse(raw) as StoredToken;
+  } catch {
+    localStorage.removeItem(TOKEN_KEY);
+    return null;
+  }
   if (token.expiresAt <= Date.now()) {
     localStorage.removeItem(TOKEN_KEY);
     return null;

@@ -2,7 +2,13 @@ import type { ReportData } from "@wcl/core";
 import { loadCredentials, loadToken, saveToken } from "./storage";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public needsKey = false) { super(message); }
+  status: number;
+  needsKey: boolean;
+  constructor(status: number, message: string, needsKey = false) {
+    super(message);
+    this.status = status;
+    this.needsKey = needsKey;
+  }
 }
 
 async function ensureToken(): Promise<string | null> {
