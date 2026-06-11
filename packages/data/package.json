@@ -1,0 +1,11 @@
+{
+  "name": "@wcl/data",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "extract": "python3 scripts/extract_xlsx.py",
+    "test": "vitest run"
+  },
+  "devDependencies": { "vitest": "^3.0.0", "typescript": "^5.6.0" }
+}
