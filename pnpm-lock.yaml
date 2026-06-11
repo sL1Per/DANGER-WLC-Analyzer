@@ -8,6 +8,15 @@ importers:
 
   .: {}
 
+  packages/core:
+    devDependencies:
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6
+
   packages/data:
     devDependencies:
       typescript:
