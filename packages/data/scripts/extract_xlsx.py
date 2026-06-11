@@ -11,14 +11,14 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "json")
 CLA = os.path.join(ROOT, "WoW Classic TBC - Combat Log Analytics V1.6.0a.xlsx")
 RPB = os.path.join(ROOT, "WoW Classic TBC - Role Performance Breakdown V1.6.0a.xlsx")
 
-# Fix 4: Missing-file guard
+# Fail fast if the source workbooks are missing.
 for path in (CLA, RPB):
     if not os.path.exists(path):
         raise SystemExit(f"Missing source file: {path}")
 
 def dump(name, obj):
     os.makedirs(OUT, exist_ok=True)
-    # Fix 3: Numeric key ordering for dict outputs
+    # Sort dict outputs by numeric key so JSON diffs stay stable.
     if isinstance(obj, dict):
         obj = dict(sorted(obj.items(), key=lambda kv: int(kv[0])))
     with open(os.path.join(OUT, name), "w") as f:
@@ -36,7 +36,7 @@ def id_value_sheet(ws, skip_header):
             out[str(int(a))] = b if b != int(b) else int(b)
     return out
 
-# Fix 1: Robust npc-id parsing handling both string ("25363,25367") and float (25034.0) cells
+# Parse a cell that may contain a comma-separated list of NPC ids, including float-valued cells.
 def parse_ids(cell):
     out = []
     for part in str(cell).split(","):
@@ -70,7 +70,7 @@ for row in ws.iter_rows(min_row=5, min_col=2, max_col=3, values_only=True):
         if m:
             enchants.append({"enchantId": int(m.group(1)),
                              "slot": int(m.group(2)), "name": name.strip()})
-    elif isinstance(bid, (int, float)):  # Fix 2: accept floats too
+    elif isinstance(bid, (int, float)):  # slot-agnostic enchant stored as a bare number
         enchants.append({"enchantId": int(bid), "slot": None, "name": name.strip()})
 dump("bad-enchants.json", enchants)
 
@@ -91,7 +91,7 @@ for row in cla["validate"].iter_rows(min_row=6, max_col=4, values_only=True):
     ids, zone, name, minimum = row
     if ids is None or name is None or minimum is None:
         continue
-    npc_ids = parse_ids(ids)  # Fix 1: use robust parser
+    npc_ids = parse_ids(ids)
     reqs.append({"zone": str(zone), "name": str(name),
                  "npcIds": npc_ids, "minKills": int(float(str(minimum)))})
 dump("trash-requirements.json", reqs)
