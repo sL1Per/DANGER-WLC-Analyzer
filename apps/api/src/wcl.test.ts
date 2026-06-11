@@ -43,4 +43,9 @@ describe("fetchRawReport", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("limit", { status: 429 })));
     await expect(fetchRawReport("a1B2c3D4e5F6g7H8", "tok")).rejects.toMatchObject({ status: 429 });
   });
+  it("throws WclError(502) on GraphQL-level errors", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: null, errors: [{ message: "Query cost limit exceeded" }] }), { status: 200 })));
+    await expect(fetchRawReport("a1B2c3D4e5F6g7H8", "tok")).rejects.toMatchObject({ status: 502 });
+  });
 });
