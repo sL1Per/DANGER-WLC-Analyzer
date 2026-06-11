@@ -129,6 +129,20 @@ stale cache with "cached at" timestamp).
 - `apps/api`: integration tests with mocked WCL endpoints (token + GraphQL).
 - `apps/web`: smoke test per tab.
 
+## Known unknowns and how we resolve them
+
+The Apps Script source is not in the xlsx exports, so a few internal formulas
+are not directly visible. Policy: first try to reverse-engineer from the xlsx
+sample data (inputs and outputs are both visible); where underdetermined,
+define our own formula, document it in code, and don't claim parity:
+
+- Drums **weighted score** (sample: 10 drums ⌀1.6 → 16; 30 ⌀2.43 → 73 —
+  consistent with round(count × ⌀ buffs), verify against all rows).
+- Role **auto-detection** heuristic (define ours: healing done vs. damage
+  taken/tank gear vs. spell vs. melee damage share).
+- The exact per-role ability/uptime row lists for RPB (reconstruct per class
+  from TBC knowledge during M5, one role at a time).
+
 ## Out of scope (explicitly)
 
 - User accounts, databases, saved snapshots.
