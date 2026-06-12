@@ -56,6 +56,16 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
 - **M6 — polish:** Discord webhook, dark mode, Cloudflare Workers deploy (swap
   TtlCache → KV), lock down CORS.
 
+## UI conventions (apply to every new tab)
+
+- **Severity color coding** (user-requested, 2026-06-12, like the original sheets'
+  conditional formatting): core results carry `severity: "major" | "moderate" | "minor"`
+  (`IssueSeverity` + `SEVERITY_RANK` in `packages/core/src/gearIssues.ts`); web renders
+  via `sev-major` (red) / `sev-moderate` (yellow) / `sev-minor` (green) / `sev-ok`
+  (green, positive) CSS classes in `index.css`, with `<SeverityLegend />` on each tab.
+  M3+ analyses (consumable uptimes, drums scores, validate verdicts, RPB) must assign
+  severities in core and reuse these classes.
+
 ## Known gotchas / deferred
 
 - Gear recorded only at boss-pull (`combatantInfo`); some T6 fights miss it.
