@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gearIssues, type GearIssueConfig } from "./gearIssues";
-import { reportFixture } from "./fixtures/report.fixture";
+import { reportFixture, reportFixture as fixture } from "./fixtures/report.fixture";
 
 export const testConfig: GearIssueConfig = {
   minGemQuality: 3,
@@ -49,5 +49,51 @@ describe("gearIssues — enchants/slots/excluded", () => {
     const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
     const dupes = p1.issues.filter((i) => i.itemId === 24250 && i.issue === "no enchant");
     expect(dupes).toHaveLength(1);
+  });
+});
+
+describe("gearIssues — gems", () => {
+  it("flags items with unfilled sockets", () => {
+    expect(issuesFor("Playerone")).toContainEqual(
+      expect.objectContaining({ itemId: 21848, issue: "missing gem(s) (1/2)" }));
+  });
+  it("flags gems below the minimum quality", () => {
+    // gem 31867 is quality 2 (uncommon) in the fixture itemMeta, min is 3
+    expect(issuesFor("Playerone")).toContainEqual(
+      expect.objectContaining({ itemId: 24266, issue: "uncommon gem used" }));
+  });
+  it("respects a lower minimum quality", () => {
+    const p1 = issuesFor("Playerone", { ...testConfig, minGemQuality: 2 });
+    expect(p1.find((i) => i.issue === "uncommon gem used")).toBeUndefined();
+  });
+  it("skips gems with unknown quality", () => {
+    const report = structuredClone(fixture);
+    delete (report.itemMeta as Record<string, unknown>)["31867"];
+    const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
+    expect(p1.issues.find((i) => i.issue === "uncommon gem used")).toBeUndefined();
+  });
+});
+
+describe("gearIssues — shadow resistance", () => {
+  const srConfig: GearIssueConfig = {
+    ...testConfig,
+    itemShadowRes: { "28781": 20 }, // Playertwo's chest (slot 4) has SR
+  };
+  it("flags SR gear on non-SR fights", () => {
+    expect(issuesFor("Playertwo", srConfig)).toContainEqual(
+      expect.objectContaining({ itemId: 28781, issue: "useless SR gear" }));
+  });
+  it("does not flag SR gear on SR fights", () => {
+    const report = structuredClone(fixture);
+    report.fights = report.fights.map((f) => (f.id === 3 ? { ...f, name: "Mother Shahraz" } : f));
+    const rows = gearIssues(report, srConfig);
+    const p2 = rows.find((r) => r.playerName === "Playertwo");
+    expect(p2?.issues.find((i) => i.issue === "useless SR gear")).toBeUndefined();
+  });
+  it("excludeShahraz drops Shahraz snapshots entirely", () => {
+    const report = structuredClone(fixture);
+    report.fights = report.fights.map((f) => (f.id === 3 ? { ...f, name: "Mother Shahraz" } : f));
+    const rows = gearIssues(report, { ...srConfig, excludeShahraz: true });
+    expect(rows.find((r) => r.playerName === "Playertwo")).toBeUndefined();
   });
 });
