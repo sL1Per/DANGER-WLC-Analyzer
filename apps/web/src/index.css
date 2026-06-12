@@ -152,3 +152,7 @@ small {
 [role="status"] {
   color: #217a3c;
 }
+
+.tabs { margin: 1rem 0; display: flex; gap: 0.5rem; }
+.tabs button.active { font-weight: bold; text-decoration: underline; }
+.scroll-x { overflow-x: auto; }

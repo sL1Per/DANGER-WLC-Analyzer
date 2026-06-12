@@ -3,12 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError, fetchReport, refreshReport, type ReportResponse } from "../lib/api";
 import { loadCredentials } from "../lib/storage";
 import { ReportSummary } from "../components/ReportSummary";
+import { GearListingView } from "../components/GearListingView";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
   const [result, setResult] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"summary" | "gear listing">("summary");
 
   useEffect(() => {
     setLoading(true);
@@ -46,7 +48,13 @@ export function ReportPage() {
           Refresh from WCL
         </button>
       )}
-      <ReportSummary report={result.data} cachedAt={result.cachedAt} />
+      <nav className="tabs">
+        {(["summary", "gear listing"] as const).map((t) => (
+          <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
+        ))}
+      </nav>
+      {tab === "summary" && <ReportSummary report={result.data} cachedAt={result.cachedAt} />}
+      {tab === "gear listing" && <GearListingView report={result.data} />}
     </div>
   );
 }
