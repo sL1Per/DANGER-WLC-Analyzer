@@ -199,5 +199,9 @@ describe("GET /api/report/:id — buff intervals and drum events", () => {
     expect(body.data.buffs).toEqual([]);
     expect(body.data.drumCasts).toEqual([]);
     expect(body.data.drumApplications).toEqual([]);
+    // independent fetches are individually best-effort: gear that was
+    // successfully fetched survives a buff-event failure
+    expect(body.data.gear).toHaveLength(1);
+    expect(body.data.itemMeta["24266"]?.name).toBe("Spellstrike Hood");
   });
 });

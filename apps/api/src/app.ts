@@ -81,23 +81,27 @@ export function createApp(deps: AppDeps = {
       let buffEvents: RawBuffEvent[] = [];
       let castEvents: RawCastEvent[] = [];
       if (bossFightIds.length > 0) {
-        // gear and buff/cast events are best-effort: a failure here must not
-        // take down the whole report
-        try {
-          combatants = await deps.fetchCombatantInfo(id, token, bossFightIds);
-          const ids = new Set<number>();
-          for (const c of combatants) for (const g of c.gear ?? []) {
-            if (g.id !== 0) ids.add(g.id);
-            for (const gem of g.gems ?? []) ids.add(gem.id);
-          }
-          if (ids.size > 0) itemMeta = await deps.fetchItemMeta([...ids], token);
-          buffEvents = await deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS);
-          castEvents = await deps.fetchCastEvents(id, token, DRUM_CAST_IDS);
-        } catch {
-          combatants = [];
-          itemMeta = {};
-          buffEvents = [];
-          castEvents = [];
+        // gear and buff/cast events are best-effort: a failure must not take
+        // down the whole report, and must not discard what the OTHER fetches
+        // already returned. The three are independent, so run them in parallel
+        // (WCL limits points/hour, not concurrency).
+        const [combatantsR, buffR, castR] = await Promise.allSettled([
+          deps.fetchCombatantInfo(id, token, bossFightIds),
+          deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS),
+          deps.fetchCastEvents(id, token, DRUM_CAST_IDS),
+        ]);
+        if (combatantsR.status === "fulfilled") combatants = combatantsR.value;
+        if (buffR.status === "fulfilled") buffEvents = buffR.value;
+        if (castR.status === "fulfilled") castEvents = castR.value;
+        const ids = new Set<number>();
+        for (const c of combatants) for (const g of c.gear ?? []) {
+          if (g.id !== 0) ids.add(g.id);
+          for (const gem of g.gems ?? []) ids.add(gem.id);
+        }
+        if (ids.size > 0) {
+          try {
+            itemMeta = await deps.fetchItemMeta([...ids], token);
+          } catch { /* names degrade to "item #id" in the UI */ }
         }
       }
       const data = normalizeReport(id, rawReport, combatants, itemMeta, {
