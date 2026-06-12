@@ -10,9 +10,28 @@ export interface ReportData {
   players: Player[];
   /** combatantInfo gear snapshots, boss fights only; empty when unavailable */
   gear: GearSnapshot[];
+  /** consumable/drum buff intervals on players (M3+); undefined = report cached before M3 */
+  buffs?: BuffInterval[];
+  drumCasts?: DrumCast[];
+  drumApplications?: DrumApplication[];
   /** itemId/gemId → name+quality, for every id appearing in gear */
   itemMeta: Record<string, ItemMeta>;
 }
+
+/** A buff active on a player, clamped to one fight's window (report-relative ms). */
+export interface BuffInterval {
+  fightId: number;
+  targetId: number;
+  spellId: number;
+  startTime: number;
+  endTime: number;
+}
+
+/** One drum cast by a player. */
+export interface DrumCast { fightId: number; sourceId: number; spellId: number; timestamp: number; }
+
+/** One drum-buff application (source = the drummer). */
+export interface DrumApplication { fightId: number; sourceId: number; targetId: number; spellId: number; timestamp: number; }
 
 export interface Fight {
   id: number;

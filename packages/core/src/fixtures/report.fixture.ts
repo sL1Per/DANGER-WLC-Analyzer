@@ -37,6 +37,21 @@ export const reportFixture: ReportData = {
       ],
     },
   ],
+  buffs: [
+    { fightId: 3, targetId: 1, spellId: 28520, startTime: 150_000, endTime: 250_000 }, // Flask of Relentless Assault: whole fight
+    { fightId: 3, targetId: 1, spellId: 33256, startTime: 150_000, endTime: 200_000 }, // Well Fed (+20 Str): first half only
+    { fightId: 3, targetId: 2, spellId: 28497, startTime: 150_000, endTime: 250_000 }, // Elixir of Major Agility: whole fight
+    { fightId: 3, targetId: 2, spellId: 39627, startTime: 150_000, endTime: 250_000 }, // Elixir of Draenic Wisdom: whole fight
+  ],
+  drumCasts: [
+    { fightId: 3, sourceId: 1, spellId: 35476, timestamp: 151_000 }, // Drums of Battle: 3 buffs applied
+    { fightId: 3, sourceId: 1, spellId: 35476, timestamp: 211_000 }, // Drums of Battle: wasted (no applications)
+  ],
+  drumApplications: [
+    { fightId: 3, sourceId: 1, targetId: 1, spellId: 35476, timestamp: 151_100 },
+    { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_200 },
+    { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_300 },
+  ],
   itemMeta: {
     "24266": { name: "Spellstrike Hood", quality: 4 },
     "21848": { name: "Spellfire Robe", quality: 4 },
