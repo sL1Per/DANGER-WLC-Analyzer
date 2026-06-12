@@ -1,7 +1,12 @@
-import { isTbcRaidZone, type ReportData } from "@wcl/core";
-import { WclError, type RawReport } from "./wcl";
+import { isTbcRaidZone, type ItemMeta, type ReportData } from "@wcl/core";
+import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
 
-export function normalizeReport(reportId: string, raw: RawReport): ReportData {
+export function normalizeReport(
+  reportId: string,
+  raw: RawReport,
+  combatants: RawCombatantInfo[] = [],
+  itemMeta: Record<string, ItemMeta> = {},
+): ReportData {
   if (!raw.zone?.name) {
     throw new WclError(422, "The zone of the report was not recognized by WCL.");
   }
@@ -28,7 +33,20 @@ export function normalizeReport(reportId: string, raw: RawReport): ReportData {
       endTime: f.endTime,
     })),
     players: raw.masterData.actors.map((a) => ({ id: a.id, name: a.name, class: a.subType })),
-    gear: [],
-    itemMeta: {},
+    gear: combatants.map((c) => ({
+      fightId: c.fight,
+      playerId: c.sourceID,
+      items: (c.gear ?? [])
+        .filter((g) => g.id !== 0)
+        .map((g) => ({
+          slot: g.slot,
+          itemId: g.id,
+          itemLevel: g.itemLevel,
+          permanentEnchantId: g.permanentEnchant,
+          temporaryEnchantId: g.temporaryEnchant,
+          gemIds: (g.gems ?? []).map((gem) => gem.id),
+        })),
+    })),
+    itemMeta,
   };
 }
