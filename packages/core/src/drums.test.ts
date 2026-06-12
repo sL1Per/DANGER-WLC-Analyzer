@@ -62,6 +62,16 @@ describe("drums — application matching", () => {
     expect(p1.wasted).toBe(1);
     expect(p1.battle).toEqual({ casts: 2, avgBuffs: 0.5 });
   });
+  it("matches applications by the cast's buffId, not its castId", () => {
+    const report = structuredClone(reportFixture);
+    const mapped: DrumConfig = {
+      drums: [{ castId: 35476, buffId: 40000, kind: "battle", greater: false, name: "Mapped Drums" }],
+    };
+    // fixture applications use spellId 35476 — with buffId 40000 none may match
+    expect(drums(report, mapped)?.rows[0]?.weightedScore).toBe(0);
+    report.drumApplications = report.drumApplications!.map((a) => ({ ...a, spellId: 40000 }));
+    expect(drums(report, mapped)?.rows[0]?.weightedScore).toBe(3);
+  });
   it("does not match applications from other sources", () => {
     const report = structuredClone(reportFixture);
     report.drumApplications!.push({ fightId: 3, sourceId: 2, targetId: 1, spellId: 35476, timestamp: 151_150 });
