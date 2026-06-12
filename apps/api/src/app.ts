@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
+import { consumableBuffs, drumSpells, jcNecks } from "@wcl/data";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
 import {
@@ -10,14 +11,28 @@ import {
   fetchToken as realFetchToken,
   fetchCombatantInfo as realFetchCombatantInfo,
   fetchItemMeta as realFetchItemMeta,
+  fetchBuffEvents as realFetchBuffEvents,
+  fetchCastEvents as realFetchCastEvents,
+  type RawBuffEvent,
+  type RawCastEvent,
   type RawCombatantInfo,
 } from "./wcl";
+
+const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
+const DRUM_CAST_IDS = [...new Set(drumSpells.map((d) => d.castId))];
+const TRACKED_BUFF_IDS = [...new Set([
+  ...consumableBuffs.map((b) => b.spellId),
+  ...DRUM_BUFF_IDS,
+  ...jcNecks.map((n) => n.buffId),
+])];
 
 export interface AppDeps {
   fetchToken: typeof realFetchToken;
   fetchRawReport: typeof realFetchRawReport;
   fetchCombatantInfo: typeof realFetchCombatantInfo;
   fetchItemMeta: typeof realFetchItemMeta;
+  fetchBuffEvents: typeof realFetchBuffEvents;
+  fetchCastEvents: typeof realFetchCastEvents;
   cacheTtlMs: number;
 }
 
@@ -26,6 +41,8 @@ export function createApp(deps: AppDeps = {
   fetchRawReport: realFetchRawReport,
   fetchCombatantInfo: realFetchCombatantInfo,
   fetchItemMeta: realFetchItemMeta,
+  fetchBuffEvents: realFetchBuffEvents,
+  fetchCastEvents: realFetchCastEvents,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -61,8 +78,11 @@ export function createApp(deps: AppDeps = {
       const bossFightIds = rawReport.fights.filter((f) => f.encounterID !== 0).map((f) => f.id);
       let combatants: RawCombatantInfo[] = [];
       let itemMeta: Record<string, ItemMeta> = {};
+      let buffEvents: RawBuffEvent[] = [];
+      let castEvents: RawCastEvent[] = [];
       if (bossFightIds.length > 0) {
-        // gear is best-effort: a failure here must not take down the whole report
+        // gear and buff/cast events are best-effort: a failure here must not
+        // take down the whole report
         try {
           combatants = await deps.fetchCombatantInfo(id, token, bossFightIds);
           const ids = new Set<number>();
@@ -71,12 +91,19 @@ export function createApp(deps: AppDeps = {
             for (const gem of g.gems ?? []) ids.add(gem.id);
           }
           if (ids.size > 0) itemMeta = await deps.fetchItemMeta([...ids], token);
+          buffEvents = await deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS);
+          castEvents = await deps.fetchCastEvents(id, token, DRUM_CAST_IDS);
         } catch {
           combatants = [];
           itemMeta = {};
+          buffEvents = [];
+          castEvents = [];
         }
       }
-      const data = normalizeReport(id, rawReport, combatants, itemMeta);
+      const data = normalizeReport(id, rawReport, combatants, itemMeta, {
+        buffEvents, castEvents,
+        trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
+      });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
     } catch (e) {

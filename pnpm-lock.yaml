@@ -16,6 +16,9 @@ importers:
       '@wcl/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@wcl/data':
+        specifier: workspace:*
+        version: link:../../packages/data
       hono:
         specifier: ^4.6.0
         version: 4.12.25

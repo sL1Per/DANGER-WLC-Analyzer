@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeReport } from "./normalize";
-import type { RawReport, RawCombatantInfo } from "./wcl";
+import type { RawBuffEvent, RawCastEvent, RawReport, RawCombatantInfo } from "./wcl";
 
 const raw: RawReport = {
   title: "T5 fun",
@@ -108,5 +108,104 @@ describe("normalizeReport — players limited to fight participants", () => {
     };
     const data = normalizeReport("a1B2c3D4e5F6g7H8", noInfo);
     expect(data.players).toHaveLength(3);
+  });
+});
+
+describe("normalizeReport — buff intervals and drum events", () => {
+  // Fight 2 ("Hydross") in `raw` runs [70_000, 130_000].
+  const buff = (type: string, timestamp: number, overrides: Partial<RawBuffEvent> = {}): RawBuffEvent => ({
+    timestamp, type, sourceID: 7, targetID: 7, abilityGameID: 28520, fight: 2, ...overrides,
+  });
+
+  it("builds one interval from an apply/remove pair", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents: [buff("applybuff", 80_000), buff("removebuff", 90_000)],
+    });
+    expect(data.buffs).toEqual([
+      { fightId: 2, targetId: 7, spellId: 28520, startTime: 80_000, endTime: 90_000 },
+    ]);
+  });
+
+  it("treats a remove without a prior apply as up since the pull", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents: [buff("removebuff", 90_000)],
+    });
+    expect(data.buffs).toEqual([
+      { fightId: 2, targetId: 7, spellId: 28520, startTime: 70_000, endTime: 90_000 },
+    ]);
+  });
+
+  it("closes never-removed buffs at the fight end", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents: [buff("applybuff", 80_000)],
+    });
+    expect(data.buffs).toEqual([
+      { fightId: 2, targetId: 7, spellId: 28520, startTime: 80_000, endTime: 130_000 },
+    ]);
+  });
+
+  it("seeds full-fight intervals from combatantInfo pull auras", () => {
+    const combatants: RawCombatantInfo[] = [
+      { sourceID: 7, fight: 2, gear: [], auras: [{ source: 7, ability: 28520 }] },
+    ];
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, combatants, {}, {
+      trackedBuffIds: [28520],
+    });
+    expect(data.buffs).toEqual([
+      { fightId: 2, targetId: 7, spellId: 28520, startTime: 70_000, endTime: 130_000 },
+    ]);
+  });
+
+  it("seeded interval + later remove produces exactly one interval (no remove-fallback duplicate)", () => {
+    const combatants: RawCombatantInfo[] = [
+      { sourceID: 7, fight: 2, gear: [], auras: [{ source: 7, ability: 28520 }] },
+    ];
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, combatants, {}, {
+      buffEvents: [buff("removebuff", 90_000)],
+      trackedBuffIds: [28520],
+    });
+    expect(data.buffs).toEqual([
+      { fightId: 2, targetId: 7, spellId: 28520, startTime: 70_000, endTime: 90_000 },
+    ]);
+  });
+
+  it("drops events whose fight id is unknown", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents: [buff("applybuff", 80_000, { fight: 99 }), buff("removebuff", 90_000, { fight: 99 })],
+    });
+    expect(data.buffs).toEqual([]);
+  });
+
+  it("maps cast events to drumCasts and drum-buff applies to drumApplications", () => {
+    const castEvents: RawCastEvent[] = [
+      { timestamp: 75_000, type: "cast", sourceID: 7, abilityGameID: 35476, fight: 2 },
+    ];
+    const buffEvents = [
+      buff("applybuff", 75_100, { abilityGameID: 35476, targetID: 9 }),
+      buff("removebuff", 105_100, { abilityGameID: 35476, targetID: 9 }),
+    ];
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents, castEvents, drumBuffIds: [35476],
+    });
+    expect(data.drumCasts).toEqual([
+      { fightId: 2, sourceId: 7, spellId: 35476, timestamp: 75_000 },
+    ]);
+    expect(data.drumApplications).toEqual([
+      { fightId: 2, sourceId: 7, targetId: 9, spellId: 35476, timestamp: 75_100 },
+    ]);
+  });
+
+  it("produces no drumApplications when drumBuffIds is omitted", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, [], {}, {
+      buffEvents: [buff("applybuff", 75_100, { abilityGameID: 35476, targetID: 9 })],
+    });
+    expect(data.drumApplications).toEqual([]);
+  });
+
+  it("defaults buffs/drumCasts/drumApplications to [] when no events are passed", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw);
+    expect(data.buffs).toEqual([]);
+    expect(data.drumCasts).toEqual([]);
+    expect(data.drumApplications).toEqual([]);
   });
 });

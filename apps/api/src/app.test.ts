@@ -13,6 +13,8 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
     fetchRawReport: vi.fn().mockResolvedValue(raw),
     fetchCombatantInfo: vi.fn().mockResolvedValue([]),
     fetchItemMeta: vi.fn().mockResolvedValue({}),
+    fetchBuffEvents: vi.fn().mockResolvedValue([]),
+    fetchCastEvents: vi.fn().mockResolvedValue([]),
     cacheTtlMs: 60_000,
     ...overrides,
   });
@@ -141,5 +143,61 @@ describe("GET /api/report/:id — gear", () => {
     const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
     expect(res.status).toBe(200);
     expect((await res.json()).data.gear).toEqual([]);
+  });
+});
+
+describe("GET /api/report/:id — buff intervals and drum events", () => {
+  const rawWithBoss: RawReport = {
+    ...raw,
+    fights: [
+      { id: 2, name: "Attumen the Huntsman", encounterID: 652, kill: true, startTime: 0, endTime: 100_000 },
+    ],
+  };
+
+  it("includes intervals and drum events built from the event fetchers", async () => {
+    const fetchBuffEvents = vi.fn().mockResolvedValue([
+      // consumable buff (flask of pure death 28540): apply + remove
+      { timestamp: 10_000, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 28540, fight: 2 },
+      { timestamp: 50_000, type: "removebuff", sourceID: 7, targetID: 7, abilityGameID: 28540, fight: 2 },
+      // drum buff application (Drums of Battle 35476)
+      { timestamp: 20_000, type: "applybuff", sourceID: 7, targetID: 9, abilityGameID: 35476, fight: 2 },
+    ]);
+    const fetchCastEvents = vi.fn().mockResolvedValue([
+      { timestamp: 19_900, type: "cast", sourceID: 7, abilityGameID: 35476, fight: 2 },
+    ]);
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchBuffEvents, fetchCastEvents,
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.buffs).toContainEqual(
+      { fightId: 2, targetId: 7, spellId: 28540, startTime: 10_000, endTime: 50_000 });
+    expect(body.data.drumCasts).toEqual([
+      { fightId: 2, sourceId: 7, spellId: 35476, timestamp: 19_900 }]);
+    expect(body.data.drumApplications).toEqual([
+      { fightId: 2, sourceId: 7, targetId: 9, spellId: 35476, timestamp: 20_000 }]);
+    // events were requested with non-empty tracked ability id lists
+    expect(fetchBuffEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
+    expect(fetchCastEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
+  });
+
+  it("serves the report with empty buffs when event fetching fails (best-effort)", async () => {
+    const fetchItemMeta = vi.fn().mockResolvedValue({ "24266": { name: "Spellstrike Hood", quality: 4 } });
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchCombatantInfo: vi.fn().mockResolvedValue([
+        { sourceID: 7, fight: 2, gear: [{ id: 24266, slot: 0 }] },
+      ]),
+      fetchItemMeta,
+      fetchBuffEvents: vi.fn().mockRejectedValue(new WclError(502, "boom")),
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.buffs).toEqual([]);
+    expect(body.data.drumCasts).toEqual([]);
+    expect(body.data.drumApplications).toEqual([]);
   });
 });

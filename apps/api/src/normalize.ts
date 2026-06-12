@@ -1,11 +1,33 @@
-import { isTbcRaidZone, type ItemMeta, type ReportData } from "@wcl/core";
-import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
+import {
+  isTbcRaidZone,
+  type BuffInterval,
+  type Fight,
+  type ItemMeta,
+  type ReportData,
+} from "@wcl/core";
+import {
+  WclError,
+  type RawBuffEvent,
+  type RawCastEvent,
+  type RawCombatantInfo,
+  type RawReport,
+} from "./wcl";
+
+export interface NormalizeEventInputs {
+  buffEvents?: RawBuffEvent[];
+  castEvents?: RawCastEvent[];
+  /** buff ids whose pull-time presence (combatantInfo auras) should seed intervals */
+  trackedBuffIds?: number[];
+  /** buff ids that count as drum buffs for drumApplications */
+  drumBuffIds?: number[];
+}
 
 export function normalizeReport(
   reportId: string,
   raw: RawReport,
   combatants: RawCombatantInfo[] = [],
   itemMeta: Record<string, ItemMeta> = {},
+  events: NormalizeEventInputs = {},
 ): ReportData {
   if (!raw.zone?.name) {
     throw new WclError(422, "The zone of the report was not recognized by WCL.");
@@ -17,21 +39,24 @@ export function normalizeReport(
   if (!raw.masterData?.actors) {
     throw new WclError(422, "Report has no player data (it may be private or restricted).");
   }
+  const fights: Fight[] = raw.fights.map((f) => ({
+    id: f.id,
+    name: f.name,
+    encounterId: f.encounterID,
+    isBoss: f.encounterID !== 0,
+    kill: f.encounterID !== 0 ? (f.kill ?? false) : undefined,
+    startTime: f.startTime,
+    endTime: f.endTime,
+  }));
+  const buffEvents = events.buffEvents ?? [];
+  const drumBuffIds = new Set(events.drumBuffIds ?? []);
   return {
     reportId,
     title: raw.title,
     zoneName: raw.zone.name,
     startTime: raw.startTime,
     endTime: raw.endTime,
-    fights: raw.fights.map((f) => ({
-      id: f.id,
-      name: f.name,
-      encounterId: f.encounterID,
-      isBoss: f.encounterID !== 0,
-      kill: f.encounterID !== 0 ? (f.kill ?? false) : undefined,
-      startTime: f.startTime,
-      endTime: f.endTime,
-    })),
+    fights,
     players: filterToParticipants(raw),
     gear: combatants.map((c) => ({
       fightId: c.fight,
@@ -49,8 +74,93 @@ export function normalizeReport(
         }))
         .filter((i) => i.itemId !== 0),
     })),
+    buffs: buildBuffIntervals(buffEvents, combatants, fights, events.trackedBuffIds ?? []),
+    drumCasts: (events.castEvents ?? []).map((e) => ({
+      fightId: e.fight, sourceId: e.sourceID, spellId: e.abilityGameID, timestamp: e.timestamp,
+    })),
+    drumApplications: buffEvents
+      .filter((e) => (e.type === "applybuff" || e.type === "refreshbuff")
+        && drumBuffIds.has(e.abilityGameID))
+      .map((e) => ({
+        fightId: e.fight, sourceId: e.sourceID, targetId: e.targetID,
+        spellId: e.abilityGameID, timestamp: e.timestamp,
+      })),
     itemMeta,
   };
+}
+
+/**
+ * Turn WCL apply/refresh/remove buff events into per-fight BuffIntervals.
+ *
+ * Ordering decision: pull-aura seeds (combatantInfo) are processed BEFORE the
+ * event sweep. A seed opens an interval at the fight start; a later removebuff
+ * then closes it naturally, and a later applybuff for the same key is ignored
+ * while the seeded interval is open. Crucially, this also prevents
+ * double-creation: without seeding-first, a remove-without-apply would ALSO
+ * fall back to "open since pull" and we'd emit the same interval twice.
+ */
+export function buildBuffIntervals(
+  buffEvents: RawBuffEvent[],
+  combatants: RawCombatantInfo[],
+  fights: Fight[],
+  trackedBuffIds: number[],
+): BuffInterval[] {
+  const fightById = new Map(fights.map((f) => [f.id, f]));
+  const tracked = new Set(trackedBuffIds);
+  const intervals: BuffInterval[] = [];
+  /** key "fightId:targetId:spellId" → index into `intervals` of the open one */
+  const open = new Map<string, number>();
+  const keyOf = (fightId: number, targetId: number, spellId: number) =>
+    `${fightId}:${targetId}:${spellId}`;
+
+  const openAt = (fightId: number, targetId: number, spellId: number, startTime: number) => {
+    const fight = fightById.get(fightId);
+    if (!fight) return;
+    const key = keyOf(fightId, targetId, spellId);
+    if (open.has(key)) return;
+    open.set(key, intervals.length);
+    intervals.push({ fightId, targetId, spellId, startTime, endTime: fight.endTime });
+  };
+
+  // 1. seed from pull auras (must precede the event sweep — see doc comment)
+  for (const c of combatants) {
+    const fight = fightById.get(c.fight);
+    if (!fight) continue;
+    for (const aura of c.auras ?? []) {
+      if (tracked.has(aura.ability)) openAt(c.fight, c.sourceID, aura.ability, fight.startTime);
+    }
+  }
+
+  // 2. sweep the (time-ordered) events
+  for (const e of buffEvents) {
+    const fight = fightById.get(e.fight);
+    if (!fight) continue;
+    if (e.type === "applybuff" || e.type === "refreshbuff") {
+      openAt(e.fight, e.targetID, e.abilityGameID, e.timestamp);
+    } else if (e.type === "removebuff") {
+      const key = keyOf(e.fight, e.targetID, e.abilityGameID);
+      const idx = open.get(key);
+      if (idx !== undefined) {
+        intervals[idx]!.endTime = e.timestamp;
+        open.delete(key);
+      } else {
+        // remove without a prior apply: the buff was up since the pull
+        intervals.push({
+          fightId: e.fight, targetId: e.targetID, spellId: e.abilityGameID,
+          startTime: fight.startTime, endTime: e.timestamp,
+        });
+      }
+    }
+  }
+  // still-open intervals already end at fight.endTime (set in openAt)
+
+  // 3. clamp to the fight window; drop empty/negative intervals
+  return intervals.flatMap((iv) => {
+    const fight = fightById.get(iv.fightId)!;
+    const startTime = Math.max(iv.startTime, fight.startTime);
+    const endTime = Math.min(iv.endTime, fight.endTime);
+    return endTime > startTime ? [{ ...iv, startTime, endTime }] : [];
+  });
 }
 
 /**
