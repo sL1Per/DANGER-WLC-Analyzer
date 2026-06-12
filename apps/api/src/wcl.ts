@@ -98,7 +98,7 @@ export async function fetchCombatantInfo(
     for (const e of page.data) {
       if (e.type === "combatantinfo") events.push(e as unknown as RawCombatantInfo);
     }
-    if (page.nextPageTimestamp == null) break;
+    if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
     start = page.nextPageTimestamp;
   }
   return events;

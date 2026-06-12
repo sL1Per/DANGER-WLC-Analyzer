@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "./app";
-import { WclError, type RawReport } from "./wcl";
+import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
 
 const raw: RawReport = {
   title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
@@ -11,6 +11,8 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
   return createApp({
     fetchToken: vi.fn().mockResolvedValue({ accessToken: "tok", expiresIn: 86400 }),
     fetchRawReport: vi.fn().mockResolvedValue(raw),
+    fetchCombatantInfo: vi.fn().mockResolvedValue([]),
+    fetchItemMeta: vi.fn().mockResolvedValue({}),
     cacheTtlMs: 60_000,
     ...overrides,
   });
@@ -99,5 +101,45 @@ describe("GET /api/report/:id", () => {
     const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
     const body2 = await r2.json();
     expect(body1.cachedAt).toBe(body2.cachedAt);
+  });
+});
+
+describe("GET /api/report/:id — gear", () => {
+  const rawWithBoss: RawReport = {
+    ...raw,
+    fights: [
+      { id: 1, name: "Trash", encounterID: 0, kill: null, startTime: 0, endTime: 1 },
+      { id: 2, name: "Attumen the Huntsman", encounterID: 652, kill: true, startTime: 2, endTime: 3 },
+    ],
+  };
+  const combatants: RawCombatantInfo[] = [
+    { sourceID: 7, fight: 2, gear: [{ id: 24266, slot: 0, gems: [{ id: 31867 }] }] },
+  ];
+
+  it("fetches combatant info for boss fights and resolves item meta", async () => {
+    const fetchCombatantInfo = vi.fn().mockResolvedValue(combatants);
+    const fetchItemMeta = vi.fn().mockResolvedValue({ "24266": { name: "Spellstrike Hood", quality: 4 } });
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchCombatantInfo, fetchItemMeta,
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.gear).toHaveLength(1);
+    expect(body.data.itemMeta["24266"].name).toBe("Spellstrike Hood");
+    expect(fetchCombatantInfo).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [2]); // boss fights only
+    // item ids AND gem ids requested:
+    expect(fetchItemMeta.mock.calls[0]![0]).toEqual(expect.arrayContaining([24266, 31867]));
+  });
+  it("serves the report even when combatant info fails", async () => {
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchCombatantInfo: vi.fn().mockRejectedValue(new WclError(502, "boom")),
+      fetchItemMeta: vi.fn(),
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.gear).toEqual([]);
   });
 });

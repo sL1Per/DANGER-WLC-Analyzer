@@ -1,20 +1,31 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
-import { REPORT_ID_RE, type ReportData } from "@wcl/core";
+import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
-import { WclError, fetchRawReport as realFetchRawReport, fetchToken as realFetchToken } from "./wcl";
+import {
+  WclError,
+  fetchRawReport as realFetchRawReport,
+  fetchToken as realFetchToken,
+  fetchCombatantInfo as realFetchCombatantInfo,
+  fetchItemMeta as realFetchItemMeta,
+  type RawCombatantInfo,
+} from "./wcl";
 
 export interface AppDeps {
   fetchToken: typeof realFetchToken;
   fetchRawReport: typeof realFetchRawReport;
+  fetchCombatantInfo: typeof realFetchCombatantInfo;
+  fetchItemMeta: typeof realFetchItemMeta;
   cacheTtlMs: number;
 }
 
 export function createApp(deps: AppDeps = {
   fetchToken: realFetchToken,
   fetchRawReport: realFetchRawReport,
+  fetchCombatantInfo: realFetchCombatantInfo,
+  fetchItemMeta: realFetchItemMeta,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -46,11 +57,28 @@ export function createApp(deps: AppDeps = {
       }, 401);
     }
     try {
-      const data = normalizeReport(id, await deps.fetchRawReport(id, token));
+      const rawReport = await deps.fetchRawReport(id, token);
+      const bossFightIds = rawReport.fights.filter((f) => f.encounterID !== 0).map((f) => f.id);
+      let combatants: RawCombatantInfo[] = [];
+      let itemMeta: Record<string, ItemMeta> = {};
+      if (bossFightIds.length > 0) {
+        // gear is best-effort: a failure here must not take down the whole report
+        try {
+          combatants = await deps.fetchCombatantInfo(id, token, bossFightIds);
+          const ids = new Set<number>();
+          for (const c of combatants) for (const g of c.gear ?? []) {
+            if (g.id !== 0) ids.add(g.id);
+            for (const gem of g.gems ?? []) ids.add(gem.id);
+          }
+          if (ids.size > 0) itemMeta = await deps.fetchItemMeta([...ids], token);
+        } catch {
+          combatants = [];
+          itemMeta = {};
+        }
+      }
+      const data = normalizeReport(id, rawReport, combatants, itemMeta);
       cache.set(id, data);
-      // Read cachedAt from the stored entry so the response matches exactly what was stored.
-      const { cachedAt } = cache.get(id)!;
-      return c.json({ data, cachedAt });
+      return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
     } catch (e) {
       return toErrorResponse(c, e);
     }
