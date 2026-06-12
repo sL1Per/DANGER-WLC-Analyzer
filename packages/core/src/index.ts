@@ -6,4 +6,5 @@ export * from "./slots";
 export * from "./itemName";
 export * from "./gearListing";
 export * from "./gearIssues";
+export * from "./consumables";
 export { reportFixture } from "./fixtures/report.fixture";
