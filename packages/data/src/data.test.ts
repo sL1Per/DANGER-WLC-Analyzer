@@ -51,8 +51,14 @@ describe("consumable reference data", () => {
     const kinds = new Set(suboptimalConsumables.map((s) => s.kind));
     expect(kinds).toEqual(new Set(["buff", "tempEnchant"]));
   });
-  it("has no duplicate buff spell ids", () => {
-    const ids = consumableBuffs.map((b) => b.spellId);
-    expect(new Set(ids).size).toBe(ids.length);
+  it("has no duplicate ids in any curated table", () => {
+    for (const ids of [
+      consumableBuffs.map((b) => b.spellId),
+      drumSpells.map((d) => d.castId),
+      jcNecks.map((n) => n.itemId),
+      suboptimalConsumables.map((s) => `${s.kind}|${s.id}`),
+    ]) {
+      expect(new Set(ids).size).toBe(ids.length);
+    }
   });
 });

@@ -113,7 +113,9 @@ export const drumSpells: DrumSpell[] = [
 
 /**
  * Tinnitus debuff (cannot receive drums again while active).
- * Classic drums trigger 51120; the Greater versions trigger 369770.
+ * 51120 verified on wowhead.com/tbc (2-min Tinnitus, triggered by the classic
+ * drums). 369770 is listed by Wowhead as triggered by the Greater versions but
+ * sits outside typical TBC-Classic id ranges — UNVERIFIED beyond that relation.
  */
 export const tinnitusSpellIds: number[] = [51120, 369770];
 
