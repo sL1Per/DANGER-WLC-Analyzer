@@ -29,6 +29,16 @@ Reports load once with your credentials and are then served from the API's
 - `apps/api` — Hono proxy: WCL OAuth, GraphQL fetch, report cache
 - `apps/web` — React SPA
 
+### Gear analyses (M2)
+
+The report page has three tabs: summary, gear issues, gear listing. Gear is
+read from WCL combatantInfo (recorded at boss-pull only; some T6 fights miss
+it). Reports cached before M2 lack gear — hit "Refresh from WCL".
+
+To verify the WCL schema assumptions against the live API once:
+
+    WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api probe <reportCode>
+
 ## Known trade-offs (M1)
 
 - `DELETE /api/report/:id` (manual refresh) is unauthenticated — anyone can

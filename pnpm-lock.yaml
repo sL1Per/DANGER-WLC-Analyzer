@@ -35,6 +35,9 @@ importers:
       '@wcl/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@wcl/data':
+        specifier: workspace:*
+        version: link:../../packages/data
       react:
         specifier: ^19.2.6
         version: 19.2.7
