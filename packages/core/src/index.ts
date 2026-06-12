@@ -3,6 +3,7 @@ export * from "./reportInput";
 export * from "./filters";
 export * from "./zones";
 export * from "./slots";
+export * from "./itemName";
 export * from "./gearListing";
 export * from "./gearIssues";
 export { reportFixture } from "./fixtures/report.fixture";

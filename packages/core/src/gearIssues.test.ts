@@ -72,6 +72,18 @@ describe("gearIssues — gems", () => {
     const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
     expect(p1.issues.find((i) => i.issue === "uncommon gem used")).toBeUndefined();
   });
+  it("counts each offending gem separately (two uncommon gems → two issues)", () => {
+    const report = structuredClone(reportFixture);
+    // Give item 24266 two uncommon gems (31867) + one rare gem (24030)
+    const snap = report.gear.find((g) => g.playerId === 1)!;
+    const item = snap.items.find((i) => i.itemId === 24266)!;
+    item.gemIds = [31867, 31867, 24030];
+    const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
+    const uncommonIssues = p1.issues.filter(
+      (i) => i.itemId === 24266 && /uncommon gem used/.test(i.issue),
+    );
+    expect(uncommonIssues).toHaveLength(2);
+  });
 });
 
 describe("gearIssues — shadow resistance", () => {

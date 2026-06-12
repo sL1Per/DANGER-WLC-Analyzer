@@ -1,5 +1,5 @@
 import { ENCHANTABLE_SLOTS, QUALITY_NAMES, REQUIRED_SLOTS, SLOT_NAMES } from "./slots";
-import { itemName } from "./gearListing";
+import { itemName } from "./itemName";
 import type { GearItem, ReportData } from "./types";
 
 export interface GearIssueConfig {
@@ -32,8 +32,8 @@ export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGear
   for (const player of report.players) {
     const seen = new Set<string>();
     const issues: GearIssue[] = [];
-    const add = (itemId: number, issue: string) => {
-      const key = `${itemId}|${issue}`;
+    const add = (itemId: number, issue: string, dedupeKey = "") => {
+      const key = `${itemId}|${issue}|${dedupeKey}`;
       if (seen.has(key)) return;
       seen.add(key);
       issues.push({ itemId, itemName: itemId ? itemName(report, itemId) : "", issue });
@@ -87,19 +87,21 @@ function checkGems(
   report: ReportData,
   item: GearItem,
   cfg: GearIssueConfig,
-  add: (itemId: number, issue: string) => void,
+  add: (itemId: number, issue: string, dedupeKey?: string) => void,
 ): void {
   const sockets = cfg.itemSockets[String(item.itemId)] ?? 0;
   if (sockets === 0) return;
   const missing = sockets - item.gemIds.length;
   if (missing > 0) add(item.itemId, `missing gem(s) (${item.gemIds.length}/${sockets})`);
-  for (const gemId of item.gemIds) {
+  item.gemIds.forEach((gemId, idx) => {
     const quality = report.itemMeta[String(gemId)]?.quality;
     if (quality !== undefined && quality < cfg.minGemQuality) {
-      // one entry per offending gem, like the original — bypass dedupe via counter suffix
-      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`);
+      // include gem index in the dedupe key so two offending gems on the same item
+      // each get their own issue entry; the same index is stable across fights, so
+      // cross-fight deduplication still works correctly
+      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`, `gem${idx}`);
     }
-  }
+  });
 }
 
 function checkShadowRes(

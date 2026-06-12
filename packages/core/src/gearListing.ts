@@ -1,4 +1,6 @@
 import type { Fight, ReportData } from "./types";
+import { itemName } from "./itemName";
+export { itemName } from "./itemName";
 
 export interface ListedItem { itemId: number; name: string; }
 export interface GearListingRow {
@@ -6,10 +8,6 @@ export interface GearListingRow {
   playerName: string;
   /** keyed by slot id; absent slot = nothing equipped/recorded */
   items: Partial<Record<number, ListedItem>>;
-}
-
-export function itemName(report: ReportData, itemId: number): string {
-  return report.itemMeta[String(itemId)]?.name ?? `item ${itemId}`;
 }
 
 /** Boss fights that have at least one gear snapshot, in fight order. */
