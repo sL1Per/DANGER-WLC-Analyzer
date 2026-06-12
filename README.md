@@ -31,9 +31,24 @@ Reports load once with your credentials and are then served from the API's
 
 ### Gear analyses (M2)
 
-The report page has three tabs: summary, gear issues, gear listing. Gear is
+The report page has tabs: summary, gear issues, gear listing. Gear is
 read from WCL combatantInfo (recorded at boss-pull only; some T6 fights miss
 it). Reports cached before M2 lack gear — hit "Refresh from WCL".
+
+### Consumables + drums (M3)
+
+Two more tabs: **buff consumables** (per-player boss-fight uptimes for
+elixirs/flasks/food/scrolls, gear-based weapon-enhancement uptime, JC-neck
+usage, suboptimal-consumable callouts, and the original's total average) and
+**drums** (battle/war/restoration counts, wasted "on Tinnitus" casts = drums
+that buffed nobody, ⌀ buffs per drum, weighted score = total buffs applied,
+lesser-version flag). Reports cached before M3 need a "Refresh from WCL".
+
+Caveat: the consumable/drum spell-id lists are hand-curated (the originals
+lived in the spreadsheet's Apps Script, which isn't in the xlsx exports) and
+were verified against Wowhead TBC — see `packages/data/src/consumables.ts`.
+Problem cells follow the project-wide color convention: red = big issue,
+yellow = intermediate, green = fine/small.
 
 To verify the WCL schema assumptions against the live API once:
 

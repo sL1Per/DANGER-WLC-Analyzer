@@ -10,7 +10,16 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
 
 ## Current state (2026-06-12)
 
-- **M0 (foundation), M1 (report loading), M2 (gear issues + gear listing): merged to `main`, 100 tests passing.**
+- **M0 (foundation), M1 (report loading), M2 (gear issues + gear listing), M3 (buff consumables + drums): merged to `main`.**
+- M3 notes: consumable/drum/JC-neck spell ids are hand-curated in
+  `packages/data/src/consumables.ts` (NOT from the xlsx — the originals lived in
+  Apps Script); every id Wowhead-verified except two flagged `UNVERIFIED`
+  (Tinnitus 369770 for Greater drums; "Increased Intellect" buff 3166). Buff
+  uptimes come from WCL Buffs events + combatantInfo pull-aura seeding;
+  drums "on Tinnitus" = casts with zero buff applications within 1500 ms (our
+  heuristic). Reverse-engineered formulas verified against the xlsx sample:
+  totalAverage = mean(elixirOrFlask, food, weaponEnh≠0); weighted score = total
+  buff applications. Reports cached before M3 show refresh notices on new tabs.
 - Bugfix after first real-data test (2026-06-12): Classic combatantinfo gear
   entries have **no `slot` field — array index = slot id** (id-0 placeholders keep
   indices aligned); and `masterData.actors` includes every player the logger
@@ -44,11 +53,7 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
 
 ## Next milestones
 
-- **M3 — CLA consumables + drums** (next; needs its own plan): elixir/flask/food/
-  scroll/weapon-enhancement uptimes on boss fights, JC necks, suboptimal list,
-  total average; drums counts, Tinnitus waste, lesser-version flag, ⌀ buffs,
-  weighted score ≈ round(count × ⌀buffs).
-- **M4 — validate + shadow resi + fight timeline.** Must first extract per-zone
+- **M4 — validate + shadow resi + fight timeline** (next; needs its own plan). Must first extract per-zone
   trash tables from CLA `trans` sheet cols W–AA (current JSON has SW only).
 - **M5 — RPB.** Spell-haste JSON has only 143 of ~543 rows (rest hidden behind a
   Google IMPORTRANGE not cached in the export); role auto-detection heuristic and
