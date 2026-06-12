@@ -30,7 +30,7 @@ query Report($code: String!) {
       startTime
       endTime
       zone { name }
-      fights { id name encounterID kill startTime endTime }
+      fights { id name encounterID kill startTime endTime friendlyPlayers }
       masterData { actors(type: "Player") { id name subType } }
     }
   }
@@ -42,7 +42,7 @@ export interface RawReport {
   endTime: number;
   zone: { name: string } | null;
   fights: { id: number; name: string; encounterID: number; kill: boolean | null;
-            startTime: number; endTime: number }[];
+            startTime: number; endTime: number; friendlyPlayers?: number[] | null }[];
   masterData: { actors: { id: number; name: string; subType: string }[] } | null;
 }
 
@@ -80,7 +80,8 @@ query CombatantInfo($code: String!, $fightIds: [Int], $start: Float) {
 }`;
 
 export interface RawGearEntry {
-  id: number; slot: number; itemLevel?: number;
+  // Classic logs omit `slot`: the entry's position in the gear array is the slot id.
+  id: number; slot?: number; itemLevel?: number;
   permanentEnchant?: number; temporaryEnchant?: number;
   gems?: { id: number }[];
 }

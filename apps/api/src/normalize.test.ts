@@ -60,4 +60,53 @@ describe("normalizeReport — gear", () => {
     expect(data.gear).toEqual([]);
     expect(data.itemMeta).toEqual({});
   });
+
+  it("derives slot from array index when WCL omits the slot field (Classic logs)", () => {
+    // Classic combatantinfo gear arrays have no per-entry slot: position = slot id,
+    // and empty slots come through as id 0 placeholders that still occupy their index.
+    const classicCombatants: RawCombatantInfo[] = [
+      { sourceID: 7, fight: 2, gear: [
+        { id: 24266, permanentEnchant: 29191, gems: [{ id: 24030 }] } as never, // index 0 = Head
+        { id: 28134 } as never,  // index 1 = Neck
+        { id: 0 } as never,      // index 2 = empty Shoulders — dropped, but keeps indices aligned
+        { id: 0 } as never,      // index 3 = empty Shirt
+        { id: 21848 } as never,  // index 4 = Chest
+      ] },
+    ];
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, classicCombatants);
+    expect(data.gear[0]?.items.map((i) => [i.slot, i.itemId])).toEqual([
+      [0, 24266], [1, 28134], [4, 21848],
+    ]);
+  });
+});
+
+describe("normalizeReport — players limited to fight participants", () => {
+  const rawWithBystanders: RawReport = {
+    ...raw,
+    fights: [
+      { id: 1, name: "Underbog Colossus", encounterID: 0, kill: null,
+        startTime: 0, endTime: 60_000, friendlyPlayers: [7] },
+      { id: 2, name: "Hydross the Unstable", encounterID: 623, kill: false,
+        startTime: 70_000, endTime: 130_000, friendlyPlayers: [7, 9] },
+    ],
+    masterData: { actors: [
+      { id: 7, name: "Playerone", subType: "Mage" },
+      { id: 9, name: "Playertwo", subType: "Druid" },
+      { id: 50, name: "ShattrathBystander", subType: "Priest" },
+    ] },
+  };
+
+  it("drops actors that never appear in any fight's friendlyPlayers", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rawWithBystanders);
+    expect(data.players.map((p) => p.name)).toEqual(["Playerone", "Playertwo"]);
+  });
+
+  it("keeps all actors when WCL returns no friendlyPlayers info", () => {
+    const noInfo: RawReport = {
+      ...rawWithBystanders,
+      fights: rawWithBystanders.fights.map((f) => ({ ...f, friendlyPlayers: null })),
+    };
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", noInfo);
+    expect(data.players).toHaveLength(3);
+  });
 });

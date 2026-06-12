@@ -33,6 +33,8 @@ describe("fetchRawReport", () => {
     expect(url).toBe("https://classic.warcraftlogs.com/api/v2/client");
     expect((init!.headers as Record<string,string>).Authorization).toBe("Bearer tok");
     expect(JSON.parse(init!.body! as string).variables.code).toBe("a1B2c3D4e5F6g7H8");
+    // friendlyPlayers is needed to filter out logged bystanders (see normalize)
+    expect(JSON.parse(init!.body! as string).query).toContain("friendlyPlayers");
   });
   it("throws WclError(404) when the report is null", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(

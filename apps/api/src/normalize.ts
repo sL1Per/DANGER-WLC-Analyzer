@@ -32,21 +32,42 @@ export function normalizeReport(
       startTime: f.startTime,
       endTime: f.endTime,
     })),
-    players: raw.masterData.actors.map((a) => ({ id: a.id, name: a.name, class: a.subType })),
+    players: filterToParticipants(raw),
     gear: combatants.map((c) => ({
       fightId: c.fight,
       playerId: c.sourceID,
+      // map before dropping id-0 placeholders: Classic logs omit `slot`, so the
+      // array index IS the slot id, and empty slots must still consume their index
       items: (c.gear ?? [])
-        .filter((g) => g.id !== 0)
-        .map((g) => ({
-          slot: g.slot,
+        .map((g, index) => ({
+          slot: g.slot ?? index,
           itemId: g.id,
           itemLevel: g.itemLevel,
           permanentEnchantId: g.permanentEnchant,
           temporaryEnchantId: g.temporaryEnchant,
           gemIds: (g.gems ?? []).map((gem) => gem.id),
-        })),
+        }))
+        .filter((i) => i.itemId !== 0),
     })),
     itemMeta,
   };
+}
+
+/**
+ * Classic combat logs record every player the logger walks past (e.g. in
+ * Shattrath), so masterData lists far more "players" than the raid had.
+ * Keep only actors that appear in some fight's friendlyPlayers; if WCL gave
+ * us no participation info at all, fall back to the full actor list.
+ */
+function filterToParticipants(raw: RawReport) {
+  const participants = new Set<number>();
+  let hasInfo = false;
+  for (const f of raw.fights) {
+    if (f.friendlyPlayers == null) continue;
+    hasInfo = true;
+    for (const id of f.friendlyPlayers) participants.add(id);
+  }
+  const actors = raw.masterData!.actors;
+  const kept = hasInfo ? actors.filter((a) => participants.has(a.id)) : actors;
+  return kept.map((a) => ({ id: a.id, name: a.name, class: a.subType }));
 }
