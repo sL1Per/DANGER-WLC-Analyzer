@@ -15,3 +15,5 @@ export const spellHaste: Record<string, number> = spellHasteJson;
 export const badEnchants: BadEnchant[] = badEnchantsJson as BadEnchant[];
 export const excludedItems: ExcludedItem[] = excludedItemsJson;
 export const trashRequirements: TrashRequirement[] = trashRequirementsJson as TrashRequirement[];
+
+export * from "./consumables";
