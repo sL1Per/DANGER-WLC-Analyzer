@@ -86,6 +86,29 @@ describe("gearIssues — gems", () => {
   });
 });
 
+describe("gearIssues — severity (red/yellow/green like the original sheet)", () => {
+  it("classifies blocking problems as major", () => {
+    const p1 = issuesFor("Playerone");
+    expect(p1).toContainEqual(expect.objectContaining({ issue: "no enchant", severity: "major" }));
+    expect(p1).toContainEqual(expect.objectContaining({ issue: "no item on Weapon", severity: "major" }));
+    expect(p1).toContainEqual(expect.objectContaining({ issue: "missing gem(s) (1/2)", severity: "major" }));
+    expect(p1).toContainEqual(expect.objectContaining({ issue: "useless/fun item", severity: "major" }));
+  });
+  it("classifies cheap enchants, uncommon gems and SR gear as moderate", () => {
+    expect(issuesFor("Playerone")).toContainEqual(expect.objectContaining(
+      { issue: "cheap or bad enchant (Chest - 5 Mana)", severity: "moderate" }));
+    expect(issuesFor("Playerone")).toContainEqual(expect.objectContaining(
+      { issue: "uncommon gem used", severity: "moderate" }));
+    expect(issuesFor("Playertwo", { ...testConfig, itemShadowRes: { "28781": 20 } }))
+      .toContainEqual(expect.objectContaining({ issue: "useless SR gear", severity: "moderate" }));
+  });
+  it("classifies a rare gem below an epic minimum as minor", () => {
+    // gem 24030 is rare (quality 3) in the fixture; only flagged when min is epic
+    const p1 = issuesFor("Playerone", { ...testConfig, minGemQuality: 4 });
+    expect(p1).toContainEqual(expect.objectContaining({ issue: "rare gem used", severity: "minor" }));
+  });
+});
+
 describe("gearIssues — shadow resistance", () => {
   const srConfig: GearIssueConfig = {
     ...testConfig,

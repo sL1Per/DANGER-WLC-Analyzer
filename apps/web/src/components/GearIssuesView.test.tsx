@@ -11,6 +11,13 @@ describe("GearIssuesView", () => {
     expect(screen.getByText("Playerone")).toBeTruthy();
     expect(screen.getAllByText(/no enchant/).length).toBeGreaterThan(0);
   });
+  it("color-codes issues by severity", () => {
+    render(<GearIssuesView report={reportFixture} />);
+    const major = screen.getAllByText(/no enchant/)[0]!.closest("li");
+    expect(major?.className).toBe("sev-major");
+    const moderate = screen.getAllByText(/uncommon gem used/)[0]!.closest("li");
+    expect(moderate?.className).toBe("sev-moderate");
+  });
   it("min gem quality select changes flagged gems", () => {
     render(<GearIssuesView report={reportFixture} />);
     expect(screen.getAllByText(/uncommon gem used/).length).toBeGreaterThan(0);

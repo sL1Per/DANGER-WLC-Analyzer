@@ -15,6 +15,12 @@ describe("ReportSummary", () => {
     expect(screen.getAllByText("Hydross the Unstable").length).toBe(2);
     expect(screen.getByText("Playerone")).toBeTruthy();
   });
+  it("color-codes kills green and wipes red", () => {
+    render(<ReportSummary report={reportFixture} cachedAt={Date.now()} />);
+    const cells = screen.getAllByRole("cell");
+    expect(cells.some((c) => c.textContent?.trim() === "kill" && c.className === "sev-ok")).toBe(true);
+    expect(cells.some((c) => c.textContent?.trim() === "wipe" && c.className === "sev-major")).toBe(true);
+  });
   it("filters to bosses without wipes via the controls", async () => {
     const { getByLabelText, queryAllByText } = render(
       <ReportSummary report={reportFixture} cachedAt={Date.now()} />,

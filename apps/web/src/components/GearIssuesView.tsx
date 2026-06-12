@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { gearIssues, QUALITY_NAMES, type GearIssueConfig, type ReportData } from "@wcl/core";
 import { badEnchants, excludedItems, itemShadowRes, itemSockets } from "@wcl/data";
+import { SeverityLegend } from "./SeverityLegend";
 
 export function GearIssuesView({ report }: { report: ReportData }) {
   const [minGemQuality, setMinGemQuality] = useState(3);
@@ -41,6 +42,7 @@ export function GearIssuesView({ report }: { report: ReportData }) {
         </label>
       </fieldset>
       <p><small>Gear is only recorded at the start of boss fights. Issues are aggregated across all boss fights in the report.</small></p>
+      <SeverityLegend />
       <table>
         <thead><tr><th>player</th><th>issues</th></tr></thead>
         <tbody>
@@ -50,7 +52,9 @@ export function GearIssuesView({ report }: { report: ReportData }) {
               <td>
                 <ul className="issues">
                   {r.issues.map((i, idx) => (
-                    <li key={idx}>{i.itemName ? `${i.itemName} ` : ""}[{i.issue}]</li>
+                    <li key={idx} className={`sev-${i.severity}`}>
+                      {i.itemName ? `${i.itemName} ` : ""}[{i.issue}]
+                    </li>
                   ))}
                 </ul>
               </td>

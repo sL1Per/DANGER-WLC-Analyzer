@@ -157,3 +157,18 @@ small {
 .tabs button.active { font-weight: bold; text-decoration: underline; }
 .scroll-x { overflow-x: auto; }
 .issues { margin: 0; padding-left: 1rem; }
+
+/* Severity colors, mirroring the original sheet's conditional formatting:
+   red = major issues, yellow = intermediate, green = small things / OK.
+   `tr td.sev-*` outranks the even-row striping rule. */
+li.sev-major { color: #b71c1c; }
+li.sev-moderate { color: #8a6d00; }
+li.sev-minor { color: #1b5e20; }
+tr td.sev-major { background: #fdecea; color: #b71c1c; }
+tr td.sev-moderate { background: #fff8e1; color: #8a6d00; }
+tr td.sev-minor, tr td.sev-ok { background: #e8f5e9; color: #1b5e20; }
+.sev-legend { font-size: 0.85em; color: #555; }
+.sev-legend .chip { display: inline-block; padding: 0 8px; border-radius: 3px; margin-right: 8px; }
+.sev-legend .chip.sev-major { background: #fdecea; color: #b71c1c; }
+.sev-legend .chip.sev-moderate { background: #fff8e1; color: #8a6d00; }
+.sev-legend .chip.sev-minor { background: #e8f5e9; color: #1b5e20; }

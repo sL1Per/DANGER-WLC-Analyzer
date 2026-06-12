@@ -16,7 +16,14 @@ export interface GearIssueConfig {
   excludedItems: { itemId: number; name: string }[];
 }
 
-export interface GearIssue { itemId: number; itemName: string; issue: string; }
+/**
+ * Severity tiers matching the original sheet's conditional formatting:
+ * major = red (big problems), moderate = yellow, minor = green (small things).
+ */
+export type IssueSeverity = "major" | "moderate" | "minor";
+export const SEVERITY_RANK: Record<IssueSeverity, number> = { minor: 1, moderate: 2, major: 3 };
+
+export interface GearIssue { itemId: number; itemName: string; issue: string; severity: IssueSeverity; }
 export interface PlayerGearIssues { playerId: number; playerName: string; issues: GearIssue[]; }
 
 /** Boss names where shadow-resistance gear is legitimate, not "useless". */
@@ -32,11 +39,11 @@ export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGear
   for (const player of report.players) {
     const seen = new Set<string>();
     const issues: GearIssue[] = [];
-    const add = (itemId: number, issue: string, dedupeKey = "") => {
+    const add = (itemId: number, issue: string, severity: IssueSeverity, dedupeKey = "") => {
       const key = `${itemId}|${issue}|${dedupeKey}`;
       if (seen.has(key)) return;
       seen.add(key);
-      issues.push({ itemId, itemName: itemId ? itemName(report, itemId) : "", issue });
+      issues.push({ itemId, itemName: itemId ? itemName(report, itemId) : "", issue, severity });
     };
 
     for (const snap of report.gear) {
@@ -49,11 +56,11 @@ export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGear
         snap.items.filter((i) => i.itemId !== 0).map((i) => [i.slot, i]));
 
       for (const slot of REQUIRED_SLOTS) {
-        if (!bySlot.has(slot)) add(0, `no item on ${SLOT_NAMES[slot]}`);
+        if (!bySlot.has(slot)) add(0, `no item on ${SLOT_NAMES[slot]}`, "major");
       }
 
       for (const item of bySlot.values()) {
-        if (excludedById.has(item.itemId)) add(item.itemId, "useless/fun item");
+        if (excludedById.has(item.itemId)) add(item.itemId, "useless/fun item", "major");
         checkEnchant(item, badEnchantById, add);
         checkGems(report, item, cfg, add);
         checkShadowRes(item, fight.name, cfg, add);
@@ -70,16 +77,16 @@ export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGear
 function checkEnchant(
   item: GearItem,
   badEnchantById: Map<number, { slot: number | null; name: string }>,
-  add: (itemId: number, issue: string) => void,
+  add: (itemId: number, issue: string, severity: IssueSeverity) => void,
 ): void {
   if (!ENCHANTABLE_SLOTS.has(item.slot)) return;
   if (item.permanentEnchantId === undefined) {
-    add(item.itemId, "no enchant");
+    add(item.itemId, "no enchant", "major");
     return;
   }
   const bad = badEnchantById.get(item.permanentEnchantId);
   if (bad && (bad.slot === null || bad.slot === item.slot)) {
-    add(item.itemId, `cheap or bad enchant (${bad.name})`);
+    add(item.itemId, `cheap or bad enchant (${bad.name})`, "moderate");
   }
 }
 
@@ -87,19 +94,22 @@ function checkGems(
   report: ReportData,
   item: GearItem,
   cfg: GearIssueConfig,
-  add: (itemId: number, issue: string, dedupeKey?: string) => void,
+  add: (itemId: number, issue: string, severity: IssueSeverity, dedupeKey?: string) => void,
 ): void {
   const sockets = cfg.itemSockets[String(item.itemId)] ?? 0;
   if (sockets === 0) return;
   const missing = sockets - item.gemIds.length;
-  if (missing > 0) add(item.itemId, `missing gem(s) (${item.gemIds.length}/${sockets})`);
+  if (missing > 0) add(item.itemId, `missing gem(s) (${item.gemIds.length}/${sockets})`, "major");
   item.gemIds.forEach((gemId, idx) => {
     const quality = report.itemMeta[String(gemId)]?.quality;
     if (quality !== undefined && quality < cfg.minGemQuality) {
+      // severity tracks the gem's quality: common = major, uncommon = moderate,
+      // rare (only flagged when the configured minimum is epic) = minor
+      const severity: IssueSeverity = quality <= 1 ? "major" : quality === 2 ? "moderate" : "minor";
       // include gem index in the dedupe key so two offending gems on the same item
       // each get their own issue entry; the same index is stable across fights, so
       // cross-fight deduplication still works correctly
-      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`, `gem${idx}`);
+      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`, severity, `gem${idx}`);
     }
   });
 }
@@ -108,10 +118,10 @@ function checkShadowRes(
   item: GearItem,
   fightName: string,
   cfg: GearIssueConfig,
-  add: (itemId: number, issue: string) => void,
+  add: (itemId: number, issue: string, severity: IssueSeverity) => void,
 ): void {
   if (SR_FIGHT_NAMES.has(fightName)) return;
   if (cfg.itemShadowRes[String(item.itemId)] !== undefined) {
-    add(item.itemId, "useless SR gear");
+    add(item.itemId, "useless SR gear", "moderate");
   }
 }

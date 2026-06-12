@@ -66,7 +66,9 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
               <td>{f.id}</td>
               <td>{f.name}</td>
               <td>{f.isBoss ? "boss" : "trash"}</td>
-              <td>{f.isBoss ? (f.kill ? "kill" : "wipe") : "—"}</td>
+              <td className={f.isBoss ? (f.kill ? "sev-ok" : "sev-major") : undefined}>
+                {f.isBoss ? (f.kill ? "kill" : "wipe") : "—"}
+              </td>
               <td>{fmtDuration(f.endTime - f.startTime)}</td>
             </tr>
           ))}
