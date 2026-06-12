@@ -14,7 +14,8 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^6.28.0",
-    "@wcl/core": "workspace:*"
+    "@wcl/core": "workspace:*",
+    "@wcl/data": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

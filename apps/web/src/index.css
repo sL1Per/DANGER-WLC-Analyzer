@@ -156,3 +156,4 @@ small {
 .tabs { margin: 1rem 0; display: flex; gap: 0.5rem; }
 .tabs button.active { font-weight: bold; text-decoration: underline; }
 .scroll-x { overflow-x: auto; }
+.issues { margin: 0; padding-left: 1rem; }
