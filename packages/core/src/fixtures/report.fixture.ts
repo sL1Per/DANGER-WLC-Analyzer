@@ -17,4 +17,38 @@ export const reportFixture: ReportData = {
     { id: 1, name: "Playerone", class: "Mage" },
     { id: 2, name: "Playertwo", class: "Warrior" },
   ],
+  gear: [
+    {
+      fightId: 3, playerId: 1, items: [
+        { slot: 0, itemId: 24266, gemIds: [24030, 24030, 31867], permanentEnchantId: 29191 }, // Spellstrike Hood: 3 sockets filled (one uncommon), enchanted
+        { slot: 4, itemId: 21848, gemIds: [24030], permanentEnchantId: 1144 },                // Spellfire Robe: 1 of 2 sockets filled, cheap enchant
+        { slot: 8, itemId: 24250, gemIds: [] },                                               // Bracers of Havok: no enchant, 0 of 1 socket filled
+        { slot: 14, itemId: 15138, gemIds: [], permanentEnchantId: 368 },                     // Onyxia Scale Cloak: excluded/fun item
+        { slot: 10, itemId: 28227, gemIds: [] },                                              // Sha'tari ring (no enchant required)
+      ],
+    },
+    {
+      fightId: 3, playerId: 2, items: [
+        { slot: 0, itemId: 30973, gemIds: [], permanentEnchantId: 29192 },   // no sockets in DB, enchanted: clean
+        { slot: 4, itemId: 28781, gemIds: [], permanentEnchantId: 1891 },    // no sockets in DB
+        { slot: 15, itemId: 28767, gemIds: [], permanentEnchantId: 2669 },   // no sockets in DB
+        { slot: 6, itemId: 30528, gemIds: [], permanentEnchantId: 3010 },    // no sockets in DB
+        { slot: 5, itemId: 29992, gemIds: [] },                              // no sockets in DB (waist — no enchant required)
+      ],
+    },
+  ],
+  itemMeta: {
+    "24266": { name: "Spellstrike Hood", quality: 4 },
+    "21848": { name: "Spellfire Robe", quality: 4 },
+    "24250": { name: "Bracers of Havok", quality: 3 },
+    "15138": { name: "Onyxia Scale Cloak", quality: 4 },
+    "28227": { name: "Sha'tari Vengeance Ring", quality: 3 },
+    "30973": { name: "Destroyer Helmet", quality: 4 },
+    "28781": { name: "Chestplate of Stoicism", quality: 4 },
+    "28767": { name: "The Decapitator", quality: 4 },
+    "30528": { name: "Legguards of the Shattered Hand", quality: 4 },
+    "29992": { name: "Belt of the Guardian", quality: 4 },
+    "24030": { name: "Runed Living Ruby", quality: 3 },
+    "31867": { name: "Great Golden Draenite", quality: 2 },
+  },
 };

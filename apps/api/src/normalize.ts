@@ -28,5 +28,7 @@ export function normalizeReport(reportId: string, raw: RawReport): ReportData {
       endTime: f.endTime,
     })),
     players: raw.masterData.actors.map((a) => ({ id: a.id, name: a.name, class: a.subType })),
+    gear: [],
+    itemMeta: {},
   };
 }
