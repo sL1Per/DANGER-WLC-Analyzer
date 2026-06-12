@@ -52,10 +52,10 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
   if (report.buffs === undefined) return null;
 
   const bossFights = new Map(report.fights.filter((f) => f.isBoss).map((f) => [f.id, f]));
-  const totalBossMs = [...bossFights.values()].reduce((sum, f) => sum + (f.endTime - f.startTime), 0);
   if (bossFights.size === 0) return { rows: [] };
+  const totalBossMs = [...bossFights.values()].reduce((sum, f) => sum + (f.endTime - f.startTime), 0);
 
-  const idsByCategory = (category: string) =>
+  const idsByCategory = (category: ConsumableConfig["buffs"][number]["category"]) =>
     new Set(cfg.buffs.filter((b) => b.category === category).map((b) => b.spellId));
   const battleIds = idsByCategory("battleElixir");
   const guardianIds = idsByCategory("guardianElixir");
@@ -120,7 +120,8 @@ function mergedUptime(
   const byFight = new Map<number, [number, number][]>();
   for (const b of buffs) {
     if (!ids.has(b.spellId)) continue;
-    const fight = bossFights.get(b.fightId)!;
+    const fight = bossFights.get(b.fightId);
+    if (!fight) continue; // callers pre-filter to boss fights; stay safe anyway
     const start = Math.max(b.startTime, fight.startTime);
     const end = Math.min(b.endTime, fight.endTime);
     if (end <= start) continue;
