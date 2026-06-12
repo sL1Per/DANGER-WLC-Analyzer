@@ -116,6 +116,7 @@ function matchApplications(
     let count = 0;
     for (const app of applications) {
       if (consumed.has(app)) continue;
+      if (app.fightId !== cast.fightId) continue; // a cast can't buff into the next pull
       if (app.sourceId !== cast.sourceId || app.spellId !== buffId) continue;
       if (app.timestamp < cast.timestamp || app.timestamp > cast.timestamp + APPLICATION_WINDOW_MS) continue;
       consumed.add(app);
