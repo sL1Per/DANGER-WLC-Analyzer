@@ -85,7 +85,8 @@ export interface RawGearEntry {
   permanentEnchant?: number; temporaryEnchant?: number;
   gems?: { id: number }[];
 }
-export interface RawCombatantInfo { sourceID: number; fight: number; gear: RawGearEntry[]; }
+export interface RawAura { source: number; ability: number; name?: string; }
+export interface RawCombatantInfo { sourceID: number; fight: number; gear: RawGearEntry[]; auras?: RawAura[]; }
 
 export async function fetchCombatantInfo(
   code: string, accessToken: string, fightIds: number[],
@@ -103,6 +104,60 @@ export async function fetchCombatantInfo(
     start = page.nextPageTimestamp;
   }
   return events;
+}
+
+const EVENTS_QUERY = `
+query Events($code: String!, $dataType: EventDataType!, $filter: String, $start: Float) {
+  reportData {
+    report(code: $code) {
+      events(dataType: $dataType, filterExpression: $filter, startTime: $start, endTime: 100000000000) {
+        data
+        nextPageTimestamp
+      }
+    }
+  }
+}`;
+
+export interface RawBuffEvent {
+  timestamp: number; type: string; sourceID: number; targetID: number;
+  abilityGameID: number; fight: number;
+}
+export interface RawCastEvent {
+  timestamp: number; type: string; sourceID: number; abilityGameID: number; fight: number;
+}
+
+async function fetchEvents(
+  code: string, accessToken: string, dataType: string,
+  abilityIds: number[], keepTypes: Set<string>,
+): Promise<Record<string, unknown>[]> {
+  const filter = `ability.id IN (${abilityIds.join(", ")})`;
+  const out: Record<string, unknown>[] = [];
+  let start = 0;
+  for (;;) {
+    const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
+      EVENTS_QUERY, { code, dataType, filter, start }, accessToken);
+    const page = data.reportData.report.events;
+    for (const e of page.data) if (keepTypes.has(e.type as string)) out.push(e);
+    if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
+    start = page.nextPageTimestamp;
+  }
+  return out;
+}
+
+export async function fetchBuffEvents(
+  code: string, accessToken: string, abilityIds: number[],
+): Promise<RawBuffEvent[]> {
+  if (abilityIds.length === 0) return [];
+  return await fetchEvents(code, accessToken, "Buffs", abilityIds,
+    new Set(["applybuff", "removebuff", "refreshbuff"])) as unknown as RawBuffEvent[];
+}
+
+export async function fetchCastEvents(
+  code: string, accessToken: string, abilityIds: number[],
+): Promise<RawCastEvent[]> {
+  if (abilityIds.length === 0) return [];
+  return await fetchEvents(code, accessToken, "Casts", abilityIds,
+    new Set(["cast"])) as unknown as RawCastEvent[];
 }
 
 export async function fetchItemMeta(

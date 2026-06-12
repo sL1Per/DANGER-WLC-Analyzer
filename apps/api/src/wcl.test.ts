@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta } from "./wcl";
+import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -75,6 +75,79 @@ describe("fetchCombatantInfo", () => {
       page([{ type: "damage", sourceID: 1 }, { type: "combatantinfo", sourceID: 7, fight: 3, gear: [] }], null)));
     const events = await fetchCombatantInfo("a1B2c3D4e5F6g7H8", "tok", [3]);
     expect(events).toHaveLength(1);
+  });
+});
+
+describe("fetchBuffEvents", () => {
+  const page = (events: unknown[], next: number | null) =>
+    new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
+
+  it("collects apply/remove/refresh buff events across pages and filters by ability", async () => {
+    const e1 = { type: "applybuff", sourceID: 1, targetID: 1, abilityGameID: 28497, fight: 3, timestamp: 100 };
+    const e2 = { type: "removebuff", sourceID: 1, targetID: 1, abilityGameID: 28497, fight: 3, timestamp: 200 };
+    const e3 = { type: "refreshbuff", sourceID: 2, targetID: 2, abilityGameID: 35476, fight: 3, timestamp: 300 };
+    const junk1 = { type: "applybuffstack", sourceID: 1, targetID: 1, abilityGameID: 28497, fight: 3, timestamp: 150 };
+    const junk2 = { type: "cast", sourceID: 1, abilityGameID: 28497, fight: 3, timestamp: 160 };
+    const mock = vi.fn()
+      .mockResolvedValueOnce(page([e1, junk1, junk2], 12345))
+      .mockResolvedValueOnce(page([e2, e3], null));
+    vi.stubGlobal("fetch", mock);
+    const events = await fetchBuffEvents("a1B2c3D4e5F6g7H8", "tok", [28497, 35476]);
+    expect(events).toEqual([e1, e2, e3]);
+    expect(mock).toHaveBeenCalledTimes(2);
+    const body1 = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    // dataType wired either via variable or inline
+    if (/dataType:\s*\$dataType/.test(body1.query)) {
+      expect(body1.variables.dataType).toBe("Buffs");
+    } else {
+      expect(body1.query).toContain("dataType: Buffs");
+    }
+    expect(body1.variables.filter).toContain("ability.id IN (28497, 35476)");
+    const vars2 = JSON.parse(mock.mock.calls[1]![1]!.body as string).variables;
+    expect(vars2.start).toBe(12345);
+  });
+
+  it("returns [] without calling fetch when no ability ids are given", async () => {
+    const mock = vi.fn();
+    vi.stubGlobal("fetch", mock);
+    const events = await fetchBuffEvents("a1B2c3D4e5F6g7H8", "tok", []);
+    expect(events).toEqual([]);
+    expect(mock).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchCastEvents", () => {
+  const page = (events: unknown[], next: number | null) =>
+    new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
+
+  it("keeps only cast events, uses Casts dataType and paginates via nextPageTimestamp", async () => {
+    const c1 = { type: "cast", sourceID: 5, abilityGameID: 35476, fight: 2, timestamp: 50 };
+    const c2 = { type: "cast", sourceID: 6, abilityGameID: 35476, fight: 2, timestamp: 90 };
+    const junk = { type: "begincast", sourceID: 5, abilityGameID: 35476, fight: 2, timestamp: 40 };
+    const mock = vi.fn()
+      .mockResolvedValueOnce(page([junk, c1], 777))
+      .mockResolvedValueOnce(page([c2], null));
+    vi.stubGlobal("fetch", mock);
+    const events = await fetchCastEvents("a1B2c3D4e5F6g7H8", "tok", [35476]);
+    expect(events).toEqual([c1, c2]);
+    expect(mock).toHaveBeenCalledTimes(2);
+    const body1 = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    if (/dataType:\s*\$dataType/.test(body1.query)) {
+      expect(body1.variables.dataType).toBe("Casts");
+    } else {
+      expect(body1.query).toContain("dataType: Casts");
+    }
+    expect(body1.variables.filter).toContain("ability.id IN (35476)");
+    const vars2 = JSON.parse(mock.mock.calls[1]![1]!.body as string).variables;
+    expect(vars2.start).toBe(777);
+  });
+
+  it("returns [] without calling fetch when no ability ids are given", async () => {
+    const mock = vi.fn();
+    vi.stubGlobal("fetch", mock);
+    const events = await fetchCastEvents("a1B2c3D4e5F6g7H8", "tok", []);
+    expect(events).toEqual([]);
+    expect(mock).not.toHaveBeenCalled();
   });
 });
 
