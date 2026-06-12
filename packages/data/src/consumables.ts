@@ -116,6 +116,8 @@ export const drumSpells: DrumSpell[] = [
  * 51120 verified on wowhead.com/tbc (2-min Tinnitus, triggered by the classic
  * drums). 369770 is listed by Wowhead as triggered by the Greater versions but
  * sits outside typical TBC-Classic id ranges — UNVERIFIED beyond that relation.
+ * Currently unused: wasted-drum detection counts casts with zero buff
+ * applications instead of reading the debuff; kept as reference data.
  */
 export const tinnitusSpellIds: number[] = [51120, 369770];
 

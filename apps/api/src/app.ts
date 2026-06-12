@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
-import { consumableBuffs, drumSpells, jcNecks } from "@wcl/data";
+import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables } from "@wcl/data";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
 import {
@@ -24,6 +24,9 @@ const TRACKED_BUFF_IDS = [...new Set([
   ...consumableBuffs.map((b) => b.spellId),
   ...DRUM_BUFF_IDS,
   ...jcNecks.map((n) => n.buffId),
+  // suboptimal buffs aren't all in consumableBuffs (e.g. low-level int
+  // elixirs) — without fetching them, suboptimal detection can't see them
+  ...suboptimalConsumables.filter((s) => s.kind === "buff").map((s) => s.id),
 ])];
 
 export interface AppDeps {
@@ -80,18 +83,20 @@ export function createApp(deps: AppDeps = {
       let itemMeta: Record<string, ItemMeta> = {};
       let buffEvents: RawBuffEvent[] = [];
       let castEvents: RawCastEvent[] = [];
-      if (bossFightIds.length > 0) {
+      {
         // gear and buff/cast events are best-effort: a failure must not take
         // down the whole report, and must not discard what the OTHER fetches
         // already returned. The three are independent, so run them in parallel
-        // (WCL limits points/hour, not concurrency).
+        // (WCL limits points/hour, not concurrency). Gear/buffs are boss-only;
+        // drum casts count trash fights too, so they're fetched regardless.
+        const none = Promise.resolve([]);
         const [combatantsR, buffR, castR] = await Promise.allSettled([
-          deps.fetchCombatantInfo(id, token, bossFightIds),
-          deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS),
+          bossFightIds.length > 0 ? deps.fetchCombatantInfo(id, token, bossFightIds) : none,
+          bossFightIds.length > 0 ? deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS) : none,
           deps.fetchCastEvents(id, token, DRUM_CAST_IDS),
         ]);
-        if (combatantsR.status === "fulfilled") combatants = combatantsR.value;
-        if (buffR.status === "fulfilled") buffEvents = buffR.value;
+        if (combatantsR.status === "fulfilled") combatants = combatantsR.value as RawCombatantInfo[];
+        if (buffR.status === "fulfilled") buffEvents = buffR.value as RawBuffEvent[];
         if (castR.status === "fulfilled") castEvents = castR.value;
         const ids = new Set<number>();
         for (const c of combatants) for (const g of c.gear ?? []) {

@@ -181,6 +181,10 @@ describe("GET /api/report/:id — buff intervals and drum events", () => {
     // events were requested with non-empty tracked ability id lists
     expect(fetchBuffEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
     expect(fetchCastEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
+    // suboptimal-only buffs (not in consumableBuffs) must be tracked too,
+    // or suboptimal detection is dead in production (final-review finding)
+    const tracked = fetchBuffEvents.mock.calls[0]![2] as number[];
+    expect(tracked).toContain(3166); // Elixir of Wisdom — suboptimal list only
   });
 
   it("serves the report with empty buffs when event fetching fails (best-effort)", async () => {
