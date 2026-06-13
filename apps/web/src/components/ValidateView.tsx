@@ -21,7 +21,8 @@ export function ValidateView({ report }: { report: ReportData }) {
       <p>
         <label>
           zone:{" "}
-          <select value={result.zone} onChange={(e) => setOverride(e.target.value)}>
+          <select value={result.zone} onChange={(e) => setOverride(e.target.value || undefined)}>
+            <option value="">↺ auto-detect</option>
             {!ZONE_CODES.includes(result.zone) && <option value={result.zone}>{result.zone} (auto)</option>}
             {ZONE_CODES.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
@@ -36,21 +37,23 @@ export function ValidateView({ report }: { report: ReportData }) {
       ) : (
         <>
           <SeverityLegend />
-          <table>
-            <thead>
-              <tr><th>name</th><th>minimum to kill</th><th>how many killed?</th><th>killed enough?</th></tr>
-            </thead>
-            <tbody>
-              {result.trash.map((t) => (
-                <tr key={t.name}>
-                  <td>{t.name}</td>
-                  <td>{t.minKills}</td>
-                  <td>{t.killed}</td>
-                  <td className={t.severity === "minor" ? "sev-ok" : "sev-major"}>{t.enough ? "yes" : "no"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="scroll-x">
+            <table>
+              <thead>
+                <tr><th>name</th><th>minimum to kill</th><th>how many killed?</th><th>killed enough?</th></tr>
+              </thead>
+              <tbody>
+                {result.trash.map((t) => (
+                  <tr key={t.name}>
+                    <td>{t.name}</td>
+                    <td>{t.minKills}</td>
+                    <td>{t.killed}</td>
+                    <td className={t.severity === "minor" ? "sev-ok" : "sev-major"}>{t.enough ? "yes" : "no"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <ul className="validate-summary">
             <li className={result.bosses.enough ? "sev-ok" : "sev-major"}>
               bosses killed ({result.bosses.required} necessary): {result.bosses.killed}
