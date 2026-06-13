@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables } from "./index";
 import { validateRules, zoneCodeByName } from "./index";
+import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
 
 describe("reference data", () => {
   it("loads item sockets with plausible volume and values", () => {
@@ -93,5 +94,18 @@ describe("speedrun validation rules", () => {
     expect(zoneCodeByName["Black Temple"]).toBe("BT");
     expect(zoneCodeByName["Mount Hyjal"]).toBe("MH");
     expect(zoneCodeByName["Zul'Aman"]).toBe("ZA");
+  });
+});
+
+describe("shadow resistance reference data", () => {
+  it("maps SR permanent enchants to their values", () => {
+    expect(Object.keys(shadowResEnchants).length).toBeGreaterThan(0);
+    for (const v of Object.values(shadowResEnchants)) expect(v).toBeGreaterThan(0);
+  });
+  it("maps SR buff auras to their values (Shadow Protection ≈ 70)", () => {
+    expect(Object.values(shadowResBuffs)).toContain(70);
+  });
+  it("exposes an advisory soft target", () => {
+    expect(SR_SOFT_TARGET).toBeGreaterThan(0);
   });
 });
