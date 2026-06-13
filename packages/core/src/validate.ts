@@ -73,6 +73,9 @@ export function validate(
     const enough = bossKills >= rule.boss.count;
     bosses = { required: String(rule.boss.count), killed: bossKills, enough, severity: sev(enough) };
   } else {
+    // split rule = a COMBINED two-zone run (e.g. MH+BT); we check the total
+    // boss kills against count1+count2. Only meaningful on a combined log, not
+    // a single-zone report (where the total is unreachable).
     const need = rule.boss.count1 + rule.boss.count2;
     const enough = bossKills >= need;
     bosses = {

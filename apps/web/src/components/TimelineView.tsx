@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { compareTimelines, type TimelineComparison, type TimelinePull, type ReportData } from "@wcl/core";
+import { compareTimelines, parseReportInput, type TimelineComparison, type TimelinePull, type ReportData } from "@wcl/core";
 import { ApiError, fetchReport } from "../lib/api";
 import { SeverityLegend } from "./SeverityLegend";
 
@@ -34,7 +34,7 @@ export function TimelineView({ report }: { report: ReportData }) {
   const compare = () => {
     setError(null);
     setLoading(true);
-    fetchReport(id.trim())
+    fetchReport(parseReportInput(id.trim()) ?? id.trim())
       .then((res) => setCmp(compareTimelines(report, res.data)))
       .catch((e) => setError(e instanceof ApiError ? e.message : String(e)))
       .finally(() => setLoading(false));

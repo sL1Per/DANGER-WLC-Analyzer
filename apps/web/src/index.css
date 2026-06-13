@@ -163,7 +163,7 @@ small {
    `tr td.sev-*` outranks the even-row striping rule. */
 li.sev-major { color: #b71c1c; }
 li.sev-moderate { color: #8a6d00; }
-li.sev-minor { color: #1b5e20; }
+li.sev-minor, li.sev-ok { color: #1b5e20; }
 tr td.sev-major { background: #fdecea; color: #b71c1c; }
 tr td.sev-moderate { background: #fff8e1; color: #8a6d00; }
 tr td.sev-minor, tr td.sev-ok { background: #e8f5e9; color: #1b5e20; }
