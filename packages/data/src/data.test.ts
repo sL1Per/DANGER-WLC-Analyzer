@@ -98,12 +98,20 @@ describe("speedrun validation rules", () => {
 });
 
 describe("shadow resistance reference data", () => {
-  it("maps SR permanent enchants to their values", () => {
+  it("maps SR permanent enchants by ENCHANTMENT id (not spell id)", () => {
     expect(Object.keys(shadowResEnchants).length).toBeGreaterThan(0);
     for (const v of Object.values(shadowResEnchants)) expect(v).toBeGreaterThan(0);
+    expect(shadowResEnchants["804"]).toBe(10); // Lesser Shadow Resistance (cloak)
+    expect(shadowResEnchants["1441"]).toBe(15); // Greater Shadow Resistance (cloak)
+    // regression guard: combatantInfo reports enchantment ids, never the casting spell ids
+    expect(shadowResEnchants["13522"]).toBeUndefined();
+    expect(shadowResEnchants["27101"]).toBeUndefined();
+    expect(shadowResEnchants["34006"]).toBeUndefined();
   });
-  it("maps SR buff auras to their values (Shadow Protection ≈ 70)", () => {
+  it("maps SR buff auras by spell id (Shadow Protection / Resistance Aura)", () => {
     expect(Object.values(shadowResBuffs)).toContain(70);
+    expect(shadowResBuffs["25433"]).toBe(70); // Shadow Protection (max rank)
+    expect(shadowResBuffs["27151"]).toBe(70); // Shadow Resistance Aura (max rank)
   });
   it("exposes an advisory soft target", () => {
     expect(SR_SOFT_TARGET).toBeGreaterThan(0);
