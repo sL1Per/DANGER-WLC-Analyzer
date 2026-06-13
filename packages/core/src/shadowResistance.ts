@@ -71,9 +71,9 @@ export function shadowResistance(
       slots[item.slot] = parts.join(" ");
     }
 
-    // distinct auras only (combatantInfo lists each aura once); sum their SR
+    // distinct auras only (dedup defensively in case a source repeats one); sum their SR
     let fromBuffs = 0;
-    for (const spellId of snap.auras ?? []) fromBuffs += cfg.buffShadowRes[String(spellId)] ?? 0;
+    for (const spellId of new Set(snap.auras ?? [])) fromBuffs += cfg.buffShadowRes[String(spellId)] ?? 0;
 
     const total = fromGear + fromBuffs;
     players.push({ playerId: player.id, name: player.name, total, fromGear, fromBuffs, slots, severity: srSeverity(total, cfg.softTarget) });

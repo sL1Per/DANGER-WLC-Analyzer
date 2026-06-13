@@ -44,4 +44,14 @@ describe("shadowResistance", () => {
     const noBoss = report([{ id: 1, name: "Najentus", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 100 }]);
     expect(shadowResistance(noBoss, cfg)).toBeNull();
   });
+  it("analyzes the longest wipe when there is no kill", () => {
+    // two Shahraz wipes; the gear snapshot is on fight 60 (the longer wipe)
+    const r = shadowResistance(report([
+      { id: 59, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 0, endTime: 30_000 },
+      { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 100_000, endTime: 260_000 },
+    ]), cfg, { boss: "Mother Shahraz" })!;
+    expect(r.isKill).toBe(false);
+    expect(r.fightId).toBe(60); // longer wipe (160s vs 30s)
+    expect(r.players.find((x) => x.name === "Playertwo")!.total).toBe(115);
+  });
 });
