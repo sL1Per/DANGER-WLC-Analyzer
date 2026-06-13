@@ -31,7 +31,10 @@ query Report($code: String!) {
       endTime
       zone { name }
       fights { id name encounterID kill startTime endTime friendlyPlayers }
-      masterData { actors(type: "Player") { id name subType } }
+      masterData {
+        actors(type: "Player") { id name subType }
+        npcs: actors(type: "NPC") { id gameID }
+      }
     }
   }
 }`;
@@ -43,7 +46,10 @@ export interface RawReport {
   zone: { name: string } | null;
   fights: { id: number; name: string; encounterID: number; kill: boolean | null;
             startTime: number; endTime: number; friendlyPlayers?: number[] | null }[];
-  masterData: { actors: { id: number; name: string; subType: string }[] } | null;
+  masterData: {
+    actors: { id: number; name: string; subType: string }[];
+    npcs: { id: number; gameID: number }[];
+  } | null;
 }
 
 async function gql<T>(query: string, variables: Record<string, unknown>, accessToken: string): Promise<T> {
@@ -158,6 +164,23 @@ export async function fetchCastEvents(
   if (abilityIds.length === 0) return [];
   return await fetchEvents(code, accessToken, "Casts", abilityIds,
     new Set(["cast"])) as unknown as RawCastEvent[];
+}
+
+export interface RawDeathEvent { timestamp: number; type: string; targetID: number; fight: number; }
+
+/** All enemy/player death events (whole report). targetID maps to a masterData actor. */
+export async function fetchDeaths(code: string, accessToken: string): Promise<RawDeathEvent[]> {
+  const out: RawDeathEvent[] = [];
+  let start = 0;
+  for (;;) {
+    const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
+      EVENTS_QUERY, { code, dataType: "Deaths", filter: null, start }, accessToken);
+    const page = data.reportData.report.events;
+    for (const e of page.data) if (e.type === "death") out.push(e as unknown as RawDeathEvent);
+    if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
+    start = page.nextPageTimestamp;
+  }
+  return out;
 }
 
 export async function fetchItemMeta(

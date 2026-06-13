@@ -13,9 +13,11 @@ import {
   fetchItemMeta as realFetchItemMeta,
   fetchBuffEvents as realFetchBuffEvents,
   fetchCastEvents as realFetchCastEvents,
+  fetchDeaths as realFetchDeaths,
   type RawBuffEvent,
   type RawCastEvent,
   type RawCombatantInfo,
+  type RawDeathEvent,
 } from "./wcl";
 
 const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
@@ -36,6 +38,7 @@ export interface AppDeps {
   fetchItemMeta: typeof realFetchItemMeta;
   fetchBuffEvents: typeof realFetchBuffEvents;
   fetchCastEvents: typeof realFetchCastEvents;
+  fetchDeaths: typeof realFetchDeaths;
   cacheTtlMs: number;
 }
 
@@ -46,6 +49,7 @@ export function createApp(deps: AppDeps = {
   fetchItemMeta: realFetchItemMeta,
   fetchBuffEvents: realFetchBuffEvents,
   fetchCastEvents: realFetchCastEvents,
+  fetchDeaths: realFetchDeaths,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -83,21 +87,24 @@ export function createApp(deps: AppDeps = {
       let itemMeta: Record<string, ItemMeta> = {};
       let buffEvents: RawBuffEvent[] = [];
       let castEvents: RawCastEvent[] = [];
+      let deaths: RawDeathEvent[] | undefined;
       {
         // gear and buff/cast events are best-effort: a failure must not take
         // down the whole report, and must not discard what the OTHER fetches
-        // already returned. The three are independent, so run them in parallel
+        // already returned. The four are independent, so run them in parallel
         // (WCL limits points/hour, not concurrency). Gear/buffs are boss-only;
-        // drum casts count trash fights too, so they're fetched regardless.
+        // drum casts and deaths count trash fights too, so fetched regardless.
         const none = Promise.resolve([]);
-        const [combatantsR, buffR, castR] = await Promise.allSettled([
+        const [combatantsR, buffR, castR, deathR] = await Promise.allSettled([
           bossFightIds.length > 0 ? deps.fetchCombatantInfo(id, token, bossFightIds) : none,
           bossFightIds.length > 0 ? deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS) : none,
           deps.fetchCastEvents(id, token, DRUM_CAST_IDS),
+          deps.fetchDeaths(id, token),
         ]);
         if (combatantsR.status === "fulfilled") combatants = combatantsR.value as RawCombatantInfo[];
         if (buffR.status === "fulfilled") buffEvents = buffR.value as RawBuffEvent[];
         if (castR.status === "fulfilled") castEvents = castR.value;
+        if (deathR.status === "fulfilled") deaths = deathR.value as RawDeathEvent[];
         const ids = new Set<number>();
         for (const c of combatants) for (const g of c.gear ?? []) {
           if (g.id !== 0) ids.add(g.id);
@@ -110,7 +117,7 @@ export function createApp(deps: AppDeps = {
         }
       }
       const data = normalizeReport(id, rawReport, combatants, itemMeta, {
-        buffEvents, castEvents,
+        buffEvents, castEvents, deaths,
         trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
       });
       cache.set(id, data);

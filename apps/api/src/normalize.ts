@@ -10,6 +10,7 @@ import {
   type RawBuffEvent,
   type RawCastEvent,
   type RawCombatantInfo,
+  type RawDeathEvent,
   type RawReport,
 } from "./wcl";
 
@@ -20,6 +21,27 @@ export interface NormalizeEventInputs {
   trackedBuffIds?: number[];
   /** buff ids that count as drum buffs for drumApplications */
   drumBuffIds?: number[];
+  /** enemy/player death events; enemy deaths become npcKills */
+  deaths?: RawDeathEvent[];
+}
+
+function buildNpcKills(
+  deaths: RawDeathEvent[],
+  npcs: { id: number; gameID: number }[],
+  fights: Fight[],
+): { npcKills: Record<string, number>; firstPullNpcIds: number[] } {
+  const gameIdByActor = new Map(npcs.map((n) => [n.id, n.gameID]));
+  const npcKills: Record<string, number> = {};
+  const firstFightId = fights.length === 0 ? undefined
+    : fights.reduce((a, b) => (b.startTime < a.startTime ? b : a)).id;
+  const firstPull = new Set<number>();
+  for (const d of deaths) {
+    const gameId = gameIdByActor.get(d.targetID);
+    if (gameId === undefined) continue; // not an NPC (e.g. a player death)
+    npcKills[String(gameId)] = (npcKills[String(gameId)] ?? 0) + 1;
+    if (d.fight === firstFightId) firstPull.add(gameId);
+  }
+  return { npcKills, firstPullNpcIds: [...firstPull] };
 }
 
 export function normalizeReport(
@@ -85,6 +107,9 @@ export function normalizeReport(
         fightId: e.fight, sourceId: e.sourceID, targetId: e.targetID,
         spellId: e.abilityGameID, timestamp: e.timestamp,
       })),
+    ...(events.deaths
+      ? buildNpcKills(events.deaths, raw.masterData!.npcs ?? [], fights)
+      : {}),
     itemMeta,
   };
 }
