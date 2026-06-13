@@ -48,7 +48,7 @@ describe("normalizeReport — gear", () => {
   it("maps combatant info onto GearSnapshots and itemMeta", () => {
     const data = normalizeReport("a1B2c3D4e5F6g7H8", raw, combatants, itemMeta);
     expect(data.gear).toEqual([{
-      fightId: 2, playerId: 7, items: [{
+      fightId: 2, playerId: 7, auras: [], items: [{
         slot: 0, itemId: 24266, itemLevel: undefined,
         permanentEnchantId: 29191, temporaryEnchantId: undefined, gemIds: [24030],
       }],
@@ -207,6 +207,20 @@ describe("normalizeReport — buff intervals and drum events", () => {
     expect(data.buffs).toEqual([]);
     expect(data.drumCasts).toEqual([]);
     expect(data.drumApplications).toEqual([]);
+  });
+});
+
+describe("normalizeReport — gear auras (shadow resi)", () => {
+  const raw = {
+    title: "BT", startTime: 0, endTime: 1000, zone: { name: "Black Temple" },
+    fights: [{ id: 1, name: "Mother Shahraz", encounterID: 602, kill: true, startTime: 0, endTime: 100, friendlyPlayers: [10] }],
+    masterData: { actors: [{ id: 10, name: "Heal", subType: "Priest" }], npcs: [] },
+  };
+  it("copies combatantInfo aura ids onto the gear snapshot", () => {
+    const data = normalizeReport("c", raw as never, [
+      { sourceID: 10, fight: 1, gear: [{ id: 34204 }], auras: [{ source: 10, ability: 25433 }] },
+    ], {});
+    expect(data.gear[0]!.auras).toEqual([25433]);
   });
 });
 

@@ -95,6 +95,7 @@ export function normalizeReport(
           gemIds: (g.gems ?? []).map((gem) => gem.id),
         }))
         .filter((i) => i.itemId !== 0),
+      auras: (c.auras ?? []).map((a) => a.ability),
     })),
     buffs: buildBuffIntervals(buffEvents, combatants, fights, events.trackedBuffIds ?? []),
     drumCasts: (events.castEvents ?? []).map((e) => ({
