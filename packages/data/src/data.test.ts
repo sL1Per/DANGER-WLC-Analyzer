@@ -21,7 +21,6 @@ describe("reference data", () => {
     expect(badEnchants.find((e) => e.enchantId === 927)).toMatchObject({ slot: 8, name: "Bracers - 7 Str" });
     expect(badEnchants.some((e) => e.slot === null)).toBe(true); // slot-agnostic enchants exist
     expect(excludedItems.find((i) => i.itemId === 15138)?.name).toBe("Onyxia Scale Cloak");
-    // trashRequirements removed — see validateRules
   });
 });
 
@@ -80,7 +79,7 @@ describe("speedrun validation rules", () => {
   });
   it("uses the split boss rule where two zones are combined", () => {
     const splits = validateRules.filter((r) => r.boss.kind === "split");
-    expect(splits.length).toBeGreaterThanOrEqual(1); // MH+BT combined run
+    expect(splits.length).toBe(1); // exactly the MH+BT combined run
   });
   it("flags every non-SW zone as unverified until a human checks it", () => {
     for (const r of validateRules) {

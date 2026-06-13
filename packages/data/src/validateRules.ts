@@ -29,6 +29,10 @@ export interface ZoneValidation {
   zone: string;
   trash: ZoneTrashRule[];
   boss: BossRequirement;
+  /**
+   * npc gameIds that constitute a valid first pull. Independent of `trash` —
+   * an id here need not appear in any trash row (consumers must not assume overlap).
+   */
   startingPointNpcIds: number[];
   verified: boolean;
 }
@@ -308,7 +312,9 @@ export const validateRules: ZoneValidation[] = [
 
 /**
  * Maps the full WCL zone name string to the short code used in ZoneValidation.
- * Zone names match what the WCL v1 API returns in the `zone` field of report data.
+ * This is a complete TBC-raid name→code lookup, NOT limited to zones that have
+ * `validateRules`: codes with no rule entry (Kara/Gruul/Mag/SSC/TK) resolve to
+ * the "unsupported zone" path in the validate analysis — that is intentional.
  */
 export const zoneCodeByName: Record<string, string> = {
   Karazhan: "Kara",
