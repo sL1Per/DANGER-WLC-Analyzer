@@ -48,7 +48,8 @@ export interface RawReport {
             startTime: number; endTime: number; friendlyPlayers?: number[] | null }[];
   masterData: {
     actors: { id: number; name: string; subType: string }[];
-    npcs: { id: number; gameID: number }[];
+    /** optional: absent on reports with no NPC actors / older fixtures (normalize falls back to []) */
+    npcs?: { id: number; gameID: number }[];
   } | null;
 }
 
