@@ -9,13 +9,14 @@ import { ConsumablesView } from "../components/ConsumablesView";
 import { DrumsView } from "../components/DrumsView";
 import { ValidateView } from "../components/ValidateView";
 import { ShadowResView } from "../components/ShadowResView";
+import { TimelineView } from "../components/TimelineView";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
   const [result, setResult] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi">("summary");
+  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("summary");
 
   useEffect(() => {
     setLoading(true);
@@ -54,7 +55,7 @@ export function ReportPage() {
         </button>
       )}
       <nav className="tabs">
-        {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi"] as const).map((t) => (
+        {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
           <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
         ))}
       </nav>
@@ -65,6 +66,7 @@ export function ReportPage() {
       {tab === "drums" && <DrumsView key={result.data.reportId} report={result.data} />}
       {tab === "validate" && <ValidateView key={result.data.reportId} report={result.data} />}
       {tab === "shadow resi" && <ShadowResView key={result.data.reportId} report={result.data} />}
+      {tab === "fight timeline" && <TimelineView key={result.data.reportId} report={result.data} />}
     </div>
   );
 }
