@@ -10,4 +10,5 @@ export * from "./consumables";
 export * from "./drums";
 export * from "./validate";
 export * from "./shadowResistance";
+export * from "./timeline";
 export { reportFixture } from "./fixtures/report.fixture";
