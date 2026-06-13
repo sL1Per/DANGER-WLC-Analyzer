@@ -6,21 +6,24 @@
  */
 
 /**
- * Permanent-enchant spell id → Shadow Resistance granted.
+ * Permanent-enchant ENCHANTMENT id → Shadow Resistance granted.
+ *
+ * Keyed by enchantment id = what combatantInfo.permanentEnchantId reports,
+ * the same id space as bad-enchants.json (small integers like 804, 927, 856).
+ * NOT spell ids (which are the larger ids used to cast the enchant, e.g.
+ * 13522 or 34006). Using spell ids here would never match real gear data.
  *
  * Verified ids:
- *   13522  Enchant Cloak - Lesser Shadow Resistance (+10) — confirmed on
- *          wowhead.com/tbc/spell=13522; effect "Enchant Item: +10 Shadow
- *          Resistance (804)".
- *   27101  Enchant Cloak - Greater Shadow Resistance (+15) — UNVERIFIED on
- *          Wowhead TBC (the URL redirects to an unrelated spell); id is the
- *          commonly-cited value in multiple WoW Classic databases and the
- *          task description's "Greater Shadow Resistance +15" anchor. Mark as
- *          uncertain until confirmed in-game or via another source.
+ *   804   Enchant Cloak - Lesser Shadow Resistance (+10) — spell 13522;
+ *         confirmed on wowhead.com/tbc/spell=13522; effect
+ *         "Enchant Item: +10 Shadow Resistance (804)".
+ *   1441  Enchant Cloak - Greater Shadow Resistance (+15) — spell 34006;
+ *         confirmed on wowhead.com/tbc/spell=34006; effect
+ *         "Enchant Item: +15 Shadow Resistance (1441)".
  */
 export const shadowResEnchants: Record<string, number> = {
-  "13522": 10, // Enchant Cloak - Lesser Shadow Resistance; verified wowhead.com/tbc/spell=13522
-  "27101": 15, // Enchant Cloak - Greater Shadow Resistance; UNVERIFIED (Wowhead TBC redirects)
+  "804":  10, // Enchant Cloak - Lesser Shadow Resistance; spell 13522, verified wowhead.com/tbc/spell=13522
+  "1441": 15, // Enchant Cloak - Greater Shadow Resistance; spell 34006, verified wowhead.com/tbc/spell=34006
 };
 
 /**
