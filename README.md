@@ -50,6 +50,25 @@ were verified against Wowhead TBC — see `packages/data/src/consumables.ts`.
 Problem cells follow the project-wide color convention: red = big issue,
 yellow = intermediate, green = fine/small.
 
+### Speedrun tools (M4)
+
+Three more tabs:
+
+- **validate** — checks a speedrun log against per-zone trash/boss/starting-point
+  requirements (Sunwell is verified against the original; Mount Hyjal / Black
+  Temple / Zul'Aman are curated from community rules and badged "unverified" —
+  cross-check against WCL). Zone is auto-detected with a manual override.
+- **shadow resi** — per-player Shadow Resistance for Mother Shahraz / Kaz'rogal /
+  Azgalor (SR from gear + enchants + buffs, per-slot breakdown), analyzing the kill
+  or longest wipe. The total's coloring is advisory, not an official threshold.
+- **fight timeline** — side-by-side pull-timing comparison against a second report
+  (per-pull idle/start/duration/end + per-boss cumulative time difference).
+
+Like M3, the SR enchant/buff ids and the non-Sunwell speedrun rules are
+hand-curated (not in the xlsx) and Wowhead/community-sourced — see
+`packages/data/src/{validateRules,shadowResistance}.ts`. Reports cached before
+M4 need a "Refresh from WCL" for the validate tab.
+
 To verify the WCL schema assumptions against the live API once:
 
     WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api probe <reportCode>
