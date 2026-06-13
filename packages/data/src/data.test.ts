@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, trashRequirements } from "./index";
+import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables } from "./index";
+import { validateRules, zoneCodeByName } from "./index";
 
 describe("reference data", () => {
   it("loads item sockets with plausible volume and values", () => {
@@ -20,7 +21,7 @@ describe("reference data", () => {
     expect(badEnchants.find((e) => e.enchantId === 927)).toMatchObject({ slot: 8, name: "Bracers - 7 Str" });
     expect(badEnchants.some((e) => e.slot === null)).toBe(true); // slot-agnostic enchants exist
     expect(excludedItems.find((i) => i.itemId === 15138)?.name).toBe("Onyxia Scale Cloak");
-    expect(trashRequirements.find((t) => t.name === "Sunblade Scout")?.minKills).toBe(4);
+    // trashRequirements removed — see validateRules
   });
 });
 
@@ -60,5 +61,38 @@ describe("consumable reference data", () => {
     ]) {
       expect(new Set(ids).size).toBe(ids.length);
     }
+  });
+});
+
+describe("speedrun validation rules", () => {
+  it("covers the curated speedrun zones", () => {
+    const zones = new Set(validateRules.map((r) => r.zone));
+    expect(zones).toEqual(new Set(["SW", "MH", "BT", "ZA"]));
+  });
+  it("keeps the xlsx-verified SW rules intact", () => {
+    const sw = validateRules.find((r) => r.zone === "SW")!;
+    expect(sw.verified).toBe(true);
+    const protector = sw.trash.find((t) => t.npcIds.includes(25507))!;
+    expect(protector.minKills).toBe(5);
+    const archmage = sw.trash.find((t) => t.npcIds.includes(25363))!;
+    expect(archmage.minKills).toBe(65);
+    expect(sw.boss).toEqual({ kind: "single", count: 6 });
+  });
+  it("uses the split boss rule where two zones are combined", () => {
+    const splits = validateRules.filter((r) => r.boss.kind === "split");
+    expect(splits.length).toBeGreaterThanOrEqual(1); // MH+BT combined run
+  });
+  it("flags every non-SW zone as unverified until a human checks it", () => {
+    for (const r of validateRules) {
+      if (r.zone !== "SW") expect(r.verified).toBe(false);
+      expect(r.startingPointNpcIds.length).toBeGreaterThan(0);
+      for (const t of r.trash) { expect(t.npcIds.length).toBeGreaterThan(0); expect(t.minKills).toBeGreaterThan(0); }
+    }
+  });
+  it("maps full WCL zone names to short codes", () => {
+    expect(zoneCodeByName["Sunwell Plateau"]).toBe("SW");
+    expect(zoneCodeByName["Black Temple"]).toBe("BT");
+    expect(zoneCodeByName["Mount Hyjal"]).toBe("MH");
+    expect(zoneCodeByName["Zul'Aman"]).toBe("ZA");
   });
 });
