@@ -72,6 +72,8 @@ export interface GearSnapshot {
   fightId: number;
   playerId: number;
   items: GearItem[];
+  /** spell ids active at boss pull (combatantInfo auras); used for SR-from-buffs */
+  auras?: number[];
 }
 
 /** Item/gem metadata resolved via WCL gameData. quality: 1 common … 4 epic. */
