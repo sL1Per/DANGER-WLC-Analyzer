@@ -10,7 +10,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/report/:reportId" element={<ReportPage />} />
+        <Route path="/cla/:reportId" element={<ReportPage />} />
       </Routes>
     </AppShell>
   );

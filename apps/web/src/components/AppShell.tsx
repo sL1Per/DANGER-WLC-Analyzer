@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { loadLastReportId } from "../lib/storage";
 
 function IconHome() {
   return (
@@ -7,6 +8,17 @@ function IconHome() {
       <path d="M3 10.5 12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9.5 21v-6h5v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconCla() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+      <path d="M4 4v15a1 1 0 0 0 1 1h15" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="7" y="11" width="3" height="6" rx="0.5" />
+      <rect x="12" y="7" width="3" height="10" rx="0.5" />
+      <rect x="17" y="13" width="3" height="4" rx="0.5" />
     </svg>
   );
 }
@@ -25,6 +37,9 @@ function IconSettings() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const lastReportId = loadLastReportId();
+  const onCla = useLocation().pathname.startsWith("/cla/");
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -43,6 +58,24 @@ export function AppShell({ children }: { children: ReactNode }) {
             <IconHome />
             Home
           </NavLink>
+          {lastReportId ? (
+            <Link
+              to={`/cla/${lastReportId}`}
+              className={onCla ? "navitem active" : "navitem"}
+            >
+              <IconCla />
+              CLA
+            </Link>
+          ) : (
+            <span
+              className="navitem navitem--disabled"
+              title="Analyze a report from Home first"
+              aria-disabled
+            >
+              <IconCla />
+              CLA
+            </span>
+          )}
           <NavLink to="/settings" className="navitem">
             <IconSettings />
             Settings

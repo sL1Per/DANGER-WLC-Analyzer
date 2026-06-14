@@ -3,6 +3,14 @@ export interface StoredToken { accessToken: string; expiresAt: number; }
 
 const CREDS_KEY = "wcl.credentials";
 const TOKEN_KEY = "wcl.token";
+const LAST_REPORT_KEY = "wcl.lastReportId";
+
+export function saveLastReportId(id: string): void {
+  localStorage.setItem(LAST_REPORT_KEY, id);
+}
+export function loadLastReportId(): string | null {
+  return localStorage.getItem(LAST_REPORT_KEY);
+}
 
 export function saveCredentials(c: Credentials): void {
   localStorage.setItem(CREDS_KEY, JSON.stringify(c));

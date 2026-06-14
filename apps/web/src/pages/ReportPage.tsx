@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, fetchReport, refreshReport, type ReportResponse } from "../lib/api";
-import { loadCredentials } from "../lib/storage";
+import { loadCredentials, saveLastReportId } from "../lib/storage";
 import { ReportSummary } from "../components/ReportSummary";
 import { GearListingView } from "../components/GearListingView";
 import { GearIssuesView } from "../components/GearIssuesView";
@@ -19,6 +19,7 @@ export function ReportPage() {
   const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("summary");
 
   useEffect(() => {
+    if (reportId) saveLastReportId(reportId);
     setLoading(true);
     setError(null);
     fetchReport(reportId)

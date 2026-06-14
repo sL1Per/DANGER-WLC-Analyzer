@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { parseReportInput } from "@wcl/core";
+import { saveLastReportId } from "../lib/storage";
 
 export function HomePage() {
   const [input, setInput] = useState("");
@@ -14,7 +15,8 @@ export function HomePage() {
       setError("That doesn't look like a WCL report URL or id.");
       return;
     }
-    navigate(`/report/${id}`);
+    saveLastReportId(id);
+    navigate(`/cla/${id}`);
   }
 
   return (
