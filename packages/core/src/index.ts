@@ -13,5 +13,6 @@ export * from "./shadowResistance";
 export * from "./timeline";
 export * from "./roles";
 export * from "./activity";
+export * from "./classMetrics";
 export * from "./rpb";
 export { reportFixture } from "./fixtures/report.fixture";
