@@ -28,8 +28,10 @@ export interface RpbRow {
   interruptSources: string[];
   totalAbsorbed: number;
   friendlyFire: number;
-  /** DEFERRED: reflected/PvP-hostile partitioning needs real-data design; not surfaced in UI yet. */
-  damageReflectedOrHostile: number;
+  /** player damage where target == source (reflected/self) (M5b) */
+  damageReflected: number;
+  /** player damage dealt to a hostile player — PvP, counts as self in RPB (M5b) */
+  damageToHostilePlayers: number;
   /** boss damage taken from curated avoidable ability ids only (M5b) */
   totalAvoidableDamageTaken: number;
   /** all boss damage taken (context for avoidable) */
@@ -85,9 +87,8 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
       interruptSources: [...new Set(myInterrupts.map((i) => i.sourceName))],
       totalAbsorbed: absorbs.filter((a) => a.playerId === id).reduce((s, a) => s + a.amount, 0),
       friendlyFire,
-      damageReflectedOrHostile: myDamage
-        .filter((d) => d.selfInflicted || d.targetHostilePlayer)
-        .reduce((s, d) => s + d.amount, 0),
+      damageReflected: myDamage.filter((d) => d.selfInflicted).reduce((s, d) => s + d.amount, 0),
+      damageToHostilePlayers: myDamage.filter((d) => d.targetHostilePlayer && !d.selfInflicted).reduce((s, d) => s + d.amount, 0),
       totalAvoidableDamageTaken: totalAvoidable,
       totalPartlyAvoidable,
       classRows: classMetrics(id, player.class, report, cfg.classAbilities, bossFightIds, bossDurationMs),

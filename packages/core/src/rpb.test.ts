@@ -58,6 +58,19 @@ describe("rpb", () => {
     expect(row.classRows.map((c) => c.key)).toContain("test-debuff");
   });
 
+  it("partitions reflected and hostile-player damage", () => {
+    const r = structuredClone(reportFixture);
+    const pid = r.players.find((p) => p.name === "Playerone")!.id;
+    r.playerDamage = [
+      ...(r.playerDamage ?? []),
+      { fightId: r.fights.find((f) => f.isBoss)!.id, sourceId: pid, abilityId: 9, targetId: pid, amount: 40, timestamp: 1, targetHostilePlayer: false, selfInflicted: true },
+      { fightId: r.fights.find((f) => f.isBoss)!.id, sourceId: pid, abilityId: 9, targetId: 99999, amount: 60, timestamp: 2, targetHostilePlayer: true, selfInflicted: false },
+    ];
+    const row = rpb(r, cfg)!.rows.find((x) => x.playerId === pid)!;
+    expect(row.damageReflected).toBe(40);
+    expect(row.damageToHostilePlayers).toBe(60);
+  });
+
   it("avoidable filtering: totalAvoidableDamageTaken counts only avoidable ability ids", () => {
     const r = structuredClone(reportFixture);
     const sample = r.damageTakenEvents!.find((d) => !d.fromFriendly)!;
