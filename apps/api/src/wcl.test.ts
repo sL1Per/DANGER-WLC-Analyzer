@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts } from "./wcl";
+import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -197,5 +197,38 @@ describe("fetchInterrupts", () => {
     expect(mock).toHaveBeenCalledTimes(2);
     const vars2 = JSON.parse((mock.mock.calls[1]![1]!.body as string)).variables;
     expect(vars2.start).toBe(9999);
+  });
+});
+
+describe("fetchAllCasts — fightIds scoping", () => {
+  it("scopes fetchAllCasts to the given boss fight ids", async () => {
+    const calls: any[] = [];
+    const fakeFetch = vi.fn(async (_url: string, init: any) => {
+      calls.push(JSON.parse(init.body));
+      return { ok: true, json: async () => ({ data: { reportData: { report: { events: { data: [], nextPageTimestamp: null } } } } }) } as any;
+    });
+    vi.stubGlobal("fetch", fakeFetch);
+    await fetchAllCasts("RPT", "tok", [11, 22]);
+    expect(calls[0].variables.fightIds).toEqual([11, 22]);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("fetchEnemyDebuffs", () => {
+  it("fetchEnemyDebuffs keeps debuff apply/remove/refresh and scopes to fights", async () => {
+    const calls: any[] = [];
+    const fakeFetch = vi.fn(async (_url: string, init: any) => {
+      calls.push(JSON.parse(init.body));
+      return { ok: true, json: async () => ({ data: { reportData: { report: { events: {
+        data: [
+          { type: "applydebuff", sourceID: 1, targetID: 9, abilityGameID: 27228, timestamp: 100, fight: 5 },
+          { type: "cast", sourceID: 1, targetID: 9, abilityGameID: 1, timestamp: 100, fight: 5 },
+        ], nextPageTimestamp: null } } } } }) } as any;
+    });
+    vi.stubGlobal("fetch", fakeFetch);
+    const out = await fetchEnemyDebuffs("RPT", "tok", [5]);
+    expect(out.map((e) => e.type)).toEqual(["applydebuff"]);
+    expect(calls[0].variables.fightIds).toEqual([5]);
+    vi.unstubAllGlobals();
   });
 });

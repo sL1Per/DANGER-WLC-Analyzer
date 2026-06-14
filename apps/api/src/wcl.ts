@@ -114,10 +114,10 @@ export async function fetchCombatantInfo(
 }
 
 const EVENTS_QUERY = `
-query Events($code: String!, $dataType: EventDataType!, $filter: String, $start: Float) {
+query Events($code: String!, $dataType: EventDataType!, $filter: String, $start: Float, $fightIds: [Int]) {
   reportData {
     report(code: $code) {
-      events(dataType: $dataType, filterExpression: $filter, startTime: $start, endTime: 100000000000) {
+      events(dataType: $dataType, filterExpression: $filter, fightIDs: $fightIds, startTime: $start, endTime: 100000000000) {
         data
         nextPageTimestamp
       }
@@ -142,7 +142,7 @@ async function fetchEvents(
   let start = 0;
   for (;;) {
     const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
-      EVENTS_QUERY, { code, dataType, filter, start }, accessToken);
+      EVENTS_QUERY, { code, dataType, filter, start, fightIds: null }, accessToken);
     const page = data.reportData.report.events;
     for (const e of page.data) if (keepTypes.has(e.type as string)) out.push(e);
     if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
@@ -175,7 +175,7 @@ export async function fetchDeaths(code: string, accessToken: string): Promise<Ra
   let start = 0;
   for (;;) {
     const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
-      EVENTS_QUERY, { code, dataType: "Deaths", filter: null, start }, accessToken);
+      EVENTS_QUERY, { code, dataType: "Deaths", filter: null, start, fightIds: null }, accessToken);
     const page = data.reportData.report.events;
     for (const e of page.data) if (e.type === "death") out.push(e as unknown as RawDeathEvent);
     if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
@@ -195,34 +195,60 @@ export interface RawDamageEvent {
 }
 
 /** All player casts (no ability filter) — paged. Used for activity cast-time sums. */
-export async function fetchAllCasts(code: string, accessToken: string): Promise<RawCastEvent[]> {
-  return await fetchAllEvents(code, accessToken, "Casts", new Set(["cast"])) as unknown as RawCastEvent[];
+export async function fetchAllCasts(code: string, accessToken: string, fightIds?: number[]): Promise<RawCastEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Casts", new Set(["cast"]), fightIds) as unknown as RawCastEvent[];
 }
 
 /** Interrupt events (whole report). */
-export async function fetchInterrupts(code: string, accessToken: string): Promise<RawInterruptEvent[]> {
-  return await fetchAllEvents(code, accessToken, "Interrupts", new Set(["interrupt"])) as unknown as RawInterruptEvent[];
+export async function fetchInterrupts(code: string, accessToken: string, fightIds?: number[]): Promise<RawInterruptEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Interrupts", new Set(["interrupt"]), fightIds) as unknown as RawInterruptEvent[];
 }
 
 /** Damage-taken events on players (DamageTaken dataType). */
-export async function fetchDamageTaken(code: string, accessToken: string): Promise<RawDamageEvent[]> {
-  return await fetchAllEvents(code, accessToken, "DamageTaken", new Set(["damage"])) as unknown as RawDamageEvent[];
+export async function fetchDamageTaken(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
+  return await fetchAllEvents(code, accessToken, "DamageTaken", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
 }
 
 /** Damage-done events by players (DamageDone dataType). */
-export async function fetchDamageDone(code: string, accessToken: string): Promise<RawDamageEvent[]> {
-  return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"])) as unknown as RawDamageEvent[];
+export async function fetchDamageDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
+  return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
+}
+
+export interface RawDebuffEvent {
+  timestamp: number; type: string; sourceID: number; targetID: number;
+  abilityGameID: number; fight: number;
+}
+
+/** Debuff apply/remove/refresh events on enemies, sourced by players. Scoped to
+ *  the given fights. Used to compute per-player debuff uptime on the boss. */
+export async function fetchEnemyDebuffs(
+  code: string, accessToken: string, fightIds: number[],
+): Promise<RawDebuffEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Debuffs",
+    new Set(["applydebuff", "removedebuff", "refreshdebuff"]), fightIds) as unknown as RawDebuffEvent[];
+}
+
+/** Absorb amounts on players. WCL surfaces shield absorbs as DamageTaken events
+ *  with a non-zero `absorbed` field; we keep those. (Validate via the probe — if
+ *  WCL emits a distinct `absorbed` event type for your reports, add it here.) */
+export async function fetchAbsorbs(
+  code: string, accessToken: string, fightIds: number[],
+): Promise<RawDamageEvent[]> {
+  const events = await fetchAllEvents(code, accessToken, "DamageTaken",
+    new Set(["damage", "absorbed"]), fightIds) as unknown as RawDamageEvent[];
+  return events.filter((e) => (e.absorbed ?? 0) > 0);
 }
 
 /** Like fetchEvents but with no ability filter (filter: null). */
 async function fetchAllEvents(
   code: string, accessToken: string, dataType: string, keepTypes: Set<string>,
+  fightIds?: number[],
 ): Promise<Record<string, unknown>[]> {
   const out: Record<string, unknown>[] = [];
   let start = 0;
   for (;;) {
     const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
-      EVENTS_QUERY, { code, dataType, filter: null, start }, accessToken);
+      EVENTS_QUERY, { code, dataType, filter: null, start, fightIds: fightIds ?? null }, accessToken);
     const page = data.reportData.report.events;
     for (const e of page.data) if (keepTypes.has(e.type as string)) out.push(e);
     if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
