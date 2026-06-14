@@ -1,6 +1,7 @@
 import type { ReportData, Role } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
+import { classMetrics, type ClassAbilitySpec, type ClassAbilityResult } from "./classMetrics";
 
 export type RpbSeverity = "major" | "moderate" | "minor" | "ok";
 
@@ -11,6 +12,10 @@ export interface RpbConfig {
   oilOfImmolationSpellId: number;
   battleShoutBuffIds: number[];
   absorbExcludedSpellIds: number[];
+  /** curated per-class ability table (M5b) */
+  classAbilities: ClassAbilitySpec[];
+  /** ability ids whose damage-taken counts as avoidable (M5b) */
+  avoidableAbilityIds: Set<number>;
 }
 
 export interface RpbRow {
@@ -21,12 +26,16 @@ export interface RpbRow {
   deaths: number;
   interruptedSpells: number;
   interruptSources: string[];
-  /** DEFERRED: no absorb fetcher yet — always 0 until absorbs are fetched/normalized. */
   totalAbsorbed: number;
   friendlyFire: number;
   /** DEFERRED: reflected/PvP-hostile partitioning needs real-data design; not surfaced in UI yet. */
   damageReflectedOrHostile: number;
+  /** boss damage taken from curated avoidable ability ids only (M5b) */
   totalAvoidableDamageTaken: number;
+  /** all boss damage taken (context for avoidable) */
+  totalPartlyAvoidable: number;
+  /** per-class ability rows (M5b) */
+  classRows: ClassAbilityResult[];
   engineeringDamage: number;
   oilOfImmolationDamage: number;
   battleShoutUptime: number; // fraction 0..1 of boss-fight time
@@ -60,7 +69,10 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
     const myInterrupts = interrupts.filter((i) => i.targetPlayerId === id);
 
     const friendlyFire = myDmgTaken.filter((d) => d.fromFriendly).reduce((s, d) => s + d.amount, 0);
-    const totalAvoidable = myDmgTaken.reduce((s, d) => s + d.amount, 0);
+    const totalPartlyAvoidable = myDmgTaken.reduce((s, d) => s + d.amount, 0);
+    const totalAvoidable = myDmgTaken
+      .filter((d) => cfg.avoidableAbilityIds.has(d.abilityId))
+      .reduce((s, d) => s + d.amount, 0);
     const battleShoutMs = uptimeMs(report, id, cfg.battleShoutBuffIds, bossFightIds);
 
     const row: RpbRow = {
@@ -77,6 +89,8 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
         .filter((d) => d.selfInflicted || d.targetHostilePlayer)
         .reduce((s, d) => s + d.amount, 0),
       totalAvoidableDamageTaken: totalAvoidable,
+      totalPartlyAvoidable,
+      classRows: classMetrics(id, player.class, report, cfg.classAbilities, bossFightIds, bossDurationMs),
       engineeringDamage: myDamage
         .filter((d) => cfg.engineeringDamageIds.includes(d.abilityId))
         .reduce((s, d) => s + d.amount, 0),

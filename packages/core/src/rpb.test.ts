@@ -10,6 +10,8 @@ const cfg: RpbConfig = {
   oilOfImmolationSpellId: 11350,
   battleShoutBuffIds: [2048],
   absorbExcludedSpellIds: [],
+  classAbilities: [],
+  avoidableAbilityIds: new Set(),
 };
 
 const rowFor = (name: string): RpbRow => {
@@ -42,7 +44,30 @@ describe("rpb", () => {
   it("splits avoidable / friendly-fire damage taken", () => {
     const p1 = rowFor("Playerone");
     expect(p1.friendlyFire).toBe(300);
-    expect(p1.totalAvoidableDamageTaken).toBe(1500 + 300);
+    expect(p1.totalAvoidableDamageTaken).toBe(0);
+    expect(p1.totalPartlyAvoidable).toBe(1500 + 300);
+  });
+
+  it("attaches class rows for the player's class", () => {
+    const r = structuredClone(reportFixture);
+    const cfg2: RpbConfig = { ...cfg, classAbilities: [
+      { className: r.players.find((p) => p.name === "Playerone")!.class, key: "test-debuff", name: "Test Debuff",
+        measure: "cast-count", spellIds: [30451] },
+    ]};
+    const row = rpb(r, cfg2)!.rows.find((x) => x.playerName === "Playerone")!;
+    expect(row.classRows.map((c) => c.key)).toContain("test-debuff");
+  });
+
+  it("avoidable filtering: totalAvoidableDamageTaken counts only avoidable ability ids", () => {
+    const r = structuredClone(reportFixture);
+    const sample = r.damageTakenEvents!.find((d) => !d.fromFriendly)!;
+    const cfg2: RpbConfig = { ...cfg, avoidableAbilityIds: new Set([sample.abilityId]) };
+    const row = rpb(r, cfg2)!.rows.find((x) => x.playerId === sample.targetPlayerId)!;
+    const expected = r.damageTakenEvents!
+      .filter((d) => d.targetPlayerId === sample.targetPlayerId && d.abilityId === sample.abilityId)
+      .reduce((s, d) => s + d.amount, 0);
+    expect(row.totalAvoidableDamageTaken).toBe(expected);
+    expect(row.totalPartlyAvoidable).toBeGreaterThanOrEqual(expected);
   });
 
   it("attributes engineering and oil-of-immolation damage", () => {
