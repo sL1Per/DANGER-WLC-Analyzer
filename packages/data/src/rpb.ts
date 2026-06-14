@@ -4,6 +4,14 @@ import type { Role } from "@wcl/core";
 /** A buff/cast id that strongly implies a role, used as a detection tiebreaker. */
 export interface RoleSignal { spellId: number; role: Role; name: string; }
 
+/** Classes whose DPS spec is spell-based → "caster"; every other DPS class
+ *  defaults to "physical". Used by detectRole for the caster/physical split,
+ *  since WCL summary tables expose no damage-school breakdown. Hybrid edge
+ *  cases (enhancement shaman, balance vs feral druid) are handled by the manual
+ *  per-character override. Druid defaults to physical (feral); Shaman to caster
+ *  (elemental); Priest to caster (shadow); Paladin/Warrior/Rogue/Hunter physical. */
+export const casterClasses = ["Mage", "Warlock", "Priest", "Shaman"];
+
 /** Auras/casts that disambiguate specs sharing a class (e.g. feral tank vs cat). */
 export const roleSignals: RoleSignal[] = [
   { spellId: 71, role: "tank", name: "Defensive Stance" },

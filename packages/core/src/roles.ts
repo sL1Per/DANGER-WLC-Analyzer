@@ -1,24 +1,35 @@
 import type { Role, ReportData } from "./types";
 
 export interface RoleSignal { spellId: number; role: Role; name: string; }
-export interface RoleConfig { signals: RoleSignal[]; }
+export interface RoleConfig {
+  signals: RoleSignal[];
+  /** class names whose DPS spec is spell-based; every other DPS class → physical */
+  casterClasses: string[];
+}
 
 /** Thresholds (fractions of total output), tuned during E2E. */
 const HEALER_HEALING_SHARE = 0.4;
 const TANK_TAKEN_SHARE = 0.5; // damage taken / (damage taken + damage done)
-const CASTER_MAGIC_SHARE = 0.5; // magic damage / damage done
 
 /**
- * Auto-detect a player's role. Order: a tank aura/cast signal combined with a
- * high damage-taken share wins; otherwise output ratios decide healer/caster/
- * physical; ambiguous -> physical. Manual override is applied by the caller.
+ * Auto-detect a player's role. Order: healer (healing share) → tank (a tank
+ * aura/cast signal + a high damage-taken share) → caster/physical by class.
+ *
+ * The caster/physical split is CLASS-based because WCL summary tables expose no
+ * damage-school breakdown (the table `type` field is the actor's class, not a
+ * school — confirmed in E2E: a school-based split mislabelled every DPS as a
+ * caster). Hybrid DPS specs that break the class default (enhancement shaman,
+ * balance vs feral druid) are corrected by the caller's manual override.
  */
 export function detectRole(playerId: number, report: ReportData, cfg: RoleConfig): Role {
-  const totals = report.playerTotals?.find((t) => t.playerId === playerId);
-  if (!totals) return "physical";
+  const player = report.players.find((p) => p.id === playerId);
+  const byClass: Role = player && cfg.casterClasses.includes(player.class) ? "caster" : "physical";
 
-  const output = totals.healingDone + totals.damageDone;
+  const totals = report.playerTotals?.find((t) => t.playerId === playerId);
+  if (!totals) return byClass;
+
   // Healer: meaningful healing share is the strongest signal.
+  const output = totals.healingDone + totals.damageDone;
   if (output > 0 && totals.healingDone / output >= HEALER_HEALING_SHARE) return "healer";
 
   // Tank: a tank signal aura/cast AND a high damage-taken share.
@@ -29,10 +40,5 @@ export function detectRole(playerId: number, report: ReportData, cfg: RoleConfig
   const takenShare = totals.damageTaken / (totals.damageTaken + totals.damageDone || 1);
   if (hasTankSignal && takenShare >= TANK_TAKEN_SHARE) return "tank";
 
-  // Caster vs physical by magic share of damage done.
-  if (totals.damageDone > 0 && totals.magicDamageDone / totals.damageDone >= CASTER_MAGIC_SHARE) {
-    return "caster";
-  }
-  if (totals.damageDone > 0) return "physical";
-  return "physical";
+  return byClass;
 }
