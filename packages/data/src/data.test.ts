@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
+import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
 import { validateRules, zoneCodeByName } from "./index";
 import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
@@ -112,6 +113,13 @@ describe("speedrun validation rules", () => {
     expect(zoneCodeByName["Black Temple"]).toBe("BT");
     expect(zoneCodeByName["Mount Hyjal"]).toBe("MH");
     expect(zoneCodeByName["Zul'Aman"]).toBe("ZA");
+  });
+});
+
+describe("spellCastTimes", () => {
+  it("has many rows and known cast times in deci-seconds", () => {
+    expect(Object.keys(spellCastTimes).length).toBeGreaterThan(1000);
+    expect(spellCastTimes["30451"]).toBe(25); // Arcane Blast = 2.5s
   });
 });
 
