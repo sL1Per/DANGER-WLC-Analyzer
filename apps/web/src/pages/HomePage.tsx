@@ -18,9 +18,9 @@ export function HomePage() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <form className="card card--center" onSubmit={onSubmit}>
       <h1>WCL Raid Analyzer</h1>
-      <p>Paste a WarcraftLogs report URL or id:</p>
+      <p className="subhead">Paste a WarcraftLogs report URL or id to begin.</p>
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -28,7 +28,9 @@ export function HomePage() {
         size={60}
         aria-label="report url or id"
       />
-      <button type="submit">Analyze</button>
+      <button type="submit" style={{ marginTop: 16 }}>
+        Analyze
+      </button>
       {error && <p role="alert">{error}</p>}
     </form>
   );

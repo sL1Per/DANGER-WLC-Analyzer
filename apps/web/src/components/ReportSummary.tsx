@@ -25,10 +25,9 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
         </p>
       </header>
 
-      <fieldset>
-        <legend>Fights</legend>
+      <div className="segmented" role="group" aria-label="Fights">
         {(["all", "bosses", "trash"] as const).map((m) => (
-          <label key={m}>
+          <label key={m} className={mode === m ? "active" : ""}>
             <input
               type="radio"
               name="mode"
@@ -39,7 +38,7 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
             {m === "all" ? "trash & bosses" : `only ${m}`}
           </label>
         ))}
-        <label>
+        <label className={excludeWipes ? "active" : ""}>
           <input
             type="checkbox"
             aria-label="no wipes"
@@ -48,7 +47,7 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
           />
           no wipes
         </label>
-      </fieldset>
+      </div>
 
       <table>
         <thead>
@@ -76,10 +75,15 @@ export function ReportSummary({ report, cachedAt }: { report: ReportData; cached
       </table>
 
       <h2>Players ({report.players.length})</h2>
-      <ul>
+      <ul className="chips">
         {report.players.map((p) => (
           <li key={p.id}>
-            {p.name} <small>({p.class})</small>
+            <span className="chip-player">
+              <span className="chip-avatar" aria-hidden>
+                {p.name.slice(0, 2).toUpperCase()}
+              </span>
+              {p.name} <small>({p.class})</small>
+            </span>
           </li>
         ))}
       </ul>

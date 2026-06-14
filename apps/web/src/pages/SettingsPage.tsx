@@ -14,7 +14,7 @@ export function SettingsPage() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <form className="card card--center" onSubmit={onSubmit}>
       <h1>WCL API credentials</h1>
       <p>
         Create a (free) v2 API client at{" "}

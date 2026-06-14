@@ -43,30 +43,35 @@ export function ReportPage() {
   if (!result) return null;
   return (
     <div>
-      {loadCredentials() !== null && (
-        <button
-          onClick={() =>
-            refreshReport(reportId)
-              .then(setResult)
-              .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
-          }
-        >
-          Refresh from WCL
-        </button>
-      )}
-      <nav className="tabs">
-        {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
-          <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
-        ))}
-      </nav>
-      {tab === "summary" && <ReportSummary report={result.data} cachedAt={result.cachedAt} />}
-      {tab === "gear issues" && <GearIssuesView key={result.data.reportId} report={result.data} />}
-      {tab === "gear listing" && <GearListingView key={result.data.reportId} report={result.data} />}
-      {tab === "buff consumables" && <ConsumablesView key={result.data.reportId} report={result.data} />}
-      {tab === "drums" && <DrumsView key={result.data.reportId} report={result.data} />}
-      {tab === "validate" && <ValidateView key={result.data.reportId} report={result.data} />}
-      {tab === "shadow resi" && <ShadowResView key={result.data.reportId} report={result.data} />}
-      {tab === "fight timeline" && <TimelineView key={result.data.reportId} report={result.data} />}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+        <nav className="segmented">
+          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
+            <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
+          ))}
+        </nav>
+        {loadCredentials() !== null && (
+          <button
+            className="btn-outline"
+            onClick={() =>
+              refreshReport(reportId)
+                .then(setResult)
+                .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
+            }
+          >
+            Refresh from WCL
+          </button>
+        )}
+      </div>
+      <div className="card">
+        {tab === "summary" && <ReportSummary report={result.data} cachedAt={result.cachedAt} />}
+        {tab === "gear issues" && <GearIssuesView key={result.data.reportId} report={result.data} />}
+        {tab === "gear listing" && <GearListingView key={result.data.reportId} report={result.data} />}
+        {tab === "buff consumables" && <ConsumablesView key={result.data.reportId} report={result.data} />}
+        {tab === "drums" && <DrumsView key={result.data.reportId} report={result.data} />}
+        {tab === "validate" && <ValidateView key={result.data.reportId} report={result.data} />}
+        {tab === "shadow resi" && <ShadowResView key={result.data.reportId} report={result.data} />}
+        {tab === "fight timeline" && <TimelineView key={result.data.reportId} report={result.data} />}
+      </div>
     </div>
   );
 }
