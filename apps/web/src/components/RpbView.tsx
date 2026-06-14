@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { rpb, type Role, type ReportData, type RpbRow } from "@wcl/core";
 import {
   spellCastTimes, roleSignals, casterClasses, hasteBuffs, engineeringDamageIds,
   oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
+  classAbilities, avoidableAbilityIds,
 } from "@wcl/data";
 import { SeverityLegend } from "./SeverityLegend";
 import { loadRoleOverrides, saveRoleOverride } from "../lib/storage";
@@ -18,6 +19,7 @@ export function RpbView({ report }: { report: ReportData }) {
     roles: { signals: roleSignals, casterClasses },
     activity: { castTimes: spellCastTimes, hasteBuffs, aoeWindowMs: 500 },
     engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
+    classAbilities, avoidableAbilityIds,
   }), [report]);
 
   if (result === null) {
@@ -49,29 +51,54 @@ export function RpbView({ report }: { report: ReportData }) {
                 </thead>
                 <tbody>
                   {group.map((r) => (
-                    <tr key={r.playerId} className={sevClass(r.severity)}>
-                      <td>{r.playerName}</td>
-                      <td>
-                        <label className="sr-only" htmlFor={`role-${r.playerId}`}>role for {r.playerName}</label>
-                        <select
-                          id={`role-${r.playerId}`}
-                          aria-label={`role for ${r.playerName}`}
-                          value={r.role}
-                          onChange={(e) => { saveRoleOverride(r.playerName, e.target.value as Role); force((n) => n + 1); }}
-                        >
-                          {ROLES.map((ro) => <option key={ro} value={ro}>{ro}</option>)}
-                        </select>
-                      </td>
-                      <td className={r.deaths > 0 ? "sev-major" : ""}>{r.deaths}</td>
-                      <td>{r.interruptedSpells > 0 ? `${r.interruptedSpells} (${r.interruptSources.join(", ")})` : 0}</td>
-                      <td>{r.totalAvoidableDamageTaken.toLocaleString()}</td>
-                      <td>{r.friendlyFire.toLocaleString()}</td>
-                      <td>{r.engineeringDamage.toLocaleString()}</td>
-                      <td>{r.oilOfImmolationDamage.toLocaleString()}</td>
-                      <td>{pct(r.battleShoutUptime)}</td>
-                      <td>{r.activity ? `${pct(r.activity.relativeActiveST)} / ${pct(r.activity.relativeActiveAoe)}` : "—"}</td>
-                      <td>{r.activity ? r.activity.secondsSubtractedHaste.toFixed(1) : "—"}</td>
-                    </tr>
+                    <Fragment key={r.playerId}>
+                      <tr className={sevClass(r.severity)}>
+                        <td>{r.playerName}</td>
+                        <td>
+                          <label className="sr-only" htmlFor={`role-${r.playerId}`}>role for {r.playerName}</label>
+                          <select
+                            id={`role-${r.playerId}`}
+                            aria-label={`role for ${r.playerName}`}
+                            value={r.role}
+                            onChange={(e) => { saveRoleOverride(r.playerName, e.target.value as Role); force((n) => n + 1); }}
+                          >
+                            {ROLES.map((ro) => <option key={ro} value={ro}>{ro}</option>)}
+                          </select>
+                        </td>
+                        <td className={r.deaths > 0 ? "sev-major" : ""}>{r.deaths}</td>
+                        <td>{r.interruptedSpells > 0 ? `${r.interruptedSpells} (${r.interruptSources.join(", ")})` : 0}</td>
+                        <td title={`all boss damage taken: ${r.totalPartlyAvoidable.toLocaleString()}`}>{r.totalAvoidableDamageTaken.toLocaleString()}</td>
+                        <td>{r.friendlyFire.toLocaleString()}</td>
+                        <td>{r.engineeringDamage.toLocaleString()}</td>
+                        <td>{r.oilOfImmolationDamage.toLocaleString()}</td>
+                        <td>{pct(r.battleShoutUptime)}</td>
+                        <td>{r.activity ? `${pct(r.activity.relativeActiveST)} / ${pct(r.activity.relativeActiveAoe)}` : "—"}</td>
+                        <td>{r.activity ? r.activity.secondsSubtractedHaste.toFixed(1) : "—"}</td>
+                      </tr>
+                      {(r.classRows.length > 0 || r.totalAbsorbed > 0) && (
+                        <tr className="class-rows">
+                          <td colSpan={11}>
+                            {r.totalAbsorbed > 0 && (
+                              <span className="badge" style={{ marginRight: "0.75rem" }}>
+                                absorbed: {r.totalAbsorbed.toLocaleString()}
+                              </span>
+                            )}
+                            <ul className="class-ability-list">
+                              {r.classRows.map((c) => (
+                                <li key={c.key} className={sevClass(c.severity)}>
+                                  {c.name}
+                                  {c.measure === "cast-count"
+                                    ? `: ${c.castCount}× `
+                                    : `: ${pct(c.uptimePct ?? 0)} uptime `}
+                                  {c.rankFlag && <span title="mostly a lower rank than optimal"> ⚠ low rank</span>}
+                                  {!c.verified && <span className="badge" title="spell ids not yet Wowhead-verified"> unverified</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -79,7 +106,7 @@ export function RpbView({ report }: { report: ReportData }) {
           </section>
         );
       })}
-      <p><small>"Total dmg taken" is all boss damage taken (avoidable-only filtering is not yet implemented). "Total absorbed" and per-boss "raw avoidable by tracked abilities" are not yet tracked.</small></p>
+      <p><small>"Total dmg taken" shows avoidable damage from tracked abilities (hover for total). Class rows show per-class debuff/buff uptime and key casts; ⚠ flags a lower-than-optimal rank; "unverified" marks spell ids still pending Wowhead confirmation.</small></p>
     </div>
   );
 }

@@ -25,4 +25,9 @@ describe("RpbView", () => {
     fireEvent.change(select, { target: { value: "tank" } });
     expect(JSON.parse(localStorage.getItem("wcl.roles")!)).toMatchObject({ Playerone: "tank" });
   });
+
+  it("renders class-specific ability rows", () => {
+    render(<RpbView report={reportFixture} />);
+    expect(screen.getAllByText(/Winter's Chill/).length).toBeGreaterThan(0);
+  });
 });
