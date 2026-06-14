@@ -11,4 +11,5 @@ export * from "./drums";
 export * from "./validate";
 export * from "./shadowResistance";
 export * from "./timeline";
+export * from "./roles";
 export { reportFixture } from "./fixtures/report.fixture";
