@@ -2,6 +2,27 @@ import { describe, expect, it, vi } from "vitest";
 import { createApp } from "./app";
 import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
 
+const testDeps: Parameters<typeof createApp>[0] = {
+  fetchToken: vi.fn().mockResolvedValue({ accessToken: "tok", expiresIn: 86400 }),
+  fetchRawReport: vi.fn().mockResolvedValue({
+    title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
+    fights: [], masterData: { actors: [], npcs: [] },
+  } satisfies RawReport),
+  fetchCombatantInfo: vi.fn().mockResolvedValue([]),
+  fetchItemMeta: vi.fn().mockResolvedValue({}),
+  fetchBuffEvents: vi.fn().mockResolvedValue([]),
+  fetchCastEvents: vi.fn().mockResolvedValue([]),
+  fetchDeaths: vi.fn().mockResolvedValue([]),
+  fetchInterrupts: vi.fn().mockResolvedValue([]),
+  fetchDamageTaken: vi.fn().mockResolvedValue([]),
+  fetchDamageDone: vi.fn().mockResolvedValue([]),
+  fetchAllCasts: vi.fn().mockResolvedValue([]),
+  fetchTable: vi.fn().mockResolvedValue([]),
+  fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
+  fetchAbsorbs: vi.fn().mockResolvedValue([]),
+  cacheTtlMs: 60_000,
+};
+
 const raw: RawReport = {
   title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
   fights: [], masterData: { actors: [], npcs: [] },
@@ -21,6 +42,8 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
     fetchDamageDone: vi.fn().mockResolvedValue([]),
     fetchAllCasts: vi.fn().mockResolvedValue([]),
     fetchTable: vi.fn().mockResolvedValue([]),
+    fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
+    fetchAbsorbs: vi.fn().mockResolvedValue([]),
     cacheTtlMs: 60_000,
     ...overrides,
   });
@@ -263,5 +286,15 @@ describe("GET /api/report/:id — npc kills", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.npcKills).toBeUndefined();
+  });
+});
+
+describe("GET /api/report/:id — enemy debuffs + absorbs (M5b)", () => {
+  it("includes enemyDebuffs and absorbs in the normalized report", async () => {
+    const app = createApp(testDeps);
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer t" } });
+    const body = await res.json();
+    expect(body.data.enemyDebuffs).toBeDefined();
+    expect(body.data.absorbs).toBeDefined();
   });
 });

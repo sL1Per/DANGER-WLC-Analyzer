@@ -19,6 +19,8 @@ import {
   fetchDamageDone as realFetchDamageDone,
   fetchAllCasts as realFetchAllCasts,
   fetchTable as realFetchTable,
+  fetchEnemyDebuffs as realFetchEnemyDebuffs,
+  fetchAbsorbs as realFetchAbsorbs,
   type RawBuffEvent,
   type RawCastEvent,
   type RawCombatantInfo,
@@ -26,6 +28,7 @@ import {
   type RawInterruptEvent,
   type RawDamageEvent,
   type RawTableEntry,
+  type RawDebuffEvent,
 } from "./wcl";
 
 const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
@@ -54,6 +57,8 @@ export interface AppDeps {
   fetchDamageDone: typeof realFetchDamageDone;
   fetchAllCasts: typeof realFetchAllCasts;
   fetchTable: typeof realFetchTable;
+  fetchEnemyDebuffs: typeof realFetchEnemyDebuffs;
+  fetchAbsorbs: typeof realFetchAbsorbs;
   cacheTtlMs: number;
 }
 
@@ -70,6 +75,8 @@ export function createApp(deps: AppDeps = {
   fetchDamageDone: realFetchDamageDone,
   fetchAllCasts: realFetchAllCasts,
   fetchTable: realFetchTable,
+  fetchEnemyDebuffs: realFetchEnemyDebuffs,
+  fetchAbsorbs: realFetchAbsorbs,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -143,15 +150,19 @@ export function createApp(deps: AppDeps = {
       let damageDoneTable: RawTableEntry[] = [];
       let healingTable: RawTableEntry[] = [];
       let damageTakenTable: RawTableEntry[] = [];
+      let enemyDebuffs: RawDebuffEvent[] = [];
+      let absorbEvents: RawDamageEvent[] = [];
       if (bossFightIds.length > 0) {
-        const [intR, dtR, ddR, castR, ddtR, htR, dttR] = await Promise.allSettled([
-          deps.fetchInterrupts(id, token),
-          deps.fetchDamageTaken(id, token),
-          deps.fetchDamageDone(id, token),
-          deps.fetchAllCasts(id, token),
+        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR] = await Promise.allSettled([
+          deps.fetchInterrupts(id, token, bossFightIds),
+          deps.fetchDamageTaken(id, token, bossFightIds),
+          deps.fetchDamageDone(id, token, bossFightIds),
+          deps.fetchAllCasts(id, token, bossFightIds),
           deps.fetchTable(id, token, "DamageDone", bossFightIds),
           deps.fetchTable(id, token, "Healing", bossFightIds),
           deps.fetchTable(id, token, "DamageTaken", bossFightIds),
+          deps.fetchEnemyDebuffs(id, token, bossFightIds),
+          deps.fetchAbsorbs(id, token, bossFightIds),
         ]);
         if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
         if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
@@ -160,6 +171,8 @@ export function createApp(deps: AppDeps = {
         if (ddtR.status === "fulfilled") damageDoneTable = ddtR.value as RawTableEntry[];
         if (htR.status === "fulfilled") healingTable = htR.value as RawTableEntry[];
         if (dttR.status === "fulfilled") damageTakenTable = dttR.value as RawTableEntry[];
+        if (edR.status === "fulfilled") enemyDebuffs = edR.value as RawDebuffEvent[];
+        if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
       }
       const actorNames: Record<number, string> = {};
       for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
@@ -169,6 +182,7 @@ export function createApp(deps: AppDeps = {
         trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
         interrupts, damageTaken, damageDone, allCasts,
         damageDoneTable, healingTable, damageTakenTable, actorNames,
+        enemyDebuffs, absorbEvents,
       });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
