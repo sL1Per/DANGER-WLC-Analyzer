@@ -75,12 +75,23 @@ export function RpbView({ report }: { report: ReportData }) {
                         <td>{r.activity ? `${pct(r.activity.relativeActiveST)} / ${pct(r.activity.relativeActiveAoe)}` : "—"}</td>
                         <td>{r.activity ? r.activity.secondsSubtractedHaste.toFixed(1) : "—"}</td>
                       </tr>
-                      {(r.classRows.length > 0 || r.totalAbsorbed > 0) && (
+                      {(r.classRows.length > 0 || r.totalAbsorbed > 0 || r.damageReflected > 0 || r.damageToHostilePlayers > 0) && (
                         <tr className="class-rows">
                           <td colSpan={11}>
+                            <span className="sr-only">details for {r.playerName}: </span>
                             {r.totalAbsorbed > 0 && (
                               <span className="badge" style={{ marginRight: "0.75rem" }}>
                                 absorbed: {r.totalAbsorbed.toLocaleString()}
+                              </span>
+                            )}
+                            {r.damageReflected > 0 && (
+                              <span className="badge" style={{ marginRight: "0.75rem" }} title="self/reflected damage (counts as done to self)">
+                                reflected: {r.damageReflected.toLocaleString()}
+                              </span>
+                            )}
+                            {r.damageToHostilePlayers > 0 && (
+                              <span className="badge" style={{ marginRight: "0.75rem" }} title="damage to hostile players (PvP; counts as done to self)">
+                                to hostile players: {r.damageToHostilePlayers.toLocaleString()}
                               </span>
                             )}
                             <ul className="class-ability-list">
