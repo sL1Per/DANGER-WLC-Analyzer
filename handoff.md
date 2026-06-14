@@ -10,7 +10,8 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
 
 ## Current state (2026-06-14)
 
-- **M0–M4 + M5a (RPB framework + universal metrics): on `main`.** (Committed directly to main at the user's request; **230 tests pass** — core 118, data 22, api 57, web 33 — web build + core/api tsc clean.)
+- **M0–M4 + M5a (RPB framework + universal metrics): on `main`, E2E-verified.** (Committed directly to main at the user's request; **235 tests pass** — core 123, data 22, api 57, web 33 — web build + core/api tsc clean.)
+- **RPB is its own left-sidebar item + `/rpb/:reportId` route** (moved out of the CLA tab nav at user request, 2026-06-14); CLA and RPB pages share a `useReport` hook (`apps/web/src/lib/useReport.ts`).
 - **M5a notes (2026-06-14):** new "rpb" web tab. Role auto-detection (`packages/core/src/roles.ts`,
   hybrid: output ratios + curated tank aura/cast signals in `@wcl/data` `roleSignals`) with a
   per-character localStorage override (`wcl.roles` key; `loadRoleOverrides`/`saveRoleOverride` in
@@ -30,13 +31,27 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
   Final-review fixes (2026-06-14): haste + Battle Shout buff ids are now added to `TRACKED_BUFF_IDS`
   (were missing → those metrics silently 0); the always-0 "absorbed" column was dropped and
   "avoidable taken" relabeled "total dmg taken" (honest until true avoidable-filtering exists).
-- ⚠️ **M5a manual E2E (T11) STILL PENDING — needs WCL creds** (no creds in build env). Run
-  `pnpm --filter @wcl/api probe <code>` to confirm the ASSUMED WCL shapes (interrupt
-  `extraAbilityGameID`; damage `amount`/`sourceIsFriendly`; the `table` query envelope
-  `data.entries[].id/total/type`), then load a real report on the rpb tab and: verify roles vs
-  reality + tune thresholds in `roles.ts` (`HEALER_HEALING_SHARE`/`TANK_TAKEN_SHARE`/`CASTER_MAGIC_SHARE`);
-  confirm deaths/interrupts/haste/shout/activity against WCL; extend curated starter sets
-  (`engineeringDamageIds`, `hasteBuffs`, `battleShoutBuffIds`, `absorbExcludedSpellIds`).
+- ✅ **M5a E2E DONE (2026-06-14)** against real cached report `C4Zm2Rcgq6Tb7Mxn` (SSC / TK, 25
+  players, 86 fights) by curling the keyless cache (`curl localhost:8787/api/report/<id>`) and
+  running the actual `rpb()` over the normalized data. **Assumed WCL shapes all validated** —
+  playerTotals (25), playerCasts (63k), damageTakenEvents (15.8k), playerDeaths (134), interrupts,
+  buffs (incl. haste/shout) all populated; no NaN/Infinity; haste-saved (20 players) + Battle Shout
+  uptime (10) confirm the buff-id fix works. **Key bug found + fixed (`2c0ca3e`):** role split was
+  `{caster:19, physical:0}` because the WCL summary-table `type` field is the actor's CLASS, not the
+  damage school → magic-share made every DPS a caster. Replaced with class-based caster/physical
+  (`casterClasses` in `@wcl/data`); distribution is now realistic `{caster:9, physical:10, healer:5,
+  tank:1}`. **Also fixed (`f3a031d`):** zone matcher rejected `"SSC / TK"` (combined-instance reports)
+  — now normalizes slash spacing.
+- ⚠️ **E2E follow-ups still open (tune later, none blocking):** (a) **tank under-detection** — only
+  1 tank found (prot pala via Righteous Fury signal); warrior tanks fall to physical because
+  Defensive Stance isn't in their combatantInfo pull auras — rely on manual override or add a
+  taken-share+plate-class tank heuristic. (b) **interrupts** — `interruptedSpells` is 0 for everyone
+  (the 3 events are on trash and/or the source/target direction is reversed); the original likely
+  counts interrupts the player PERFORMED (source=player) — re-check direction. (c) **melee activity%**
+  looks inflated (warrior ~77% active) — the cast-time table includes some melee/hunter ability cast
+  times; documented "melee approximate" caveat. (d) `PlayerTotals.magicDamageDone` is now unused
+  (school unavailable from tables) — remove in a cleanup. (e) hybrid class defaults (enh shaman→caster,
+  feral druid→physical) are guesses — override fixes them.
 - **M5a deferred (carry into M5b / a follow-up):** (1) **absorbs** — no fetcher exists; `report.absorbs`
   is never produced, `RpbRow.totalAbsorbed` is dormant (marked DEFERRED in rpb.ts), column dropped from
   UI. (2) **true avoidable-damage filtering** — `totalAvoidableDamageTaken` is currently ALL boss damage
