@@ -4,6 +4,12 @@ import {
   type Fight,
   type ItemMeta,
   type ReportData,
+  type PlayerTotals,
+  type PlayerDeath,
+  type InterruptEvent,
+  type DamageTakenEvent,
+  type PlayerCast,
+  type PlayerDamageEvent,
 } from "@wcl/core";
 import {
   WclError,
@@ -12,6 +18,9 @@ import {
   type RawCombatantInfo,
   type RawDeathEvent,
   type RawReport,
+  type RawInterruptEvent,
+  type RawDamageEvent,
+  type RawTableEntry,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -23,6 +32,15 @@ export interface NormalizeEventInputs {
   drumBuffIds?: number[];
   /** enemy/player death events; enemy deaths become npcKills */
   deaths?: RawDeathEvent[];
+  interrupts?: RawInterruptEvent[];
+  damageTaken?: RawDamageEvent[];
+  damageDone?: RawDamageEvent[];
+  allCasts?: RawCastEvent[];
+  damageDoneTable?: RawTableEntry[];
+  healingTable?: RawTableEntry[];
+  damageTakenTable?: RawTableEntry[];
+  /** masterData actor id -> display name, for interrupt sources (players + NPCs) */
+  actorNames?: Record<number, string>;
 }
 
 function buildNpcKills(
@@ -42,6 +60,69 @@ function buildNpcKills(
     if (d.fight === firstFightId) firstPull.add(gameId);
   }
   return { npcKills, firstPullNpcIds: [...firstPull] };
+}
+
+function buildRpb(
+  events: NormalizeEventInputs,
+  playerIds: Set<number>,
+  fights: Fight[],
+): Partial<Pick<ReportData,
+  "playerTotals" | "playerDeaths" | "interrupts" | "damageTakenEvents" | "playerCasts" | "playerDamage">> {
+  if (events.allCasts === undefined && events.damageDoneTable === undefined) return {};
+  const fightIds = new Set(fights.map((f) => f.id));
+  const names = events.actorNames ?? {};
+
+  // per-player totals from summary tables
+  const totalsById = new Map<number, PlayerTotals>();
+  const ensure = (id: number) => {
+    let t = totalsById.get(id);
+    if (!t) { t = { playerId: id, healingDone: 0, damageDone: 0, damageTaken: 0, magicDamageDone: 0 }; totalsById.set(id, t); }
+    return t;
+  };
+  for (const e of events.damageDoneTable ?? []) {
+    if (!playerIds.has(e.id)) continue;
+    const t = ensure(e.id); t.damageDone += e.total;
+    if (e.type && e.type !== "Physical") t.magicDamageDone += e.total;
+  }
+  for (const e of events.healingTable ?? []) { if (playerIds.has(e.id)) ensure(e.id).healingDone += e.total; }
+  for (const e of events.damageTakenTable ?? []) { if (playerIds.has(e.id)) ensure(e.id).damageTaken += e.total; }
+
+  const playerDeaths: PlayerDeath[] = (events.deaths ?? [])
+    .filter((d) => playerIds.has(d.targetID) && fightIds.has(d.fight))
+    .map((d) => ({ playerId: d.targetID, fightId: d.fight }));
+
+  const interrupts: InterruptEvent[] = (events.interrupts ?? [])
+    .filter((i) => playerIds.has(i.targetID) && fightIds.has(i.fight))
+    .map((i) => ({
+      fightId: i.fight, targetPlayerId: i.targetID,
+      interruptedSpellId: i.extraAbilityGameID ?? 0,
+      sourceName: names[i.sourceID] ?? `#${i.sourceID}`,
+    }));
+
+  const damageTakenEvents: DamageTakenEvent[] = (events.damageTaken ?? [])
+    .filter((d) => playerIds.has(d.targetID) && fightIds.has(d.fight))
+    .map((d) => ({
+      fightId: d.fight, targetPlayerId: d.targetID, abilityId: d.abilityGameID,
+      amount: d.amount, fromFriendly: d.sourceIsFriendly === true,
+    }));
+
+  const playerCasts: PlayerCast[] = (events.allCasts ?? [])
+    .filter((c) => playerIds.has(c.sourceID) && fightIds.has(c.fight))
+    .map((c) => ({ fightId: c.fight, playerId: c.sourceID, spellId: c.abilityGameID, timestamp: c.timestamp }));
+
+  const playerDamage: PlayerDamageEvent[] = (events.damageDone ?? [])
+    .filter((d) => playerIds.has(d.sourceID) && fightIds.has(d.fight))
+    .map((d) => ({
+      fightId: d.fight, sourceId: d.sourceID, abilityId: d.abilityGameID,
+      targetId: d.targetID, amount: d.amount, timestamp: d.timestamp,
+      targetHostilePlayer: playerIds.has(d.targetID) && d.targetID !== d.sourceID,
+      selfInflicted: d.targetID === d.sourceID,
+    }));
+
+  return {
+    playerTotals: [...totalsById.values()],
+    playerDeaths, interrupts, damageTakenEvents, playerCasts, playerDamage,
+  };
 }
 
 export function normalizeReport(
@@ -72,6 +153,7 @@ export function normalizeReport(
   }));
   const buffEvents = events.buffEvents ?? [];
   const drumBuffIds = new Set(events.drumBuffIds ?? []);
+  const players = filterToParticipants(raw);
   return {
     reportId,
     title: raw.title,
@@ -79,7 +161,7 @@ export function normalizeReport(
     startTime: raw.startTime,
     endTime: raw.endTime,
     fights,
-    players: filterToParticipants(raw),
+    players,
     gear: combatants.map((c) => ({
       fightId: c.fight,
       playerId: c.sourceID,
@@ -111,6 +193,7 @@ export function normalizeReport(
     ...(events.deaths
       ? buildNpcKills(events.deaths, raw.masterData!.npcs ?? [], fights)
       : {}),
+    ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
     itemMeta,
   };
 }

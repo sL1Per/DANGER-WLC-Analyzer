@@ -254,3 +254,98 @@ describe("normalizeReport — npc kills (validate)", () => {
     expect(data.firstPullNpcIds).toBeUndefined();
   });
 });
+
+describe("normalizeReport — RPB events", () => {
+  // Boss fight id 2 (Hydross the Unstable, encounterID 623), players 1 and 2.
+  // friendlyPlayers is set so filterToParticipants picks up only ids 1 and 2.
+  const rawRpb: RawReport = {
+    title: "SSC run",
+    startTime: 1_700_000_000_000,
+    endTime: 1_700_000_400_000,
+    zone: { name: "Serpentshrine Cavern" },
+    fights: [
+      { id: 1, name: "Underbog Colossus", encounterID: 0, kill: null,
+        startTime: 0, endTime: 60_000, friendlyPlayers: [1, 2] },
+      { id: 2, name: "Hydross the Unstable", encounterID: 623, kill: true,
+        startTime: 70_000, endTime: 130_000, friendlyPlayers: [1, 2] },
+    ],
+    masterData: {
+      actors: [
+        { id: 1, name: "Playertank", subType: "Warrior" },
+        { id: 2, name: "Playermage", subType: "Mage" },
+      ],
+    },
+  };
+
+  it("normalizes RPB events into ReportData", () => {
+    const data = normalizeReport("abc", rawRpb, [], {}, {
+      allCasts: [
+        { timestamp: 100, type: "cast", sourceID: 1, abilityGameID: 30451, fight: 2 },
+      ],
+      damageDone: [
+        { timestamp: 120, type: "damage", sourceID: 1, targetID: 900, abilityGameID: 30451, amount: 50, fight: 2 },
+      ],
+      damageTaken: [
+        { timestamp: 130, type: "damage", sourceID: 800, targetID: 1, abilityGameID: 13022, amount: 75, fight: 2 },
+      ],
+      interrupts: [
+        { timestamp: 140, type: "interrupt", sourceID: 800, targetID: 1, abilityGameID: 1, extraAbilityGameID: 12471, fight: 2 },
+      ],
+      deaths: [
+        { timestamp: 150, type: "death", targetID: 2, fight: 2 },
+      ],
+      damageDoneTable: [{ id: 1, total: 1000, type: "Fire" }],
+      healingTable: [],
+      damageTakenTable: [{ id: 1, total: 75 }],
+      actorNames: { 800: "Hydross the Unstable" },
+    });
+
+    // Magic damage: Fire entry for player 1, total 1000
+    expect(data.playerTotals?.find((t) => t.playerId === 1)?.magicDamageDone).toBe(1000);
+    // damageDone table total carried through
+    expect(data.playerTotals?.find((t) => t.playerId === 1)?.damageDone).toBe(1000);
+    // damageTaken table total
+    expect(data.playerTotals?.find((t) => t.playerId === 1)?.damageTaken).toBe(75);
+    // one cast event for player 1
+    expect(data.playerCasts).toHaveLength(1);
+    expect(data.playerCasts?.[0]).toMatchObject({ playerId: 1, spellId: 30451, fightId: 2 });
+    // interrupt sourceName resolved from actorNames
+    expect(data.interrupts).toHaveLength(1);
+    expect(data.interrupts?.[0]?.sourceName).toBe("Hydross the Unstable");
+    expect(data.interrupts?.[0]?.interruptedSpellId).toBe(12471);
+    // death of player 2
+    expect(data.playerDeaths).toHaveLength(1);
+    expect(data.playerDeaths?.[0]?.playerId).toBe(2);
+    expect(data.playerDeaths?.[0]?.fightId).toBe(2);
+    // damage taken event
+    expect(data.damageTakenEvents).toHaveLength(1);
+    expect(data.damageTakenEvents?.[0]).toMatchObject({ targetPlayerId: 1, amount: 75, fromFriendly: false });
+    // player damage event
+    expect(data.playerDamage).toHaveLength(1);
+    expect(data.playerDamage?.[0]).toMatchObject({ sourceId: 1, amount: 50, selfInflicted: false, targetHostilePlayer: false });
+  });
+
+  it("returns no RPB fields when neither allCasts nor damageDoneTable is provided", () => {
+    const data = normalizeReport("abc", rawRpb, [], {}, {
+      damageTaken: [
+        { timestamp: 130, type: "damage", sourceID: 800, targetID: 1, abilityGameID: 13022, amount: 75, fight: 2 },
+      ],
+    });
+    expect(data.playerTotals).toBeUndefined();
+    expect(data.playerCasts).toBeUndefined();
+    expect(data.playerDeaths).toBeUndefined();
+  });
+
+  it("excludes events for non-participant actors", () => {
+    const data = normalizeReport("abc", rawRpb, [], {}, {
+      allCasts: [
+        // sourceID 99 is not a participant
+        { timestamp: 100, type: "cast", sourceID: 99, abilityGameID: 30451, fight: 2 },
+        { timestamp: 101, type: "cast", sourceID: 1, abilityGameID: 30451, fight: 2 },
+      ],
+      damageDoneTable: [],
+    });
+    expect(data.playerCasts).toHaveLength(1);
+    expect(data.playerCasts?.[0]?.playerId).toBe(1);
+  });
+});
