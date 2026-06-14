@@ -8,8 +8,31 @@ Rebuild of Shariva's CLA + RPB Google Sheets (WoW Classic TBC raid analysis) as 
 webapp. The two xlsx files in the repo root are the read-only functional spec
 (see `CLAUDE.md`). Design: `docs/superpowers/specs/2026-06-11-wcl-raid-analyzer-design.md`.
 
-## Current state (2026-06-14)
+## Current state (2026-06-15)
 
+- **M5b (RPB class/role-specific ability rows + M5a deferred items): on `main` (code).**
+  **254 tests pass** — core 130, data 28, api 62, web 34 — web build + tsc clean. Manual
+  E2E + Wowhead id verification still pending (see follow-ups under Next milestones → M5b).
+  - **Class rows:** data-driven `packages/data/src/classAbilities.ts` (20 abilities across all 9
+    classes; `measure` ∈ enemy-debuff-uptime / self-buff-uptime / cast-count; rank tables inline)
+    drives a pure core `classMetrics()` (`packages/core/src/classMetrics.ts`): per-player uptime%
+    (merged intervals over boss duration), cast counts, and a **rank-misuse flag** (`computeRankFlag`:
+    fires when `optimalRank:"max"` and >½ of that ability's casts used a below-max rank). `RpbRow`
+    gained `classRows: ClassAbilityResult[]`; `RpbView` renders them as a per-player detail row with
+    severity colors, `⚠ low rank`, and an **`unverified` badge** (all curated ids ship `verified:false`).
+  - **Deferred items folded in:** (a) **absorbs** now real — `fetchAbsorbs` (DamageTaken events with
+    `absorbed>0`) → `report.absorbs` → `RpbRow.totalAbsorbed`, shown as a detail-row badge. (b) **true
+    avoidable filtering** — curated `packages/data/src/avoidableAbilities.ts` + `avoidableAbilityIds`;
+    `totalAvoidableDamageTaken` now sums only curated avoidable ability ids, with `totalPartlyAvoidable`
+    (all boss dmg taken) retained as hover context. (c) **reflected/hostile split** — replaced the
+    mis-sourced `damageReflectedOrHostile` with `damageReflected` (self-target) + `damageToHostilePlayers`
+    (PvP), both surfaced as detail-row badges. (d) **fetch scoping** — `EVENTS_QUERY` now takes
+    `fightIDs`; `fetchAllCasts/Interrupts/DamageTaken/DamageDone` + the two new fetchers are scoped to
+    `bossFightIds` (WCL points budget).
+  - **New fetcher:** `fetchEnemyDebuffs` (`Debuffs` events, player source / enemy target) →
+    `report.enemyDebuffs` (`EnemyDebuffInterval`), normalized as merged open/close intervals.
+  - ⚠️ **WCL shapes for `Debuffs` + absorb events are ASSUMED** (no creds in build env) — validate via
+    `apps/api/scripts/probe-damage.ts` before claiming E2E, same posture as M4/M5a.
 - **M0–M4 + M5a (RPB framework + universal metrics): on `main`, E2E-verified.** (Committed directly to main at the user's request; **235 tests pass** — core 123, data 22, api 57, web 33 — web build + core/api tsc clean.)
 - **RPB is its own left-sidebar item + `/rpb/:reportId` route** (moved out of the CLA tab nav at user request, 2026-06-14); CLA and RPB pages share a `useReport` hook (`apps/web/src/lib/useReport.ts`).
 - **M5a notes (2026-06-14):** new "rpb" web tab. Role auto-detection (`packages/core/src/roles.ts`,
@@ -174,11 +197,21 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
   Current state). Spec/plan: `docs/superpowers/{specs,plans}/2026-06-14-wcl-raid-analyzer-m5a-rpb*.md`.
   The spell-haste gap is resolved differently than feared — we built a comprehensive cast-time table
   from wago.tools instead of the original's 143-row partial.
-- **M5b — RPB class/role-specific ability rows** (next; needs its own plan): per-class buff/debuff
-  uptimes with rank-checking (mage "winter chill?", paladin "twisted swings", etc.) — the curated
-  per-class ability lists that aren't in the xlsx. Also fold in the M5a deferred items above (absorbs,
-  true avoidable-damage filtering + raw-by-tracked-ability, reflected/hostile partitioning, fetch
-  scoping to boss fights).
+- **M5b — RPB class/role-specific ability rows + M5a deferred items: DONE (code) on `main`; manual
+  E2E + id verification pending.** Spec/plan:
+  `docs/superpowers/{specs,plans}/2026-06-15-wcl-raid-analyzer-m5b-rpb-class-rows*.md`. The per-class
+  ability lists are NOT in the xlsx (they lived in the original's Apps Script) — they were hand-curated
+  like M3/M4. **E2E + verification follow-ups (all open):**
+  - Validate enemy `Debuffs`, absorb event shapes, and damage source flags via
+    `apps/api/scripts/probe-damage.ts` against a real cached report (build env had no creds).
+  - **Flip `classAbilities` / `avoidableAbilities` `verified` flags to true once each id is
+    Wowhead-confirmed; fix any wrong ranks** (Classic ranks are distinct spell ids — the most
+    error-prone part; current values are a knowledge-based starter set).
+  - Populate `avoidableAbilities` per boss from real ability ids (currently a single placeholder entry).
+  - Re-check debuff-uptime on multi-target/cleave fights (documented melee/multi-target caveat — uptime
+    is unioned across all enemies, can inflate).
+  - Optional: surface a `self-buff-uptime` test with real buff intervals; the double-filter micro-nit in
+    `classMetrics` (cast list filtered twice for cast-count) is cosmetic.
 - **M6 — polish:** Discord webhook, dark mode, Cloudflare Workers deploy (swap
   TtlCache → KV), lock down CORS.
 
@@ -200,4 +233,6 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
 - DELETE /api/report/:id requires a Bearer header but can't validate authenticity
   (documented M1 trade-off).
 - Kalecgos must be excluded from all RPB numbers (M5).
+- Reports cached before M5b lack `enemyDebuffs`/`absorbs` → class-row uptimes + real absorbs
+  need a refresh from WCL (graceful: missing fields read as empty, no crash).
 - Folder name has a **double space** (`WOW  RPB_CLA`) — always quote paths.
