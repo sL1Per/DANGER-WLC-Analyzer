@@ -26,6 +26,8 @@ export interface ReportData {
   playerCasts?: PlayerCast[];
   playerDamage?: PlayerDamageEvent[];
   absorbs?: AbsorbEvent[];
+  /** enemy-debuff intervals sourced by a player (M5b+); undefined = cached before M5b */
+  enemyDebuffs?: EnemyDebuffInterval[];
   /** itemId/gemId → name+quality, for every id appearing in gear */
   itemMeta: Record<string, ItemMeta>;
 }
@@ -34,6 +36,18 @@ export interface ReportData {
 export interface BuffInterval {
   fightId: number;
   targetId: number;
+  spellId: number;
+  startTime: number;
+  endTime: number;
+}
+
+/** A debuff a player applied to an enemy, clamped to one fight (report-relative ms). */
+export interface EnemyDebuffInterval {
+  fightId: number;
+  /** the player who applied the debuff */
+  sourceId: number;
+  /** the enemy actor the debuff is on */
+  targetEnemyId: number;
   spellId: number;
   startTime: number;
   endTime: number;
