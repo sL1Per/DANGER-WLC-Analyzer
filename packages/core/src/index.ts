@@ -12,4 +12,5 @@ export * from "./validate";
 export * from "./shadowResistance";
 export * from "./timeline";
 export * from "./roles";
+export * from "./activity";
 export { reportFixture } from "./fixtures/report.fixture";
