@@ -82,7 +82,7 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
         .filter((d) => d.abilityId === cfg.oilOfImmolationSpellId)
         .reduce((s, d) => s + d.amount, 0),
       battleShoutUptime: bossDurationMs > 0 ? battleShoutMs / bossDurationMs : 0,
-      activity: activity(id, report, cfg.activity),
+      activity: activity(id, report, cfg.activity, bossFightIds),
       severity: "ok",
     };
     row.severity = severityFor(row);
@@ -102,6 +102,8 @@ function uptimeMs(report: ReportData, playerId: number, buffIds: number[], bossF
 
 function severityFor(row: RpbRow): RpbSeverity {
   if (row.deaths > 0) return "major";
-  if (row.friendlyFire > 0 || row.totalAvoidableDamageTaken > 0) return "moderate";
+  // friendly fire is a player-controllable mistake worth flagging; generic
+  // avoidable-damage magnitude coloring is deferred to a later tuning pass.
+  if (row.friendlyFire > 0) return "moderate";
   return "ok";
 }

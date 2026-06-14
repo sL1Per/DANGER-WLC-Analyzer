@@ -53,4 +53,17 @@ describe("rpb", () => {
   it("flags a death with major severity", () => {
     expect(rowFor("Playertwo").severity).toBe("major");
   });
+
+  it("excludes Kalecgos fights from all numbers (deaths, damage, activity)", () => {
+    const r = structuredClone(reportFixture);
+    r.fights.push({ id: 9, name: "Kalecgos", encounterId: 724, isBoss: true, kill: true, startTime: 400_000, endTime: 500_000 });
+    r.playerDeaths!.push({ playerId: 1, fightId: 9 });
+    r.playerDamage!.push({ fightId: 9, sourceId: 1, abilityId: 11350, targetId: 900, amount: 5000, timestamp: 401_000, targetHostilePlayer: false, selfInflicted: false });
+    r.playerCasts!.push({ fightId: 9, playerId: 1, spellId: 30451, timestamp: 401_000 });
+    const p1 = rpb(r, cfg)!.rows.find((x) => x.playerName === "Playerone")!;
+    expect(p1.deaths).toBe(0);                  // the Kalecgos death is excluded
+    expect(p1.oilOfImmolationDamage).toBe(250); // only fight-3 oil dmg, not the 5000 on Kalecgos
+    // activity should not have counted the Kalecgos cast: only the single fight-3 cast (2.5s) remains
+    expect(p1.activity!.secondsActiveST).toBeCloseTo(2.5);
+  });
 });

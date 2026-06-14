@@ -24,16 +24,23 @@ export interface ActivityResult {
  * Per-player activity over boss fights. Returns null when no cast data is
  * present (report cached before M5a) so the view can show a refresh notice.
  */
-export function activity(playerId: number, report: ReportData, cfg: ActivityConfig): ActivityResult | null {
+export function activity(
+  playerId: number,
+  report: ReportData,
+  cfg: ActivityConfig,
+  /** boss-fight ids to include; defaults to all boss fights. rpb() passes a
+   *  Kalecgos-excluded set so activity matches the rest of the breakdown. */
+  bossFightIds?: Set<number>,
+): ActivityResult | null {
   if (report.playerCasts === undefined) return null;
 
-  const bossFightIds = new Set(report.fights.filter((f) => f.isBoss).map((f) => f.id));
+  const fightIds = bossFightIds ?? new Set(report.fights.filter((f) => f.isBoss).map((f) => f.id));
   const bossDurationSec = report.fights
-    .filter((f) => f.isBoss)
+    .filter((f) => fightIds.has(f.id))
     .reduce((sum, f) => sum + (f.endTime - f.startTime) / 1000, 0);
 
-  const casts = report.playerCasts.filter((c) => c.playerId === playerId && bossFightIds.has(c.fightId));
-  const damage = (report.playerDamage ?? []).filter((d) => d.sourceId === playerId && bossFightIds.has(d.fightId));
+  const casts = report.playerCasts.filter((c) => c.playerId === playerId && fightIds.has(c.fightId));
+  const damage = (report.playerDamage ?? []).filter((d) => d.sourceId === playerId && fightIds.has(d.fightId));
 
   let stRawSec = 0, aoeRawSec = 0, stCorrSec = 0, aoeCorrSec = 0;
   let aoeCasts = 0, aoeHits = 0;
