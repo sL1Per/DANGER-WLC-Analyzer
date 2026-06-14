@@ -18,6 +18,14 @@ export interface ReportData {
   npcKills?: Record<string, number>;
   /** enemy gameIds that died in the chronologically first fight (for the valid-start check) */
   firstPullNpcIds?: number[];
+  /** RPB (M5a+) — all optional; undefined = report cached before M5a (refresh notice). */
+  playerTotals?: PlayerTotals[];
+  playerDeaths?: PlayerDeath[];
+  interrupts?: InterruptEvent[];
+  damageTakenEvents?: DamageTakenEvent[];
+  playerCasts?: PlayerCast[];
+  playerDamage?: PlayerDamageEvent[];
+  absorbs?: AbsorbEvent[];
   /** itemId/gemId → name+quality, for every id appearing in gear */
   itemMeta: Record<string, ItemMeta>;
 }
@@ -90,3 +98,56 @@ export interface FightFilter {
   /** mutually exclusive with fightId; ms relative to report start */
   range?: { start: number; end: number };
 }
+
+export type Role = "tank" | "healer" | "caster" | "physical";
+
+/** Per-player aggregate output from WCL summary tables (whole report, boss
+ *  fights), used by detectRole. All amounts are raw effective values. */
+export interface PlayerTotals {
+  playerId: number;
+  healingDone: number;
+  damageDone: number;
+  damageTaken: number;
+  /** portion of damageDone dealt with a magic school (not Physical) */
+  magicDamageDone: number;
+}
+
+/** A boss-fight death of a player (Kalecgos already excluded upstream). */
+export interface PlayerDeath { playerId: number; fightId: number; }
+
+/** A player's spell that was interrupted (target = the player). */
+export interface InterruptEvent {
+  fightId: number;
+  /** the player whose cast was interrupted */
+  targetPlayerId: number;
+  /** the spell that got interrupted */
+  interruptedSpellId: number;
+  /** display name of the interrupter (player or NPC) */
+  sourceName: string;
+}
+
+/** A damage-taken event on a player, with classification flags. */
+export interface DamageTakenEvent {
+  fightId: number;
+  targetPlayerId: number;
+  abilityId: number;
+  amount: number;
+  /** true when the damage source is friendly (friendly fire / reflected setups) */
+  fromFriendly: boolean;
+}
+
+/** A player's cast (for activity). */
+export interface PlayerCast { fightId: number; playerId: number; spellId: number; timestamp: number; }
+
+/** A player's outgoing damage instance (for AoE hit-counting + engineering/oil). */
+export interface PlayerDamageEvent {
+  fightId: number; sourceId: number; abilityId: number; targetId: number;
+  amount: number; timestamp: number;
+  /** true when the target is a hostile PLAYER (PvP; counted as self-damage in RPB) */
+  targetHostilePlayer: boolean;
+  /** true when the source is also the target (self/reflected) */
+  selfInflicted: boolean;
+}
+
+/** An absorb credited to a player. */
+export interface AbsorbEvent { fightId: number; playerId: number; spellId: number; amount: number; }
