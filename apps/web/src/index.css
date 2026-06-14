@@ -39,6 +39,7 @@ body {
   gap: 24px;
   position: sticky;
   top: 0;
+  align-self: flex-start;
   height: 100vh;
 }
 
@@ -110,7 +111,7 @@ body {
 }
 
 .sidebar__footer {
-  margin-top: auto;
+  margin-top: 4px;
   font-size: 0.72rem;
   color: var(--text-subtle);
   padding: 0 8px;
@@ -122,9 +123,9 @@ body {
 }
 
 .content {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 40px 32px 64px;
+  max-width: none;
+  margin: 0;
+  padding: 32px 28px 48px;
 }
 
 /* ----------------------------------------------------------------- cards */
@@ -313,7 +314,7 @@ table {
   border-collapse: separate;
   border-spacing: 0;
   margin: 16px 0;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
@@ -321,17 +322,19 @@ table {
 
 th, td {
   text-align: left;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
 }
 
 th {
   background: var(--surface-sunken);
   font-weight: 600;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 tbody tr:last-child td {
