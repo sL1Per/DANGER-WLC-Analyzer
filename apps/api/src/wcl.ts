@@ -184,6 +184,76 @@ export async function fetchDeaths(code: string, accessToken: string): Promise<Ra
   return out;
 }
 
+export interface RawInterruptEvent {
+  timestamp: number; type: string; sourceID: number; targetID: number;
+  abilityGameID: number; extraAbilityGameID?: number; fight: number;
+}
+export interface RawDamageEvent {
+  timestamp: number; type: string; sourceID: number; targetID: number;
+  abilityGameID: number; amount: number; absorbed?: number; fight: number;
+  sourceIsFriendly?: boolean; targetIsFriendly?: boolean;
+}
+
+/** All player casts (no ability filter) — paged. Used for activity cast-time sums. */
+export async function fetchAllCasts(code: string, accessToken: string): Promise<RawCastEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Casts", new Set(["cast"])) as unknown as RawCastEvent[];
+}
+
+/** Interrupt events (whole report). */
+export async function fetchInterrupts(code: string, accessToken: string): Promise<RawInterruptEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Interrupts", new Set(["interrupt"])) as unknown as RawInterruptEvent[];
+}
+
+/** Damage-taken events on players (DamageTaken dataType). */
+export async function fetchDamageTaken(code: string, accessToken: string): Promise<RawDamageEvent[]> {
+  return await fetchAllEvents(code, accessToken, "DamageTaken", new Set(["damage"])) as unknown as RawDamageEvent[];
+}
+
+/** Damage-done events by players (DamageDone dataType). */
+export async function fetchDamageDone(code: string, accessToken: string): Promise<RawDamageEvent[]> {
+  return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"])) as unknown as RawDamageEvent[];
+}
+
+/** Like fetchEvents but with no ability filter (filter: null). */
+async function fetchAllEvents(
+  code: string, accessToken: string, dataType: string, keepTypes: Set<string>,
+): Promise<Record<string, unknown>[]> {
+  const out: Record<string, unknown>[] = [];
+  let start = 0;
+  for (;;) {
+    const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
+      EVENTS_QUERY, { code, dataType, filter: null, start }, accessToken);
+    const page = data.reportData.report.events;
+    for (const e of page.data) if (keepTypes.has(e.type as string)) out.push(e);
+    if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;
+    start = page.nextPageTimestamp;
+  }
+  return out;
+}
+
+export interface RawTableEntry {
+  id: number;        // actor id
+  total: number;     // effective total
+  type?: string;     // damage school for DamageDone ("Physical", "Fire", ...)
+}
+
+/** Fetch a WCL summary table (DamageDone / Healing / DamageTaken) for boss fights.
+ *  Returns per-actor totals. One query per call — far cheaper than raw events. */
+export async function fetchTable(
+  code: string, accessToken: string, dataType: "DamageDone" | "Healing" | "DamageTaken",
+  fightIds: number[],
+): Promise<RawTableEntry[]> {
+  const query = `
+  query Table($code: String!, $dataType: TableDataType!, $fightIds: [Int]) {
+    reportData { report(code: $code) {
+      table(dataType: $dataType, fightIDs: $fightIds, hostilityType: Friendlies)
+    } }
+  }`;
+  const data = await gql<{ reportData: { report: { table: { data?: { entries?: RawTableEntry[] } } } } }>(
+    query, { code, dataType, fightIds }, accessToken);
+  return data.reportData.report.table?.data?.entries ?? [];
+}
+
 // WCL's GameItem type exposes only id/name/icon — there is no `quality` field, so we
 // resolve names here and look gem quality up from a static table (@wcl/data) instead.
 export async function fetchItemMeta(

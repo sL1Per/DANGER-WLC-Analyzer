@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents } from "./wcl";
+import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -167,5 +167,35 @@ describe("fetchItemMeta", () => {
     expect(mock).toHaveBeenCalledTimes(1);
     // the query must not request `quality` — GameItem doesn't expose it
     expect(String(mock.mock.calls[0]![1]!.body)).not.toMatch(/quality/);
+  });
+});
+
+describe("fetchInterrupts", () => {
+  const page = (events: unknown[], next: number | null) =>
+    new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
+
+  it("keeps only interrupt events and stops paging", async () => {
+    const interrupt = { type: "interrupt", sourceID: 5, targetID: 1, abilityGameID: 1, extraAbilityGameID: 12471, fight: 3, timestamp: 1 };
+    const cast = { type: "cast", sourceID: 1, abilityGameID: 2, fight: 3, timestamp: 2 };
+    const mock = vi.fn().mockResolvedValue(page([interrupt, cast], null));
+    vi.stubGlobal("fetch", mock);
+    const out = await fetchInterrupts("abc", "tok");
+    expect(out).toHaveLength(1);
+    expect(out[0]!.extraAbilityGameID).toBe(12471);
+    expect(mock).toHaveBeenCalledTimes(1);
+  });
+
+  it("pages until nextPageTimestamp is null", async () => {
+    const i1 = { type: "interrupt", sourceID: 1, targetID: 2, abilityGameID: 3, fight: 1, timestamp: 10 };
+    const i2 = { type: "interrupt", sourceID: 2, targetID: 3, abilityGameID: 4, fight: 1, timestamp: 20 };
+    const mock = vi.fn()
+      .mockResolvedValueOnce(page([i1], 9999))
+      .mockResolvedValueOnce(page([i2], null));
+    vi.stubGlobal("fetch", mock);
+    const out = await fetchInterrupts("abc", "tok");
+    expect(out).toHaveLength(2);
+    expect(mock).toHaveBeenCalledTimes(2);
+    const vars2 = JSON.parse((mock.mock.calls[1]![1]!.body as string)).variables;
+    expect(vars2.start).toBe(9999);
   });
 });
