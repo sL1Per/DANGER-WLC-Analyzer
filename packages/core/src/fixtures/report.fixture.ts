@@ -55,6 +55,29 @@ export const reportFixture: ReportData = {
     { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_200 },
     { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_300 },
   ],
+  playerTotals: [
+    { playerId: 1, healingDone: 0, damageDone: 100000, damageTaken: 2000, magicDamageDone: 95000 },
+    { playerId: 2, healingDone: 0, damageDone: 80000, damageTaken: 9000, magicDamageDone: 500 },
+  ],
+  playerDeaths: [{ playerId: 2, fightId: 3 }],
+  interrupts: [
+    { fightId: 3, targetPlayerId: 1, interruptedSpellId: 12471, sourceName: "Hydross the Unstable" },
+  ],
+  damageTakenEvents: [
+    { fightId: 3, targetPlayerId: 1, abilityId: 13022, amount: 1500, fromFriendly: false },
+    { fightId: 3, targetPlayerId: 1, abilityId: 99999, amount: 300, fromFriendly: true },
+  ],
+  playerCasts: [
+    { fightId: 3, playerId: 1, spellId: 30451, timestamp: 151_000 },
+  ],
+  playerDamage: [
+    { fightId: 3, sourceId: 1, abilityId: 30451, targetId: 900, amount: 4000, timestamp: 151_200, targetHostilePlayer: false, selfInflicted: false },
+    { fightId: 3, sourceId: 1, abilityId: 11350, targetId: 900, amount: 250, timestamp: 152_000, targetHostilePlayer: false, selfInflicted: false },
+    { fightId: 3, sourceId: 2, abilityId: 30461, targetId: 900, amount: 700, timestamp: 153_000, targetHostilePlayer: false, selfInflicted: false },
+  ],
+  absorbs: [
+    { fightId: 3, playerId: 1, spellId: 17252, amount: 1200 },
+  ],
   // names only — WCL's gameData exposes no quality; gem quality comes from a static
   // table passed via GearIssueConfig.gemQuality (see testConfig in gearIssues.test.ts).
   itemMeta: {
