@@ -9,6 +9,6 @@ describe("avoidableAbilities", () => {
     }
   });
   it("avoidableAbilityIds is a set of the ability ids", () => {
-    expect(avoidableAbilityIds.has(avoidableAbilities[0].abilityId)).toBe(true);
+    for (const a of avoidableAbilities) expect(avoidableAbilityIds.has(a.abilityId)).toBe(true);
   });
 });
