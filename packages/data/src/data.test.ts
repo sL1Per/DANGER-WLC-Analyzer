@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { roleSignals, hasteBuffs, engineeringDamageIds } from "./rpb";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
 import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
@@ -141,5 +142,13 @@ describe("shadow resistance reference data", () => {
   });
   it("exposes an advisory soft target", () => {
     expect(SR_SOFT_TARGET).toBeGreaterThan(0);
+  });
+});
+
+describe("rpb curated data", () => {
+  it("has role signals, haste buffs, and engineering ids", () => {
+    expect(roleSignals.some((s) => s.spellId === 71 && s.role === "tank")).toBe(true);
+    expect(hasteBuffs.find((h) => h.spellId === 2825)?.pct).toBe(0.3);
+    expect(engineeringDamageIds.length).toBeGreaterThan(0);
   });
 });

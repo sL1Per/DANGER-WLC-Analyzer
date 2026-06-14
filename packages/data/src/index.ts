@@ -24,3 +24,4 @@ export const excludedItems: ExcludedItem[] = excludedItemsJson;
 export * from "./consumables";
 export * from "./validateRules";
 export * from "./shadowResistance";
+export * from "./rpb";

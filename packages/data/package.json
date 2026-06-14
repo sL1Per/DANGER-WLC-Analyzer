@@ -7,5 +7,6 @@
     "extract": "python3 scripts/extract_xlsx.py",
     "test": "vitest run"
   },
+  "dependencies": { "@wcl/core": "workspace:*" },
   "devDependencies": { "vitest": "^3.0.0", "typescript": "^5.6.0" }
 }
