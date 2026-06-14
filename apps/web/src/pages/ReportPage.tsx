@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ApiError, fetchReport, refreshReport, type ReportResponse } from "../lib/api";
-import { loadCredentials, saveLastReportId } from "../lib/storage";
+import { loadCredentials } from "../lib/storage";
+import { useReport } from "../lib/useReport";
 import { ReportSummary } from "../components/ReportSummary";
 import { GearListingView } from "../components/GearListingView";
 import { GearIssuesView } from "../components/GearIssuesView";
@@ -10,24 +10,11 @@ import { DrumsView } from "../components/DrumsView";
 import { ValidateView } from "../components/ValidateView";
 import { ShadowResView } from "../components/ShadowResView";
 import { TimelineView } from "../components/TimelineView";
-import { RpbView } from "../components/RpbView";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
-  const [result, setResult] = useState<ReportResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline" | "rpb">("summary");
-
-  useEffect(() => {
-    if (reportId) saveLastReportId(reportId);
-    setLoading(true);
-    setError(null);
-    fetchReport(reportId)
-      .then(setResult)
-      .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
-      .finally(() => setLoading(false));
-  }, [reportId]);
+  const { result, error, loading, reload } = useReport(reportId);
+  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("summary");
 
   if (loading) return <p>Loading report…</p>;
   if (error) {
@@ -47,19 +34,12 @@ export function ReportPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <nav className="segmented">
-          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline", "rpb"] as const).map((t) => (
+          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
             <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
           ))}
         </nav>
         {loadCredentials() !== null && (
-          <button
-            className="btn-outline"
-            onClick={() =>
-              refreshReport(reportId)
-                .then(setResult)
-                .catch((e) => setError(e instanceof ApiError ? e : new ApiError(500, String(e))))
-            }
-          >
+          <button className="btn-outline" onClick={reload}>
             Refresh from WCL
           </button>
         )}
@@ -73,7 +53,6 @@ export function ReportPage() {
         {tab === "validate" && <ValidateView key={result.data.reportId} report={result.data} />}
         {tab === "shadow resi" && <ShadowResView key={result.data.reportId} report={result.data} />}
         {tab === "fight timeline" && <TimelineView key={result.data.reportId} report={result.data} />}
-        {tab === "rpb" && <RpbView key={result.data.reportId} report={result.data} />}
       </div>
     </div>
   );

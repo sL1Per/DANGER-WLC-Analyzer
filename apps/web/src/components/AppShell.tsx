@@ -23,6 +23,17 @@ function IconCla() {
   );
 }
 
+function IconRpb() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+      <circle cx="9" cy="8" r="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 20a6 6 0 0 1 12 0" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 5.5a3 3 0 0 1 0 5.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.5 14.2A6 6 0 0 1 21 20" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
@@ -38,7 +49,9 @@ function IconSettings() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const lastReportId = loadLastReportId();
-  const onCla = useLocation().pathname.startsWith("/cla/");
+  const path = useLocation().pathname;
+  const onCla = path.startsWith("/cla/");
+  const onRpb = path.startsWith("/rpb/");
 
   return (
     <div className="shell">
@@ -74,6 +87,24 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <IconCla />
               CLA
+            </span>
+          )}
+          {lastReportId ? (
+            <Link
+              to={`/rpb/${lastReportId}`}
+              className={onRpb ? "navitem active" : "navitem"}
+            >
+              <IconRpb />
+              RPB
+            </Link>
+          ) : (
+            <span
+              className="navitem navitem--disabled"
+              title="Analyze a report from Home first"
+              aria-disabled
+            >
+              <IconRpb />
+              RPB
             </span>
           )}
           <NavLink to="/settings" className="navitem">
