@@ -10,13 +10,14 @@ import { DrumsView } from "../components/DrumsView";
 import { ValidateView } from "../components/ValidateView";
 import { ShadowResView } from "../components/ShadowResView";
 import { TimelineView } from "../components/TimelineView";
+import { RpbView } from "../components/RpbView";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
   const [result, setResult] = useState<ReportResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("summary");
+  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline" | "rpb">("summary");
 
   useEffect(() => {
     if (reportId) saveLastReportId(reportId);
@@ -46,7 +47,7 @@ export function ReportPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <nav className="segmented">
-          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
+          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline", "rpb"] as const).map((t) => (
             <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
           ))}
         </nav>
@@ -72,6 +73,7 @@ export function ReportPage() {
         {tab === "validate" && <ValidateView key={result.data.reportId} report={result.data} />}
         {tab === "shadow resi" && <ShadowResView key={result.data.reportId} report={result.data} />}
         {tab === "fight timeline" && <TimelineView key={result.data.reportId} report={result.data} />}
+        {tab === "rpb" && <RpbView key={result.data.reportId} report={result.data} />}
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+import type { Role } from "@wcl/core";
+
 export interface Credentials { clientId: string; clientSecret: string; }
 export interface StoredToken { accessToken: string; expiresAt: number; }
 
@@ -43,4 +45,16 @@ export function loadToken(): StoredToken | null {
     return null;
   }
   return token;
+}
+
+const ROLE_KEY = "wcl.roles";
+
+export function loadRoleOverrides(): Record<string, Role> {
+  try { return JSON.parse(localStorage.getItem(ROLE_KEY) ?? "{}"); } catch { return {}; }
+}
+
+export function saveRoleOverride(characterName: string, role: Role): void {
+  const all = loadRoleOverrides();
+  all[characterName] = role;
+  localStorage.setItem(ROLE_KEY, JSON.stringify(all));
 }

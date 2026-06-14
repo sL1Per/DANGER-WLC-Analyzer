@@ -1,3 +1,5 @@
+import "@testing-library/jest-dom/vitest";
+
 // Node.js 25 ships a built-in localStorage global that vitest's jsdom
 // environment does not override (localStorage is absent from vitest's
 // KEYS allow-list so populateGlobal() skips it when the key already
