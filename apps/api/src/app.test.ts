@@ -16,6 +16,11 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
     fetchBuffEvents: vi.fn().mockResolvedValue([]),
     fetchCastEvents: vi.fn().mockResolvedValue([]),
     fetchDeaths: vi.fn().mockResolvedValue([]),
+    fetchInterrupts: vi.fn().mockResolvedValue([]),
+    fetchDamageTaken: vi.fn().mockResolvedValue([]),
+    fetchDamageDone: vi.fn().mockResolvedValue([]),
+    fetchAllCasts: vi.fn().mockResolvedValue([]),
+    fetchTable: vi.fn().mockResolvedValue([]),
     cacheTtlMs: 60_000,
     ...overrides,
   });

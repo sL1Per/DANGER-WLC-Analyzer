@@ -14,10 +14,18 @@ import {
   fetchBuffEvents as realFetchBuffEvents,
   fetchCastEvents as realFetchCastEvents,
   fetchDeaths as realFetchDeaths,
+  fetchInterrupts as realFetchInterrupts,
+  fetchDamageTaken as realFetchDamageTaken,
+  fetchDamageDone as realFetchDamageDone,
+  fetchAllCasts as realFetchAllCasts,
+  fetchTable as realFetchTable,
   type RawBuffEvent,
   type RawCastEvent,
   type RawCombatantInfo,
   type RawDeathEvent,
+  type RawInterruptEvent,
+  type RawDamageEvent,
+  type RawTableEntry,
 } from "./wcl";
 
 const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
@@ -39,6 +47,11 @@ export interface AppDeps {
   fetchBuffEvents: typeof realFetchBuffEvents;
   fetchCastEvents: typeof realFetchCastEvents;
   fetchDeaths: typeof realFetchDeaths;
+  fetchInterrupts: typeof realFetchInterrupts;
+  fetchDamageTaken: typeof realFetchDamageTaken;
+  fetchDamageDone: typeof realFetchDamageDone;
+  fetchAllCasts: typeof realFetchAllCasts;
+  fetchTable: typeof realFetchTable;
   cacheTtlMs: number;
 }
 
@@ -50,6 +63,11 @@ export function createApp(deps: AppDeps = {
   fetchBuffEvents: realFetchBuffEvents,
   fetchCastEvents: realFetchCastEvents,
   fetchDeaths: realFetchDeaths,
+  fetchInterrupts: realFetchInterrupts,
+  fetchDamageTaken: realFetchDamageTaken,
+  fetchDamageDone: realFetchDamageDone,
+  fetchAllCasts: realFetchAllCasts,
+  fetchTable: realFetchTable,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -116,9 +134,39 @@ export function createApp(deps: AppDeps = {
           } catch { /* names degrade to "item #id" in the UI */ }
         }
       }
+      let interrupts: RawInterruptEvent[] = [];
+      let damageTaken: RawDamageEvent[] = [];
+      let damageDone: RawDamageEvent[] = [];
+      let allCasts: RawCastEvent[] = [];
+      let damageDoneTable: RawTableEntry[] = [];
+      let healingTable: RawTableEntry[] = [];
+      let damageTakenTable: RawTableEntry[] = [];
+      if (bossFightIds.length > 0) {
+        const [intR, dtR, ddR, castR, ddtR, htR, dttR] = await Promise.allSettled([
+          deps.fetchInterrupts(id, token),
+          deps.fetchDamageTaken(id, token),
+          deps.fetchDamageDone(id, token),
+          deps.fetchAllCasts(id, token),
+          deps.fetchTable(id, token, "DamageDone", bossFightIds),
+          deps.fetchTable(id, token, "Healing", bossFightIds),
+          deps.fetchTable(id, token, "DamageTaken", bossFightIds),
+        ]);
+        if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
+        if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
+        if (ddR.status === "fulfilled") damageDone = ddR.value as RawDamageEvent[];
+        if (castR.status === "fulfilled") allCasts = castR.value as RawCastEvent[];
+        if (ddtR.status === "fulfilled") damageDoneTable = ddtR.value as RawTableEntry[];
+        if (htR.status === "fulfilled") healingTable = htR.value as RawTableEntry[];
+        if (dttR.status === "fulfilled") damageTakenTable = dttR.value as RawTableEntry[];
+      }
+      const actorNames: Record<number, string> = {};
+      for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
+      for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? `NPC ${n.gameID}`;
       const data = normalizeReport(id, rawReport, combatants, itemMeta, {
         buffEvents, castEvents, deaths,
         trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
+        interrupts, damageTaken, damageDone, allCasts,
+        damageDoneTable, healingTable, damageTakenTable, actorNames,
       });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
