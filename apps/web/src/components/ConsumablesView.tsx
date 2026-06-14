@@ -1,15 +1,24 @@
 import { useMemo } from "react";
 import { consumables, uptimeSeverity, type ReportData } from "@wcl/core";
-import { consumableBuffs, jcNecks, suboptimalConsumables } from "@wcl/data";
+import { consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "@wcl/data";
 import { SeverityLegend } from "./SeverityLegend";
 
+function pct(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 function UptimeCell({ value }: { value: number }) {
-  return <td className={`sev-${uptimeSeverity(value)}`}>{value.toFixed(2)}</td>;
+  return <td className={`sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
 }
 
 export function ConsumablesView({ report }: { report: ReportData }) {
   const result = useMemo(
-    () => consumables(report, { buffs: consumableBuffs, jcNecks, suboptimal: suboptimalConsumables }),
+    () => consumables(report, {
+      buffs: consumableBuffs,
+      jcNecks,
+      suboptimal: suboptimalConsumables,
+      weaponEnhancements: weaponEnhancementEnchantIds,
+    }),
     [report],
   );
 
@@ -46,9 +55,9 @@ export function ConsumablesView({ report }: { report: ReportData }) {
                 <td>{r.playerName}</td>
                 <UptimeCell value={r.totalAverage} />
                 <UptimeCell value={r.elixirOrFlask} />
-                <td>{r.battleElixir.toFixed(2)}</td>
-                <td>{r.guardianElixir.toFixed(2)}</td>
-                <td>{r.flask.toFixed(2)}</td>
+                <td>{pct(r.battleElixir)}</td>
+                <td>{pct(r.guardianElixir)}</td>
+                <td>{pct(r.flask)}</td>
                 <UptimeCell value={r.food} />
                 <td>{r.scrolls}</td>
                 {r.weaponEnhancement === null

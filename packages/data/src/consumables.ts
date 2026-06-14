@@ -32,6 +32,7 @@ export const consumableBuffs: ConsumableBuff[] = [
   { spellId: 38954, name: "Fel Strength Elixir", category: "battleElixir" },
   { spellId: 17539, name: "Greater Arcane Elixir", category: "battleElixir" },
   { spellId: 11406, name: "Elixir of Demonslaying", category: "battleElixir" },
+  { spellId: 17538, name: "Elixir of the Mongoose", category: "battleElixir" }, // confirmed via v1 API combatantInfo auras (2026-06-14)
   // --- guardian elixirs ---
   { spellId: 28502, name: "Elixir of Major Defense", category: "guardianElixir" },
   { spellId: 28509, name: "Elixir of Major Mageblood", category: "guardianElixir" },
@@ -39,6 +40,7 @@ export const consumableBuffs: ConsumableBuff[] = [
   { spellId: 39626, name: "Earthen Elixir", category: "guardianElixir" },
   { spellId: 39627, name: "Elixir of Draenic Wisdom", category: "guardianElixir" },
   { spellId: 39628, name: "Elixir of Ironskin", category: "guardianElixir" },
+  { spellId: 11371, name: "Gift of Arthas", category: "guardianElixir" }, // all-resist consumable; original counts it as guardian (confirmed via v1 API auras 2026-06-14)
   // --- flasks (TBC + Shattrath + Unstable + usable vanilla) ---
   { spellId: 28518, name: "Flask of Fortification", category: "flask" },
   { spellId: 28519, name: "Flask of Mighty Restoration", category: "flask" },
@@ -156,4 +158,35 @@ export const suboptimalConsumables: SuboptimalConsumable[] = [
   { kind: "buff", id: 11396, name: "Elixir of Greater Intellect" },
   { kind: "tempEnchant", id: 2678, name: "Superior Wizard Oil" },
   { kind: "tempEnchant", id: 2677, name: "Superior Mana Oil" },
+];
+
+/**
+ * Enchantment ids (WCL combatantInfo `temporaryEnchant`) that count as a real
+ * *consumable* weapon enhancement: oils, sharpening stones, weightstones and the
+ * vs-undead/demon coatings.
+ *
+ * WHY a whitelist: combatantInfo's `temporaryEnchant` carries ANY temporary
+ * weapon enchant, including non-consumable class effects — shaman self-imbues
+ * (Windfury/Flametongue/Frostbrand/Rockbiter, e.g. 2636 "Windfury 5"), the
+ * Windfury Totem applied to allies (2639 "Windfury Totem 5"), and rogue poisons.
+ * The original "Weapon Enhancement" column only credits consumables, so counting
+ * every temp enchant wrongly gives e.g. an Enhancement shaman 100%. Whitelisting
+ * the consumables excludes all class/totem/poison enchants in one stroke and is
+ * a bounded, stable set (no new TBC consumables are coming).
+ *
+ * Ids extracted from the TBC Classic (2.5.4.44833) SpellItemEnchantment DB2 via
+ * wago.tools on 2026-06-14: every "Sharpened (…)" (sharpening stones),
+ * "Weighted (…)" (weightstones), "* Oil", plus the vs-undead/demon coatings.
+ */
+export const weaponEnhancementEnchantIds: number[] = [
+  // sharpening stones — effect name "Sharpened (…)"
+  39, 40, 13, 14, 483, 1643, 2712, 2713,
+  // weightstones — effect name "Weighted (…)"
+  19, 20, 21, 484, 1703, 2954, 2955,
+  // oils (wizard / mana / shadow / frost, all ranks)
+  25, 26, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2676, 2677, 2678,
+  // vs-undead / vs-demon consumables: Consecrated Sharpening Stone (2684),
+  // Blessed Wizard Oil (2685), Righteous Weapon Coating (3093), Blessed
+  // Weapon Coating (3265)
+  2684, 2685, 3093, 3265,
 ];

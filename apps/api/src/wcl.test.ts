@@ -152,27 +152,20 @@ describe("fetchCastEvents", () => {
 });
 
 describe("fetchItemMeta", () => {
-  it("batches ids into one aliased gameData query", async () => {
+  it("batches ids into one aliased gameData query (names only — WCL has no quality field)", async () => {
     const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: { gameData: {
-        i0: { id: 24266, name: "Spellstrike Hood", quality: 4 },
-        i1: { id: 31867, name: "Great Golden Draenite", quality: 2 },
+        i0: { id: 24266, name: "Spellstrike Hood" },
+        i1: { id: 31867, name: "Great Golden Draenite" },
         i2: null,
       } },
     }), { status: 200 }));
     vi.stubGlobal("fetch", mock);
     const meta = await fetchItemMeta([24266, 31867, 99999], "tok");
-    expect(meta["24266"]).toEqual({ name: "Spellstrike Hood", quality: 4 });
+    expect(meta["24266"]).toEqual({ name: "Spellstrike Hood" });
     expect(meta["99999"]).toBeUndefined();
     expect(mock).toHaveBeenCalledTimes(1);
-  });
-  it("retries without the quality field if WCL rejects it", async () => {
-    const mock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ errors: [{ message: 'Cannot query field "quality"' }] }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { gameData: { i0: { id: 24266, name: "Spellstrike Hood" } } } }), { status: 200 }));
-    vi.stubGlobal("fetch", mock);
-    const meta = await fetchItemMeta([24266], "tok");
-    expect(meta["24266"]).toEqual({ name: "Spellstrike Hood", quality: undefined });
-    expect(mock).toHaveBeenCalledTimes(2);
+    // the query must not request `quality` — GameItem doesn't expose it
+    expect(String(mock.mock.calls[0]![1]!.body)).not.toMatch(/quality/);
   });
 });

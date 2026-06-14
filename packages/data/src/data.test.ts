@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems } from "./index";
-import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables } from "./index";
+import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
+import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
 import { validateRules, zoneCodeByName } from "./index";
 import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
 
@@ -17,6 +17,15 @@ describe("reference data", () => {
     // revisit in M5 if more spell-haste data is needed.
     expect(Object.keys(spellHaste).length).toBeGreaterThan(100);
     expect(spellHaste["34340"]).toBe(30); // first row of the config sheet
+  });
+  it("loads gem quality with plausible volume and known values", () => {
+    // full TBC gem set extracted from Wowhead's gem listing
+    expect(Object.keys(gemQuality).length).toBeGreaterThan(250);
+    for (const q of Object.values(gemQuality)) expect(q).toBeGreaterThanOrEqual(1);
+    for (const q of Object.values(gemQuality)) expect(q).toBeLessThanOrEqual(4);
+    expect(gemQuality["23097"]).toBe(2); // Delicate Blood Garnet — uncommon (XML-verified)
+    expect(gemQuality["24030"]).toBe(3); // Runed Living Ruby — rare
+    expect(gemQuality["30553"]).toBe(4); // Pristine Fire Opal — epic
   });
   it("loads enchant/item/trash lists", () => {
     expect(badEnchants.find((e) => e.enchantId === 927)).toMatchObject({ slot: 8, name: "Bracers - 7 Str" });
@@ -61,6 +70,15 @@ describe("consumable reference data", () => {
     ]) {
       expect(new Set(ids).size).toBe(ids.length);
     }
+  });
+  it("has a deduped whitelist of consumable weapon-enhancement enchant ids", () => {
+    expect(weaponEnhancementEnchantIds.length).toBeGreaterThan(20);
+    expect(new Set(weaponEnhancementEnchantIds).size).toBe(weaponEnhancementEnchantIds.length);
+    // includes the data-confirmed consumables, excludes shaman imbue / Windfury Totem
+    expect(weaponEnhancementEnchantIds).toContain(2678); // Superior Wizard Oil
+    expect(weaponEnhancementEnchantIds).toContain(2955); // Adamantite Weightstone
+    expect(weaponEnhancementEnchantIds).not.toContain(2636); // Windfury (shaman imbue)
+    expect(weaponEnhancementEnchantIds).not.toContain(2639); // Windfury Totem (ally buff)
   });
 });
 

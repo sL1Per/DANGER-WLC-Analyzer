@@ -14,13 +14,19 @@ export interface ConsumableConfig {
   jcNecks: { itemId: number; buffId: number; name: string }[];
   /** consumables/temp enchants that work but are the wrong choice */
   suboptimal: { kind: "buff" | "tempEnchant"; id: number; name: string }[];
+  /**
+   * Enchant ids (combatantInfo `temporaryEnchant`) that count as a consumable
+   * weapon enhancement. Whitelist — excludes shaman imbues, Windfury Totem and
+   * rogue poisons, which WCL also reports in the same field. See @wcl/data.
+   */
+  weaponEnhancements: number[];
 }
 
 /** One player's row of the "buff consumables" sheet. All uptimes are 0–1 fractions of total boss-fight time. */
 export interface ConsumableRow {
   playerId: number;
   playerName: string;
-  /** uptime of battle ∪ guardian ∪ flask (merged, not summed) */
+  /** max(flask, avg(battle, guardian)) — a flask = full credit, each elixir = half */
   elixirOrFlask: number;
   battleElixir: number;
   guardianElixir: number;
@@ -29,7 +35,7 @@ export interface ConsumableRow {
   /** e.g. "83% (Agi*,Prot)"; "" when no scrolls were used */
   scrolls: string;
   scrollUptime: number;
-  /** fraction of snapshot-covered boss time with a temp weapon enchant; null = no gear snapshots at all */
+  /** fraction of boss-fight snapshots with a consumable weapon enhancement; null = no gear snapshots at all */
   weaponEnhancement: number | null;
   jcNeck: { usedOnFights: number; inactiveOnFights: number; equipped: boolean };
   /** distinct suboptimal consumable names, insertion order */
@@ -45,7 +51,13 @@ const JC_NECK_EXEMPT_PREFIX = "Kael'thas";
 
 /**
  * CLA "buff consumables": per-player consumable discipline on boss fights.
- * Returns null when the report predates M3 (no buff data cached) so the UI
+ *
+ * Elixirs/flask/food/scrolls are read from each boss fight's combatantInfo
+ * *pull auras* (the original's source) — a column is "fights with the buff at
+ * pull / boss-fight snapshots", count-based per fight. JC necks stay buff-based
+ * (their on-use absorb is a transient combat proc, not a pull aura).
+ *
+ * Returns null when the report predates the buff/aura fetch (M3/M4) so the UI
  * can show a refresh notice instead of all-zero rows.
  */
 export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: ConsumableRow[] } | null {
@@ -53,7 +65,11 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
 
   const bossFights = new Map(report.fights.filter((f) => f.isBoss).map((f) => [f.id, f]));
   if (bossFights.size === 0) return { rows: [] };
-  const totalBossMs = [...bossFights.values()].reduce((sum, f) => sum + (f.endTime - f.startTime), 0);
+
+  // Aura-based detection needs combatantInfo pull auras (captured since M4). A
+  // report cached before that has gear but no auras → treat like a stale cache.
+  const bossSnapshots = report.gear.filter((s) => bossFights.has(s.fightId));
+  if (bossSnapshots.length > 0 && !bossSnapshots.some((s) => s.auras !== undefined)) return null;
 
   const idsByCategory = (category: ConsumableConfig["buffs"][number]["category"]) =>
     new Set(cfg.buffs.filter((b) => b.category === category).map((b) => b.spellId));
@@ -62,33 +78,40 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
   const flaskIds = idsByCategory("flask");
   const foodIds = idsByCategory("food");
   const scrollIds = idsByCategory("scroll");
-  const elixirOrFlaskIds = new Set([...battleIds, ...guardianIds, ...flaskIds]);
 
   const rows: ConsumableRow[] = [];
   for (const player of report.players) {
-    // only intervals on boss fights count anywhere below
-    const buffs = report.buffs.filter((b) => b.targetId === player.id && bossFights.has(b.fightId));
     const snapshots = report.gear.filter((s) => s.playerId === player.id && bossFights.has(s.fightId));
-    const uptime = (ids: Set<number>) => mergedUptime(buffs, ids, bossFights, totalBossMs);
+    // pull-aura snapshots drive elixir/flask/food/scroll presence
+    const auraSnapshots = snapshots.filter((s) => s.auras !== undefined);
+    // buff intervals on boss fights are still needed for JC neck on-use procs
+    const buffs = report.buffs.filter((b) => b.targetId === player.id && bossFights.has(b.fightId));
+    const presence = (ids: Set<number>) => auraPresenceFraction(auraSnapshots, ids);
 
-    const elixirOrFlask = uptime(elixirOrFlaskIds);
-    const food = uptime(foodIds);
-    const scrollUptime = uptime(scrollIds);
-    const weaponEnhancement = weaponEnhancementUptime(snapshots, bossFights);
+    const battleElixir = presence(battleIds);
+    const guardianElixir = presence(guardianIds);
+    const flask = presence(flaskIds);
+    // A flask replaces both elixirs (full credit); two separate elixirs each
+    // count as half, so a battle-only player is only half-covered. This is NOT a
+    // union of the three: max(flask, avg(battle, guardian)).
+    const elixirOrFlask = Math.max(flask, (battleElixir + guardianElixir) / 2);
+    const food = presence(foodIds);
+    const scrollUptime = presence(scrollIds);
+    const weaponEnhancement = weaponEnhancementUptime(snapshots, cfg.weaponEnhancements);
 
     rows.push({
       playerId: player.id,
       playerName: player.name,
       elixirOrFlask,
-      battleElixir: uptime(battleIds),
-      guardianElixir: uptime(guardianIds),
-      flask: uptime(flaskIds),
+      battleElixir,
+      guardianElixir,
+      flask,
       food,
-      scrolls: formatScrolls(buffs, cfg, scrollUptime),
+      scrolls: formatScrolls(auraSnapshots, cfg, scrollUptime),
       scrollUptime,
       weaponEnhancement,
       jcNeck: jcNeckUsage(snapshots, buffs, cfg, bossFights),
-      suboptimal: suboptimalNames(buffs, snapshots, cfg),
+      suboptimal: suboptimalNames(auraSnapshots, snapshots, cfg),
       totalAverage: totalAverage(elixirOrFlask, food, weaponEnhancement),
     });
   }
@@ -106,70 +129,46 @@ export function uptimeSeverity(uptime: number): IssueSeverity {
 }
 
 /**
- * Uptime of a set of spell ids: clamp each interval to its boss fight's window,
- * merge overlaps per fight (two simultaneous food buffs must not double-count),
- * then divide the merged total by totalBossMs.
+ * Count-based per boss fight, from combatantInfo pull auras: the fraction of the
+ * player's boss-fight snapshots whose pull auras include any of the given spell
+ * ids. A flask present at pull on 2 of 3 boss fights is 0.67 — not its share of
+ * total boss time (time-weighting was the bug this replaced). Denominator is the
+ * snapshots we have auras for; a fight with no combatantInfo simply isn't data.
  */
-function mergedUptime(
-  buffs: BuffInterval[],
-  ids: Set<number>,
-  bossFights: Map<number, Fight>,
-  totalBossMs: number,
-): number {
-  if (totalBossMs === 0) return 0;
-  const byFight = new Map<number, [number, number][]>();
-  for (const b of buffs) {
-    if (!ids.has(b.spellId)) continue;
-    const fight = bossFights.get(b.fightId);
-    if (!fight) continue; // callers pre-filter to boss fights; stay safe anyway
-    const start = Math.max(b.startTime, fight.startTime);
-    const end = Math.min(b.endTime, fight.endTime);
-    if (end <= start) continue;
-    let list = byFight.get(b.fightId);
-    if (!list) byFight.set(b.fightId, (list = []));
-    list.push([start, end]);
+function auraPresenceFraction(auraSnapshots: GearSnapshot[], ids: Set<number>): number {
+  if (auraSnapshots.length === 0) return 0;
+  let present = 0;
+  for (const snap of auraSnapshots) {
+    if (snap.auras!.some((spellId) => ids.has(spellId))) present += 1;
   }
-  let coveredMs = 0;
-  for (const intervals of byFight.values()) {
-    intervals.sort((a, b) => a[0] - b[0]);
-    let [curStart, curEnd] = intervals[0]!;
-    for (const [start, end] of intervals.slice(1)) {
-      if (start <= curEnd) {
-        curEnd = Math.max(curEnd, end); // overlapping/adjacent: extend
-      } else {
-        coveredMs += curEnd - curStart;
-        [curStart, curEnd] = [start, end];
-      }
-    }
-    coveredMs += curEnd - curStart;
-  }
-  return coveredMs / totalBossMs;
+  return present / auraSnapshots.length;
 }
 
 /**
- * Temp weapon enchant uptime is gear-based (combatantInfo), not buff-based:
- * over the boss fights with a snapshot, the time-weighted share where the
- * slot-15 item carries a temporaryEnchantId. Null = no snapshots at all
- * (gear info missing — distinct from "had no enhancement").
+ * Weapon enhancement is gear-based (combatantInfo), not buff-based, and counted
+ * per boss fight (NOT time-weighted): the fraction of boss-fight snapshots whose
+ * slot-15 item carries a *consumable* temporaryEnchantId (oil/stone/weightstone
+ * — see `weaponEnhancements`). Non-consumable temp enchants WCL reports here
+ * (shaman imbues, Windfury Totem on allies, rogue poisons) do not count. Null =
+ * no snapshots at all (gear info missing — distinct from "had no enhancement").
  */
-function weaponEnhancementUptime(snapshots: GearSnapshot[], bossFights: Map<number, Fight>): number | null {
+function weaponEnhancementUptime(snapshots: GearSnapshot[], weaponEnhancements: number[]): number | null {
   if (snapshots.length === 0) return null;
-  let totalMs = 0;
-  let enhancedMs = 0;
+  const enhancementIds = new Set(weaponEnhancements);
+  let enhanced = 0;
   for (const snap of snapshots) {
-    const fight = bossFights.get(snap.fightId)!;
-    const duration = fight.endTime - fight.startTime;
-    totalMs += duration;
     const weapon = snap.items.find((i) => i.slot === WEAPON_SLOT);
-    if (weapon && weapon.temporaryEnchantId !== undefined) enhancedMs += duration;
+    if (weapon && weapon.temporaryEnchantId !== undefined && enhancementIds.has(weapon.temporaryEnchantId)) {
+      enhanced += 1;
+    }
   }
-  return totalMs === 0 ? 0 : enhancedMs / totalMs;
+  return enhanced / snapshots.length;
 }
 
 /** "83% (Agi*,Prot)" — types alphabetical, * when any used scroll of the type is below level 5. */
-function formatScrolls(buffs: BuffInterval[], cfg: ConsumableConfig, scrollUptime: number): string {
+function formatScrolls(auraSnapshots: GearSnapshot[], cfg: ConsumableConfig, scrollUptime: number): string {
   if (scrollUptime <= 0) return "";
-  const usedIds = new Set(buffs.map((b) => b.spellId));
+  const usedIds = new Set(auraSnapshots.flatMap((s) => s.auras!));
   const lowLevel = new Set<string>(); // types where a sub-max scroll was used
   const types = new Set<string>();
   for (const buff of cfg.buffs) {
@@ -207,9 +206,9 @@ function jcNeckUsage(
   return { usedOnFights, inactiveOnFights, equipped };
 }
 
-/** Distinct suboptimal names: matching buffs seen, or temp weapon enchants equipped. */
-function suboptimalNames(buffs: BuffInterval[], snapshots: GearSnapshot[], cfg: ConsumableConfig): string[] {
-  const usedBuffIds = new Set(buffs.map((b) => b.spellId));
+/** Distinct suboptimal names: matching pull-aura buffs, or temp weapon enchants equipped. */
+function suboptimalNames(auraSnapshots: GearSnapshot[], snapshots: GearSnapshot[], cfg: ConsumableConfig): string[] {
+  const usedBuffIds = new Set(auraSnapshots.flatMap((s) => s.auras!));
   const tempEnchantIds = new Set(
     snapshots
       .map((s) => s.items.find((i) => i.slot === WEAPON_SLOT)?.temporaryEnchantId)

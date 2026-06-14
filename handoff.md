@@ -72,6 +72,19 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
   logged" so guildmates don't read it as an error).
 - `pnpm --filter @wcl/api probe <reportCode>` (with WCL_CLIENT_ID/SECRET env) dumps
   live WCL shapes to validate schema assumptions — run if anything looks off.
+- Bugfix (2026-06-13): **gem-quality detection was silently dead in production.**
+  WCL's `gameData.item` (GameItem) exposes NO `quality` field, so `fetchItemMeta`'s
+  quality query always 502'd and silently fell back to name-only → `itemMeta.quality`
+  was `undefined` for every gem → `gearIssues` flagged "missing gem(s)" (socket count)
+  but NEVER "uncommon/rare gem used". Unit tests missed it because the fixtures
+  hand-populated `quality`. Fix: gem quality now comes from a static table
+  `packages/data/json/gem-quality.json` (295 TBC gems, extracted from Wowhead's gem
+  listing `WH.Gatherer.addData`, XML-spot-verified), exported as `gemQuality` and
+  injected via `GearIssueConfig.gemQuality`. `ItemMeta.quality` removed; `fetchItemMeta`
+  is now name-only (no more pointless 502+retry per load). Verified against real cached
+  report `Mcva2nh39kHzfjqC`: Anjinho now gets 7 uncommon-gem flags, 21 report-wide
+  (was 0). Note: combatantInfo enriches the equipped *item* with quality but NOT gems,
+  and gem item level → quality is not a clean mapping — hence the static table.
 
 ## Architecture
 

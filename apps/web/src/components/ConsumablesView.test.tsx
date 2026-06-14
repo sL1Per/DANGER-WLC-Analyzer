@@ -18,8 +18,8 @@ describe("ConsumablesView", () => {
     render(<ConsumablesView report={baseReport()} />);
     const row = screen.getByText("Playerone").closest("tr")!;
     const cells = [...row.querySelectorAll("td")];
-    expect(cells[1]!.textContent).toBe("0.75"); // total average
-    expect(cells[2]!.textContent).toBe("1.00"); // Elixir or Flask
+    expect(cells[1]!.textContent).toBe("100%"); // total average: (elixirOrFlask 1 + food 1) / 2, count-based
+    expect(cells[2]!.textContent).toBe("100%"); // Elixir or Flask
     expect(cells[2]!.className).toBe("sev-minor");
     expect(screen.getByText("Playertwo")).toBeTruthy();
   });
@@ -42,7 +42,7 @@ describe("ConsumablesView", () => {
     render(<ConsumablesView report={baseReport()} />);
     const row = screen.getByText("Playertwo").closest("tr")!;
     const cells = [...row.querySelectorAll("td")];
-    expect(cells[6]!.textContent).toBe("0.00"); // Food Buff
+    expect(cells[6]!.textContent).toBe("0%"); // Food Buff
     expect(cells[6]!.className).toBe("sev-major");
   });
 });

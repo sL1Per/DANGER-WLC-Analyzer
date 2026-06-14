@@ -11,6 +11,9 @@ export interface GearIssueConfig {
   listNoIssues: boolean;
   // reference data, injected so core stays dependency-free (@wcl/data wires these)
   itemSockets: Record<string, number>;
+  /** gem itemId → quality (1 common … 4 epic). WCL never returns gem quality, so it
+   *  comes from a static table (@wcl/data); a missing id means quality unknown → not flagged. */
+  gemQuality: Record<string, number>;
   itemShadowRes: Record<string, number>;
   badEnchants: { enchantId: number; slot: number | null; name: string }[];
   excludedItems: { itemId: number; name: string }[];
@@ -62,7 +65,7 @@ export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGear
       for (const item of bySlot.values()) {
         if (excludedById.has(item.itemId)) add(item.itemId, "useless/fun item", "major");
         checkEnchant(item, badEnchantById, add);
-        checkGems(report, item, cfg, add);
+        checkGems(item, cfg, add);
         checkShadowRes(item, fight.name, cfg, add);
       }
     }
@@ -91,7 +94,6 @@ function checkEnchant(
 }
 
 function checkGems(
-  report: ReportData,
   item: GearItem,
   cfg: GearIssueConfig,
   add: (itemId: number, issue: string, severity: IssueSeverity, dedupeKey?: string) => void,
@@ -101,15 +103,13 @@ function checkGems(
   const missing = sockets - item.gemIds.length;
   if (missing > 0) add(item.itemId, `missing gem(s) (${item.gemIds.length}/${sockets})`, "major");
   item.gemIds.forEach((gemId, idx) => {
-    const quality = report.itemMeta[String(gemId)]?.quality;
+    const quality = cfg.gemQuality[String(gemId)];
     if (quality !== undefined && quality < cfg.minGemQuality) {
-      // severity tracks the gem's quality: common = major, uncommon = moderate,
-      // rare (only flagged when the configured minimum is epic) = minor
-      const severity: IssueSeverity = quality <= 1 ? "major" : quality === 2 ? "moderate" : "minor";
+      // a below-minimum gem is always a minor (green) issue regardless of its tier
       // include gem index in the dedupe key so two offending gems on the same item
       // each get their own issue entry; the same index is stable across fights, so
       // cross-fight deduplication still works correctly
-      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`, severity, `gem${idx}`);
+      add(item.itemId, `${QUALITY_NAMES[quality] ?? "low-quality"} gem used`, "minor", `gem${idx}`);
     }
   });
 }

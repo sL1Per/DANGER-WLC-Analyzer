@@ -15,8 +15,8 @@ describe("GearIssuesView", () => {
     render(<GearIssuesView report={reportFixture} />);
     const major = screen.getAllByText(/no enchant/)[0]!.closest("li");
     expect(major?.className).toBe("sev-major");
-    const moderate = screen.getAllByText(/uncommon gem used/)[0]!.closest("li");
-    expect(moderate?.className).toBe("sev-moderate");
+    const minor = screen.getAllByText(/uncommon gem used/)[0]!.closest("li");
+    expect(minor?.className).toBe("sev-minor");
   });
   it("min gem quality select changes flagged gems", () => {
     render(<GearIssuesView report={reportFixture} />);

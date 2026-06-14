@@ -3,7 +3,7 @@ import {
   gearIssues, gearListing, listGearFights, LISTING_SLOTS, REQUIRED_SLOTS,
   SEVERITY_RANK, SLOT_NAMES, type IssueSeverity, type ReportData,
 } from "@wcl/core";
-import { badEnchants, excludedItems, itemShadowRes, itemSockets } from "@wcl/data";
+import { badEnchants, excludedItems, gemQuality, itemShadowRes, itemSockets } from "@wcl/data";
 import { SeverityLegend } from "./SeverityLegend";
 
 export function GearListingView({ report }: { report: ReportData }) {
@@ -18,7 +18,7 @@ export function GearListingView({ report }: { report: ReportData }) {
     const sub = { ...report, gear: report.gear.filter((g) => g.fightId === fight.id) };
     const issueRows = gearIssues(sub, {
       minGemQuality: 3, excludeShahraz: false, listNoIssues: false,
-      itemSockets, itemShadowRes, badEnchants, excludedItems,
+      itemSockets, gemQuality, itemShadowRes, badEnchants, excludedItems,
     });
     for (const r of issueRows) {
       const byItem = new Map<number, IssueSeverity>();

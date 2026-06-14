@@ -19,8 +19,10 @@ export const reportFixture: ReportData = {
   ],
   gear: [
     {
-      fightId: 3, playerId: 1, items: [
-        { slot: 0, itemId: 24266, gemIds: [24030, 24030, 31867], permanentEnchantId: 29191 }, // Spellstrike Hood: 3 sockets filled (one uncommon), enchanted
+      // pull auras: Flask of Relentless Assault (28520) + Well Fed (33256) —
+      // consumables are detected from these combatantInfo auras, not buff events
+      fightId: 3, playerId: 1, auras: [28520, 33256], items: [
+        { slot: 0, itemId: 24266, gemIds: [24030, 24030, 23097], permanentEnchantId: 29191 }, // Spellstrike Hood: 3 sockets filled (one uncommon: 23097), enchanted
         { slot: 4, itemId: 21848, gemIds: [24030], permanentEnchantId: 1144 },                // Spellfire Robe: 1 of 2 sockets filled, cheap enchant
         { slot: 8, itemId: 24250, gemIds: [] },                                               // Bracers of Havok: no enchant, 0 of 1 socket filled
         { slot: 14, itemId: 15138, gemIds: [], permanentEnchantId: 368 },                     // Onyxia Scale Cloak: excluded/fun item
@@ -28,7 +30,8 @@ export const reportFixture: ReportData = {
       ],
     },
     {
-      fightId: 3, playerId: 2, items: [
+      // pull auras: Elixir of Major Agility (28497, battle) + Elixir of Draenic Wisdom (39627, guardian)
+      fightId: 3, playerId: 2, auras: [28497, 39627], items: [
         { slot: 0, itemId: 30973, gemIds: [], permanentEnchantId: 29192 },   // no sockets in DB, enchanted: clean
         { slot: 4, itemId: 28781, gemIds: [], permanentEnchantId: 1891 },    // no sockets in DB
         { slot: 15, itemId: 28767, gemIds: [], permanentEnchantId: 2669 },   // no sockets in DB
@@ -52,18 +55,20 @@ export const reportFixture: ReportData = {
     { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_200 },
     { fightId: 3, sourceId: 1, targetId: 2, spellId: 35476, timestamp: 151_300 },
   ],
+  // names only — WCL's gameData exposes no quality; gem quality comes from a static
+  // table passed via GearIssueConfig.gemQuality (see testConfig in gearIssues.test.ts).
   itemMeta: {
-    "24266": { name: "Spellstrike Hood", quality: 4 },
-    "21848": { name: "Spellfire Robe", quality: 4 },
-    "24250": { name: "Bracers of Havok", quality: 3 },
-    "15138": { name: "Onyxia Scale Cloak", quality: 4 },
-    "28227": { name: "Sha'tari Vengeance Ring", quality: 3 },
-    "30973": { name: "Destroyer Helmet", quality: 4 },
-    "28781": { name: "Chestplate of Stoicism", quality: 4 },
-    "28767": { name: "The Decapitator", quality: 4 },
-    "30528": { name: "Legguards of the Shattered Hand", quality: 4 },
-    "29992": { name: "Belt of the Guardian", quality: 4 },
-    "24030": { name: "Runed Living Ruby", quality: 3 },
-    "31867": { name: "Great Golden Draenite", quality: 2 },
+    "24266": { name: "Spellstrike Hood" },
+    "21848": { name: "Spellfire Robe" },
+    "24250": { name: "Bracers of Havok" },
+    "15138": { name: "Onyxia Scale Cloak" },
+    "28227": { name: "Sha'tari Vengeance Ring" },
+    "30973": { name: "Destroyer Helmet" },
+    "28781": { name: "Chestplate of Stoicism" },
+    "28767": { name: "The Decapitator" },
+    "30528": { name: "Legguards of the Shattered Hand" },
+    "29992": { name: "Belt of the Guardian" },
+    "24030": { name: "Runed Living Ruby" },
+    "23097": { name: "Delicate Blood Garnet" },
   },
 };

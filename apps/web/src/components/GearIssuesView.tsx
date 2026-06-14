@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { gearIssues, QUALITY_NAMES, type GearIssueConfig, type ReportData } from "@wcl/core";
-import { badEnchants, excludedItems, itemShadowRes, itemSockets } from "@wcl/data";
+import { badEnchants, excludedItems, gemQuality, itemShadowRes, itemSockets } from "@wcl/data";
 import { SeverityLegend } from "./SeverityLegend";
 
 export function GearIssuesView({ report }: { report: ReportData }) {
@@ -11,7 +11,7 @@ export function GearIssuesView({ report }: { report: ReportData }) {
   const rows = useMemo(() => {
     const cfg: GearIssueConfig = {
       minGemQuality, excludeShahraz, listNoIssues,
-      itemSockets, itemShadowRes, badEnchants, excludedItems,
+      itemSockets, gemQuality, itemShadowRes, badEnchants, excludedItems,
     };
     return gearIssues(report, cfg);
   }, [report, minGemQuality, excludeShahraz, listNoIssues]);

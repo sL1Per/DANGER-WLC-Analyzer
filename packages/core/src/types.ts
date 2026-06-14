@@ -76,8 +76,9 @@ export interface GearSnapshot {
   auras?: number[];
 }
 
-/** Item/gem metadata resolved via WCL gameData. quality: 1 common … 4 epic. */
-export interface ItemMeta { name: string; quality?: number; }
+/** Item/gem name resolved via WCL gameData (its GameItem type exposes no quality —
+ *  gem quality comes from a static table instead; see GearIssueConfig.gemQuality). */
+export interface ItemMeta { name: string; }
 
 export type FightMode = "all" | "bosses" | "trash";
 

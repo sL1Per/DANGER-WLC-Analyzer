@@ -7,6 +7,8 @@ export const testConfig: GearIssueConfig = {
   excludeShahraz: false,
   listNoIssues: false,
   itemSockets: { "24266": 3, "21848": 2, "24250": 1 }, // aligned with fixture
+  // gem quality is supplied here, NOT read from itemMeta (WCL returns no gem quality)
+  gemQuality: { "23097": 2, "24030": 3 }, // 23097 uncommon (Blood Garnet), 24030 rare
   itemShadowRes: {},
   badEnchants: [{ enchantId: 1144, slot: 4, name: "Chest - 5 Mana" }],
   excludedItems: [{ itemId: 15138, name: "Onyxia Scale Cloak" }],
@@ -58,7 +60,16 @@ describe("gearIssues — gems", () => {
       expect.objectContaining({ itemId: 21848, issue: "missing gem(s) (1/2)" }));
   });
   it("flags gems below the minimum quality", () => {
-    // gem 31867 is quality 2 (uncommon) in the fixture itemMeta, min is 3
+    // gem 31867 is quality 2 (uncommon) per testConfig.gemQuality, min is 3
+    expect(issuesFor("Playerone")).toContainEqual(
+      expect.objectContaining({ itemId: 24266, issue: "uncommon gem used" }));
+  });
+  it("uses the gemQuality table, not itemMeta (regression: WCL returns no gem quality)", () => {
+    // itemMeta carries names only — exactly what production sees. With an empty
+    // gemQuality table nothing is flagged (this was the live bug); populating it flags.
+    const blind = gearIssues(reportFixture, { ...testConfig, gemQuality: {} })
+      .find((r) => r.playerName === "Playerone")!;
+    expect(blind.issues.find((i) => /gem used/.test(i.issue))).toBeUndefined();
     expect(issuesFor("Playerone")).toContainEqual(
       expect.objectContaining({ itemId: 24266, issue: "uncommon gem used" }));
   });
@@ -67,17 +78,17 @@ describe("gearIssues — gems", () => {
     expect(p1.find((i) => i.issue === "uncommon gem used")).toBeUndefined();
   });
   it("skips gems with unknown quality", () => {
-    const report = structuredClone(fixture);
-    delete (report.itemMeta as Record<string, unknown>)["31867"];
-    const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
+    // a gem id absent from the gemQuality table is simply not quality-checked
+    const cfg = { ...testConfig, gemQuality: { "24030": 3 } }; // 23097 omitted
+    const p1 = gearIssues(fixture, cfg).find((r) => r.playerName === "Playerone")!;
     expect(p1.issues.find((i) => i.issue === "uncommon gem used")).toBeUndefined();
   });
   it("counts each offending gem separately (two uncommon gems → two issues)", () => {
     const report = structuredClone(reportFixture);
-    // Give item 24266 two uncommon gems (31867) + one rare gem (24030)
+    // Give item 24266 two uncommon gems (23097) + one rare gem (24030)
     const snap = report.gear.find((g) => g.playerId === 1)!;
     const item = snap.items.find((i) => i.itemId === 24266)!;
-    item.gemIds = [31867, 31867, 24030];
+    item.gemIds = [23097, 23097, 24030];
     const p1 = gearIssues(report, testConfig).find((r) => r.playerName === "Playerone")!;
     const uncommonIssues = p1.issues.filter(
       (i) => i.itemId === 24266 && /uncommon gem used/.test(i.issue),
@@ -94,16 +105,17 @@ describe("gearIssues — severity (red/yellow/green like the original sheet)", (
     expect(p1).toContainEqual(expect.objectContaining({ issue: "missing gem(s) (1/2)", severity: "major" }));
     expect(p1).toContainEqual(expect.objectContaining({ issue: "useless/fun item", severity: "major" }));
   });
-  it("classifies cheap enchants, uncommon gems and SR gear as moderate", () => {
+  it("classifies cheap enchants and SR gear as moderate", () => {
     expect(issuesFor("Playerone")).toContainEqual(expect.objectContaining(
       { issue: "cheap or bad enchant (Chest - 5 Mana)", severity: "moderate" }));
-    expect(issuesFor("Playerone")).toContainEqual(expect.objectContaining(
-      { issue: "uncommon gem used", severity: "moderate" }));
     expect(issuesFor("Playertwo", { ...testConfig, itemShadowRes: { "28781": 20 } }))
       .toContainEqual(expect.objectContaining({ issue: "useless SR gear", severity: "moderate" }));
   });
-  it("classifies a rare gem below an epic minimum as minor", () => {
-    // gem 24030 is rare (quality 3) in the fixture; only flagged when min is epic
+  it("classifies any below-minimum gem as minor (green), regardless of tier", () => {
+    // uncommon gem at the default rare minimum is minor…
+    expect(issuesFor("Playerone")).toContainEqual(expect.objectContaining(
+      { issue: "uncommon gem used", severity: "minor" }));
+    // …as is a rare gem below an epic minimum (gem 24030 is rare/q3 in the fixture)
     const p1 = issuesFor("Playerone", { ...testConfig, minGemQuality: 4 });
     expect(p1).toContainEqual(expect.objectContaining({ issue: "rare gem used", severity: "minor" }));
   });

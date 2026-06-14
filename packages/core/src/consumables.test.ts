@@ -14,6 +14,7 @@ const cfg: ConsumableConfig = {
   ],
   jcNecks: [{ itemId: 24097, buffId: 31000, name: "Pendant of Shadow's End" }],
   suboptimal: [{ kind: "buff", id: 28519, name: "Flask of Mighty Restoration" }],
+  weaponEnhancements: [2678, 2955], // Superior Wizard Oil, Adamantite Weightstone (consumables)
 };
 
 /**
@@ -25,6 +26,14 @@ const cfg: ConsumableConfig = {
 function baseReport(): ReportData {
   const report = structuredClone(reportFixture);
   report.fights = report.fights.filter((f) => !f.isBoss || f.id === 3);
+  return report;
+}
+
+/** Two boss fights (2 and 3); the fixture's buffs are only on fight 3, so a
+ * present buff yields a count-based presence fraction of 1/2. */
+function twoBossReport(): ReportData {
+  const report = structuredClone(reportFixture);
+  report.fights = report.fights.filter((f) => !f.isBoss || f.id === 2 || f.id === 3);
   return report;
 }
 
@@ -42,7 +51,7 @@ describe("consumables — category uptimes", () => {
     expect(p1.battleElixir).toBe(0);
     expect(p1.guardianElixir).toBe(0);
     expect(p1.elixirOrFlask).toBe(1);
-    expect(p1.food).toBe(0.5);
+    expect(p1.food).toBe(1); // present on the single boss fight — count-based, NOT 50% of fight time
     expect(p1.scrolls).toBe("");
     expect(p1.scrollUptime).toBe(0);
   });
@@ -54,33 +63,48 @@ describe("consumables — category uptimes", () => {
     expect(p2.elixirOrFlask).toBe(1);
     expect(p2.food).toBe(0);
   });
-  it("merges overlapping intervals instead of summing them", () => {
+  it("treats a battle-elixir-only player as half-covered for Elixir or Flask (Blindberserk case)", () => {
+    // A player with a Battle Elixir at pull but NO Guardian Elixir is only
+    // half-covered: the original sheet's Elixir or Flask = max(flask, avg(battle,
+    // guardian)) = max(0, avg(1, 0)) = 0.5 — not a union (which would be 1.0).
     const report = baseReport();
-    // a second, different food buff overlapping the first (150–200k):
-    // merged window is 150–225k = 75s of the 100s fight, NOT 50s + 50s
-    report.buffs!.push({ fightId: 3, targetId: 1, spellId: 33258, startTime: 175_000, endTime: 225_000 });
-    const cfg2: ConsumableConfig = {
-      ...cfg,
-      buffs: [...cfg.buffs, { spellId: 33258, name: "Well Fed (+20 Spi)", category: "food" }],
-    };
-    const p1 = consumables(report, cfg2)!.rows.find((r) => r.playerName === "Playerone")!;
-    expect(p1.food).toBe(0.75);
+    // drop the guardian elixir (39627) from Playertwo's pull auras, keep battle (28497)
+    report.gear.find((s) => s.playerId === 2)!.auras = [28497];
+    const p2 = rowFor(report, "Playertwo");
+    expect(p2.battleElixir).toBe(1);
+    expect(p2.guardianElixir).toBe(0);
+    expect(p2.flask).toBe(0);
+    expect(p2.elixirOrFlask).toBe(0.5);
+    expect(p2.totalAverage).toBe(0.25); // (elixirOrFlask 0.5 + food 0) / 2; weaponEnh 0 excluded
   });
-  it("ignores buff intervals on trash fights", () => {
-    const report = baseReport();
-    report.buffs!.push({ fightId: 1, targetId: 1, spellId: 33256, startTime: 0, endTime: 60_000 });
+  it("is count-based per boss fight, not within-fight time-weighted", () => {
+    // Two boss fights (2 and 3); Playerone has consumables in its fight-3 pull
+    // auras only and a bare fight-2 snapshot, so each is present on 1 of 2 boss
+    // fights = 0.5 — regardless of how much of fight 3 they cover.
+    const report = twoBossReport();
+    report.gear.push({ fightId: 2, playerId: 1, auras: [], items: [] });
+    const p1 = rowFor(report, "Playerone");
+    expect(p1.flask).toBe(0.5);
+    expect(p1.food).toBe(0.5);
+    expect(p1.elixirOrFlask).toBe(0.5);
+  });
+  it("ignores pull auras on trash fights", () => {
+    const report = twoBossReport();
+    report.gear.push({ fightId: 2, playerId: 1, auras: [], items: [] }); // bare boss snapshot → food 1/2
+    // a food aura on a TRASH fight snapshot must not be counted → food stays 0.5, not 0.67
+    report.gear.push({ fightId: 1, playerId: 1, auras: [33256], items: [] });
     expect(rowFor(report, "Playerone").food).toBe(0.5);
   });
 });
 
 describe("consumables — weapon enhancement & totalAverage", () => {
   it("weaponEnhancement is 0 when the snapshot has no slot-15 item; 0 is excluded from totalAverage", () => {
-    // Playerone's fight-3 snapshot has slots 0/4/8/10/14 but NO weapon (slot 15):
-    // the fight counts in the denominator but not the numerator → 0, which the
-    // original's sample data excludes from the average → (1 + 0.5) / 2 = 0.75
+    // Playerone's fight-3 snapshot has slots 0/4/8/10/14 but NO weapon (slot 15)
+    // → weaponEnhancement 0, which the original excludes from the average →
+    // (elixirOrFlask 1 + food 1) / 2 = 1
     const p1 = rowFor(baseReport(), "Playerone");
     expect(p1.weaponEnhancement).toBe(0);
-    expect(p1.totalAverage).toBe(0.75);
+    expect(p1.totalAverage).toBe(1);
   });
   it("weaponEnhancement is 0 when the weapon lacks a temporaryEnchantId", () => {
     // Playertwo's slot-15 Decapitator has a permanentEnchantId but no temp enchant
@@ -93,31 +117,53 @@ describe("consumables — weapon enhancement & totalAverage", () => {
     report.gear = report.gear.filter((s) => s.playerId !== 2);
     const p2 = rowFor(report, "Playertwo");
     expect(p2.weaponEnhancement).toBeNull();
-    expect(p2.totalAverage).toBe(0.5); // null excluded → (1 + 0) / 2
+    // no snapshots → no pull auras → all consumables 0; weaponEnh null is excluded → (0 + 0) / 2
+    expect(p2.elixirOrFlask).toBe(0);
+    expect(p2.totalAverage).toBe(0);
   });
-  it("weaponEnhancement is 1 when the slot-15 item has a temporaryEnchantId", () => {
+  it("weaponEnhancement is 1 when the slot-15 item has a whitelisted consumable enchant", () => {
     const report = baseReport();
-    report.gear[0]!.items.push({ slot: 15, itemId: 30910, temporaryEnchantId: 2678, gemIds: [] });
+    report.gear[0]!.items.push({ slot: 15, itemId: 30910, temporaryEnchantId: 2678, gemIds: [] }); // Superior Wizard Oil
     const p1 = rowFor(report, "Playerone");
     expect(p1.weaponEnhancement).toBe(1);
-    expect(p1.totalAverage).toBeCloseTo((1 + 0.5 + 1) / 3, 10);
+    expect(p1.totalAverage).toBe(1); // (elixirOrFlask 1 + food 1 + weaponEnh 1) / 3
+  });
+  it("does NOT count a non-consumable temp enchant (shaman imbue / Windfury Totem / poison)", () => {
+    // 2636 = "Windfury 5" (shaman self-imbue): WCL reports it in temporaryEnchant
+    // just like an oil, but it is not a consumable, so the original sheet shows
+    // 0% — the bug that gave Enhancement shamans a false 100%.
+    const report = baseReport();
+    report.gear[0]!.items.push({ slot: 15, itemId: 30910, temporaryEnchantId: 2636, gemIds: [] });
+    expect(rowFor(report, "Playerone").weaponEnhancement).toBe(0);
+  });
+  it("is count-based per boss fight, not time-weighted", () => {
+    // Two boss fights of very different length; enhanced on only one. Count-based
+    // = 1/2 = 0.5 regardless of durations (time-weighting would skew it).
+    const report = twoBossReport();
+    const long = report.fights.find((f) => f.id === 2)!;
+    long.startTime = 0;
+    long.endTime = 1_000_000; // far longer than fight 3 (100s)
+    // Playerone: enhanced on the short fight 3 only, plain weapon on the long fight 2
+    report.gear = report.gear.filter((s) => s.playerId === 1);
+    report.gear[0]!.items.push({ slot: 15, itemId: 30910, temporaryEnchantId: 2955, gemIds: [] });
+    report.gear.push({ fightId: 2, playerId: 1, items: [{ slot: 15, itemId: 30910, gemIds: [] }] });
+    expect(rowFor(report, "Playerone").weaponEnhancement).toBe(0.5);
   });
 });
 
 describe("consumables — scrolls", () => {
   it("formats scroll types with * for sub-level-5 scrolls", () => {
     const report = baseReport();
-    report.buffs!.push(
-      { fightId: 3, targetId: 1, spellId: 33077, startTime: 150_000, endTime: 250_000 },
-      { fightId: 3, targetId: 1, spellId: 12174, startTime: 150_000, endTime: 200_000 },
-    );
+    report.gear[0]!.auras!.push(33077, 12174); // Agility V (lvl5) + Agility IV (lvl4) in Playerone's pull auras
     const p1 = rowFor(report, "Playerone");
     expect(p1.scrollUptime).toBe(1);
     expect(p1.scrolls).toBe("100% (Agi*)");
   });
-  it("omits the * when only max-level scrolls were used", () => {
-    const report = baseReport();
-    report.buffs!.push({ fightId: 3, targetId: 1, spellId: 33077, startTime: 150_000, endTime: 200_000 });
+  it("omits the * when only max-level scrolls were used, count-based across fights", () => {
+    // Two boss fights; the scroll is in the fight-3 pull auras only → 1/2 = 0.5.
+    const report = twoBossReport();
+    report.gear[0]!.auras!.push(33077); // Agility V on fight 3
+    report.gear.push({ fightId: 2, playerId: 1, auras: [], items: [] }); // bare fight-2 snapshot
     const p1 = rowFor(report, "Playerone");
     expect(p1.scrollUptime).toBe(0.5);
     expect(p1.scrolls).toBe("50% (Agi)");
@@ -125,9 +171,9 @@ describe("consumables — scrolls", () => {
 });
 
 describe("consumables — suboptimal & JC necks", () => {
-  it("collects suboptimal buff names", () => {
+  it("collects suboptimal buff names from pull auras", () => {
     const report = baseReport();
-    report.buffs!.push({ fightId: 3, targetId: 1, spellId: 28519, startTime: 150_000, endTime: 250_000 });
+    report.gear[0]!.auras!.push(28519); // Flask of Mighty Restoration in Playerone's pull auras
     expect(rowFor(report, "Playerone").suboptimal).toEqual(["Flask of Mighty Restoration"]);
   });
   it("counts an equipped-but-unused JC neck as inactive", () => {
@@ -153,6 +199,11 @@ describe("consumables — edge cases", () => {
   it("returns null when the report has no buff data (cached pre-M3)", () => {
     const report = baseReport();
     delete report.buffs;
+    expect(consumables(report, cfg)).toBeNull();
+  });
+  it("returns null when boss-fight snapshots have no pull auras (cached pre-aura support)", () => {
+    const report = baseReport();
+    for (const s of report.gear) delete s.auras;
     expect(consumables(report, cfg)).toBeNull();
   });
   it("returns empty rows when the report has no boss fights", () => {

@@ -184,26 +184,20 @@ export async function fetchDeaths(code: string, accessToken: string): Promise<Ra
   return out;
 }
 
+// WCL's GameItem type exposes only id/name/icon — there is no `quality` field, so we
+// resolve names here and look gem quality up from a static table (@wcl/data) instead.
 export async function fetchItemMeta(
   ids: number[], accessToken: string,
-): Promise<Record<string, { name: string; quality?: number }>> {
-  const meta: Record<string, { name: string; quality?: number }> = {};
+): Promise<Record<string, { name: string }>> {
+  const meta: Record<string, { name: string }> = {};
   const chunks: number[][] = [];
   for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
   for (const chunk of chunks) {
-    const fields = (withQuality: boolean) =>
-      chunk.map((id, i) => `i${i}: item(id: ${id}) { id name${withQuality ? " quality" : ""} }`).join("\n");
-    let data: Record<string, { id: number; name: string; quality?: number } | null>;
-    try {
-      data = (await gql<{ gameData: typeof data }>(`{ gameData { ${fields(true)} } }`, {}, accessToken)).gameData;
-    } catch (e) {
-      // schema may not expose quality; retry name-only (documented fallback)
-      if (e instanceof WclError && e.status === 502 && /quality/i.test(e.message)) {
-        data = (await gql<{ gameData: typeof data }>(`{ gameData { ${fields(false)} } }`, {}, accessToken)).gameData;
-      } else throw e;
-    }
+    const fields = chunk.map((id, i) => `i${i}: item(id: ${id}) { id name }`).join("\n");
+    const data = (await gql<{ gameData: Record<string, { id: number; name: string } | null> }>(
+      `{ gameData { ${fields} } }`, {}, accessToken)).gameData;
     for (const entry of Object.values(data)) {
-      if (entry) meta[String(entry.id)] = { name: entry.name, quality: entry.quality };
+      if (entry) meta[String(entry.id)] = { name: entry.name };
     }
   }
   return meta;
