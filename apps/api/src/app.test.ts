@@ -193,6 +193,19 @@ describe("GET /api/report/:id — buff intervals and drum events", () => {
     expect(tracked).toContain(3166); // Elixir of Wisdom — suboptimal list only
   });
 
+  it("fetches haste and battle-shout buffs for RPB metrics", async () => {
+    const fetchBuffEvents = vi.fn().mockResolvedValue([]);
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchBuffEvents,
+    });
+    await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    // fetchBuffEvents(code, accessToken, abilityIds) — abilityIds is arg index 2
+    const ids = fetchBuffEvents.mock.calls[0]![2] as number[];
+    expect(ids).toContain(2825); // Bloodlust (spell-haste correction)
+    expect(ids).toContain(2048); // Battle Shout (Battle Shout uptime)
+  });
+
   it("serves the report with empty buffs when event fetching fails (best-effort)", async () => {
     const fetchItemMeta = vi.fn().mockResolvedValue({ "24266": { name: "Spellstrike Hood", quality: 4 } });
     const app = makeApp({

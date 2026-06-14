@@ -21,8 +21,10 @@ export interface RpbRow {
   deaths: number;
   interruptedSpells: number;
   interruptSources: string[];
+  /** DEFERRED: no absorb fetcher yet — always 0 until absorbs are fetched/normalized. */
   totalAbsorbed: number;
   friendlyFire: number;
+  /** DEFERRED: reflected/PvP-hostile partitioning needs real-data design; not surfaced in UI yet. */
   damageReflectedOrHostile: number;
   totalAvoidableDamageTaken: number;
   engineeringDamage: number;

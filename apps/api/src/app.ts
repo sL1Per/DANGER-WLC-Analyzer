@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
-import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables } from "@wcl/data";
+import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs, battleShoutBuffIds } from "@wcl/data";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
 import {
@@ -37,6 +37,8 @@ const TRACKED_BUFF_IDS = [...new Set([
   // suboptimal buffs aren't all in consumableBuffs (e.g. low-level int
   // elixirs) — without fetching them, suboptimal detection can't see them
   ...suboptimalConsumables.filter((s) => s.kind === "buff").map((s) => s.id),
+  ...hasteBuffs.map((h) => h.spellId),   // RPB activity spell-haste correction
+  ...battleShoutBuffIds,                 // RPB Battle Shout uptime
 ])];
 
 export interface AppDeps {

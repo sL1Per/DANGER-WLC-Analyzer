@@ -42,7 +42,7 @@ export function RpbView({ report }: { report: ReportData }) {
                 <thead>
                   <tr>
                     <th>player</th><th>role</th><th>deaths</th><th>interrupted</th>
-                    <th>avoidable taken</th><th>friendly fire</th><th>absorbed</th>
+                    <th>total dmg taken</th><th>friendly fire</th>
                     <th>engi dmg</th><th>oil dmg</th><th>shout uptime</th>
                     <th>active % (ST/AoE)</th><th>haste s saved</th>
                   </tr>
@@ -66,7 +66,6 @@ export function RpbView({ report }: { report: ReportData }) {
                       <td>{r.interruptedSpells > 0 ? `${r.interruptedSpells} (${r.interruptSources.join(", ")})` : 0}</td>
                       <td>{r.totalAvoidableDamageTaken.toLocaleString()}</td>
                       <td>{r.friendlyFire.toLocaleString()}</td>
-                      <td>{r.totalAbsorbed.toLocaleString()}</td>
                       <td>{r.engineeringDamage.toLocaleString()}</td>
                       <td>{r.oilOfImmolationDamage.toLocaleString()}</td>
                       <td>{pct(r.battleShoutUptime)}</td>
@@ -80,7 +79,7 @@ export function RpbView({ report }: { report: ReportData }) {
           </section>
         );
       })}
-      <p><small>"Raw avoidable damage by tracked abilities" (per-boss curated list) is not yet tracked — shown as total avoidable for now.</small></p>
+      <p><small>"Total dmg taken" is all boss damage taken (avoidable-only filtering is not yet implemented). "Total absorbed" and per-boss "raw avoidable by tracked abilities" are not yet tracked.</small></p>
     </div>
   );
 }
