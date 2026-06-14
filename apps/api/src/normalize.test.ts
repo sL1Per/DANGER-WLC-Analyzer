@@ -349,3 +349,50 @@ describe("normalizeReport — RPB events", () => {
     expect(data.playerCasts?.[0]?.playerId).toBe(1);
   });
 });
+
+describe("normalizeReport — enemy debuffs + absorbs (M5b)", () => {
+  // Boss fight id 2 (Hydross the Unstable, encounterID 623) runs [70_000, 130_000].
+  // Players 1 and 2; enemy target 99 is NOT a player id.
+  const baseRaw: RawReport = {
+    title: "SSC run",
+    startTime: 1_700_000_000_000,
+    endTime: 1_700_000_400_000,
+    zone: { name: "Serpentshrine Cavern" },
+    fights: [
+      { id: 1, name: "Underbog Colossus", encounterID: 0, kill: null,
+        startTime: 0, endTime: 60_000, friendlyPlayers: [1, 2] },
+      { id: 2, name: "Hydross the Unstable", encounterID: 623, kill: true,
+        startTime: 70_000, endTime: 130_000, friendlyPlayers: [1, 2] },
+    ],
+    masterData: {
+      actors: [
+        { id: 1, name: "Playertank", subType: "Warrior" },
+        { id: 2, name: "Playermage", subType: "Mage" },
+      ],
+    },
+  };
+  const F = 2; // boss fight id
+
+  it("normalizes enemy debuffs (player source, enemy target) into intervals", () => {
+    const data = normalizeReport("RPT", baseRaw, [], {}, {
+      allCasts: [],
+      enemyDebuffs: [
+        { type: "applydebuff", sourceID: 1, targetID: 99, abilityGameID: 27228, timestamp: 1000, fight: F },
+        { type: "removedebuff", sourceID: 1, targetID: 99, abilityGameID: 27228, timestamp: 4000, fight: F },
+      ],
+    } as any);
+    expect(data.enemyDebuffs).toEqual([
+      { fightId: F, sourceId: 1, targetEnemyId: 99, spellId: 27228, startTime: 1000, endTime: 4000 },
+    ]);
+  });
+
+  it("normalizes absorbs to AbsorbEvent per player", () => {
+    const data = normalizeReport("RPT", baseRaw, [], {}, {
+      allCasts: [],
+      absorbEvents: [
+        { type: "damage", sourceID: 50, targetID: 1, abilityGameID: 29166, amount: 0, absorbed: 1200, fight: F },
+      ],
+    } as any);
+    expect(data.absorbs).toEqual([{ fightId: F, playerId: 1, spellId: 29166, amount: 1200 }]);
+  });
+});

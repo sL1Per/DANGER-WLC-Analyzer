@@ -10,6 +10,8 @@ import {
   type DamageTakenEvent,
   type PlayerCast,
   type PlayerDamageEvent,
+  type EnemyDebuffInterval,
+  type AbsorbEvent,
 } from "@wcl/core";
 import {
   WclError,
@@ -21,6 +23,7 @@ import {
   type RawInterruptEvent,
   type RawDamageEvent,
   type RawTableEntry,
+  type RawDebuffEvent,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -41,6 +44,10 @@ export interface NormalizeEventInputs {
   damageTakenTable?: RawTableEntry[];
   /** masterData actor id -> display name, for interrupt sources (players + NPCs) */
   actorNames?: Record<number, string>;
+  /** debuff events on enemies, sourced by players (M5b) */
+  enemyDebuffs?: RawDebuffEvent[];
+  /** absorb-bearing damage-taken events on players (M5b) */
+  absorbEvents?: RawDamageEvent[];
 }
 
 function buildNpcKills(
@@ -67,7 +74,7 @@ function buildRpb(
   playerIds: Set<number>,
   fights: Fight[],
 ): Partial<Pick<ReportData,
-  "playerTotals" | "playerDeaths" | "interrupts" | "damageTakenEvents" | "playerCasts" | "playerDamage">> {
+  "playerTotals" | "playerDeaths" | "interrupts" | "damageTakenEvents" | "playerCasts" | "playerDamage" | "enemyDebuffs" | "absorbs">> {
   if (events.allCasts === undefined && events.damageDoneTable === undefined) return {};
   const fightIds = new Set(fights.map((f) => f.id));
   const names = events.actorNames ?? {};
@@ -119,9 +126,36 @@ function buildRpb(
       selfInflicted: d.targetID === d.sourceID,
     }));
 
+  // enemy debuffs sourced by a player → merged intervals (one open per fight:target:spell)
+  const enemyDebuffs: EnemyDebuffInterval[] = [];
+  {
+    const fightById = new Map(fights.map((f) => [f.id, f]));
+    const open = new Map<string, number>();
+    const keyOf = (fid: number, tid: number, sid: number) => `${fid}:${tid}:${sid}`;
+    for (const e of events.enemyDebuffs ?? []) {
+      if (!playerIds.has(e.sourceID)) continue;
+      if (playerIds.has(e.targetID)) continue;
+      const fight = fightById.get(e.fight);
+      if (!fight) continue;
+      const key = keyOf(e.fight, e.targetID, e.abilityGameID);
+      if (e.type === "applydebuff" || e.type === "refreshdebuff") {
+        if (open.has(key)) continue;
+        open.set(key, enemyDebuffs.length);
+        enemyDebuffs.push({ fightId: e.fight, sourceId: e.sourceID, targetEnemyId: e.targetID, spellId: e.abilityGameID, startTime: e.timestamp, endTime: fight.endTime });
+      } else if (e.type === "removedebuff") {
+        const idx = open.get(key);
+        if (idx !== undefined) { enemyDebuffs[idx]!.endTime = e.timestamp; open.delete(key); }
+      }
+    }
+  }
+  const absorbs: AbsorbEvent[] = (events.absorbEvents ?? [])
+    .filter((d) => playerIds.has(d.targetID) && fightIds.has(d.fight))
+    .map((d) => ({ fightId: d.fight, playerId: d.targetID, spellId: d.abilityGameID, amount: d.absorbed ?? 0 }));
+
   return {
     playerTotals: [...totalsById.values()],
     playerDeaths, interrupts, damageTakenEvents, playerCasts, playerDamage,
+    enemyDebuffs, absorbs,
   };
 }
 
