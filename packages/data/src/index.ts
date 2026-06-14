@@ -26,3 +26,4 @@ export * from "./validateRules";
 export * from "./shadowResistance";
 export * from "./rpb";
 export * from "./classAbilities";
+export * from "./avoidableAbilities";
