@@ -69,7 +69,8 @@ export function RpbRowsView({
                         <td className={neutral} title="damage to hostile players (PvP; counts as done to self)">{r.damageToHostilePlayers.toLocaleString()}</td>
                         <td className={neutral}>{r.engineeringDamage.toLocaleString()}</td>
                         <td className={neutral}>{r.oilOfImmolationDamage.toLocaleString()}</td>
-                        <td className={heatClass(uptimeHeat(r.battleShoutUptime))}>{pct(r.battleShoutUptime)}</td>
+                        {/* a 0 reading means "no Battle Shout reached this player" (e.g. non-Warrior groups) — not a problem, so stay neutral */}
+                        <td className={r.battleShoutUptime > 0 ? heatClass(uptimeHeat(r.battleShoutUptime)) : neutral}>{pct(r.battleShoutUptime)}</td>
                         <td className={r.activity ? heatClass(activeHeat(r.activity.relativeActiveST)) : neutral}>
                           {r.activity ? `${pct(r.activity.relativeActiveST)} / ${pct(r.activity.relativeActiveAoe)}` : "—"}
                         </td>

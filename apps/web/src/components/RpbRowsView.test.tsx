@@ -14,22 +14,25 @@ const base = (over: Partial<RpbRow>): RpbRow => ({
 });
 
 describe("RpbRowsView", () => {
+  // the deaths cell is the 3rd column (player, role, deaths, ...)
+  const deathsCell = (container: HTMLElement) =>
+    container.querySelector("tbody tr td:nth-child(3)");
+
   it("renders a class band heading and a player row", () => {
     const groups = [{ className: "Mage", rows: [base({})] }];
-    render(<table><tbody /></table>); // ensure clean DOM
     const { container } = render(<RpbRowsView groups={groups} onRoleChange={vi.fn()} />);
     expect(screen.getByText("Mage")).toBeInTheDocument(); // class band
     expect(screen.getByText("Mageguy")).toBeInTheDocument();
-    // a death-free cell is "good" (green = sev-minor)
-    const deathCell = container.querySelector("td.sev-minor");
-    expect(deathCell).not.toBeNull();
+    // a death-free deaths cell is "good" (green = sev-minor)
+    expect(deathsCell(container)).toHaveClass("sev-minor");
   });
 
   it("heatmaps a death as a problem (red = sev-major)", () => {
     const groups = [{ className: "Mage", rows: [base({ deaths: 2 })] }];
     const { container } = render(<RpbRowsView groups={groups} onRoleChange={vi.fn()} />);
-    const bad = container.querySelector("td.sev-major");
-    expect(bad?.textContent).toBe("2");
+    const cell = deathsCell(container);
+    expect(cell).toHaveClass("sev-major");
+    expect(cell?.textContent).toBe("2");
   });
 
   it("turns class abilities into columns", () => {
