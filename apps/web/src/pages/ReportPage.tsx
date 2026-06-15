@@ -10,6 +10,7 @@ import { DrumsView } from "../components/DrumsView";
 import { ValidateView } from "../components/ValidateView";
 import { ShadowResView } from "../components/ShadowResView";
 import { TimelineView } from "../components/TimelineView";
+import { ShareToDiscord } from "../components/ShareToDiscord";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
@@ -38,11 +39,18 @@ export function ReportPage() {
             <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
           ))}
         </nav>
-        {loadCredentials() !== null && (
-          <button className="btn-outline" onClick={reload}>
-            Refresh from WCL
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <ShareToDiscord
+            title={result.data.title}
+            zoneName={result.data.zoneName}
+            link={window.location.href}
+          />
+          {loadCredentials() !== null && (
+            <button className="btn-outline" onClick={reload}>
+              Refresh from WCL
+            </button>
+          )}
+        </div>
       </div>
       <div className="card">
         {tab === "summary" && <ReportSummary report={result.data} cachedAt={result.cachedAt} />}

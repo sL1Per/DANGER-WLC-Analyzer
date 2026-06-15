@@ -3,6 +3,7 @@ import { loadCredentials } from "../lib/storage";
 import { useReport } from "../lib/useReport";
 import { ReportSummary } from "../components/ReportSummary";
 import { RpbView } from "../components/RpbView";
+import { ShareToDiscord } from "../components/ShareToDiscord";
 
 export function RpbPage() {
   const { reportId = "" } = useParams();
@@ -26,11 +27,18 @@ export function RpbPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Role Performance Breakdown</h2>
-        {loadCredentials() !== null && (
-          <button className="btn-outline" onClick={reload}>
-            Refresh from WCL
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <ShareToDiscord
+            title={result.data.title}
+            zoneName={result.data.zoneName}
+            link={window.location.href}
+          />
+          {loadCredentials() !== null && (
+            <button className="btn-outline" onClick={reload}>
+              Refresh from WCL
+            </button>
+          )}
+        </div>
       </div>
       <div className="card">
         <ReportSummary report={result.data} cachedAt={result.cachedAt} />

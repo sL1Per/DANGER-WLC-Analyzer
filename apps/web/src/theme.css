@@ -25,6 +25,9 @@
   --positive: #1f7a3e;
   --positive-bg: #e7f6ee;
 
+  /* subtle row tint (e.g. nested class rows) */
+  --row-tint: rgba(0, 0, 0, 0.02);
+
   /* shape */
   --radius-card: 16px;
   --radius-control: 10px;
@@ -35,4 +38,39 @@
   /* type */
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
   --font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  /* surfaces */
+  --canvas: #0e1014;
+  --surface: #171a21;
+  --surface-sunken: #12151b;
+  --border: #272b34;
+  --hairline: #20242c;
+
+  /* text */
+  --text: #e7e9ef;
+  --text-muted: #9aa3b2;
+  --text-subtle: #6c7689;
+
+  /* primary (indigo, brightened for dark surfaces) */
+  --primary: #6b73ff;
+  --primary-hover: #828aff;
+  --primary-tint: #1e2340;
+
+  /* semantic */
+  --danger: #ff7a70;
+  --danger-bg: #38201d;
+  --danger-border: #5a2d27;
+  --warn: #e3bd57;
+  --warn-bg: #322a13;
+  --positive: #5fcf86;
+  --positive-bg: #14301e;
+
+  /* subtle row tint */
+  --row-tint: rgba(255, 255, 255, 0.04);
+
+  /* shadows read as darker, deeper on a dark canvas */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sticky: 0 4px 16px rgba(0, 0, 0, 0.55);
 }

@@ -10,6 +10,29 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
 
 ## Current state (2026-06-15)
 
+- **M6 (Discord webhook + dark mode): DONE (code) on `main`. 277 tests pass** — core 130,
+  data 28, api 62, **web 57** (+23) — web build + tsc clean; the one `eslint` error is
+  pre-existing in `useReport.ts` (a newer `react-hooks/set-state-in-effect` rule), untouched by M6.
+  Web-only; no `apps/api`/core/data changes. Both features visually verified in light + dark
+  via Playwright against the dev server.
+  - **Dark mode:** the whole app was already CSS-variable-driven, so dark = a
+    `:root[data-theme="dark"]` override block in `apps/web/src/theme.css` (surfaces/text/primary/
+    semantic tints + deeper shadows + `--row-tint` token replacing a hardcoded `rgba(0,0,0,.02)` and
+    `color-scheme` so native controls follow). `apps/web/src/lib/theme.ts`: `resolveInitialTheme()`
+    (stored choice wins, else `prefers-color-scheme`, else light), `applyTheme()` sets
+    `document.documentElement.dataset.theme`, `setTheme()` persists+applies. `main.tsx` applies the
+    theme before first paint (no flash). `components/ThemeToggle.tsx` sun/moon button in the sidebar
+    footer; choice persisted to `wcl.theme` localStorage.
+  - **Discord webhook (browser→Discord direct, user's call):** webhook URL stored only in
+    localStorage (`wcl.discordWebhook`, `saveWebhookUrl/loadWebhookUrl/clearWebhookUrl` in storage.ts;
+    blank = clear). `components/ShareToDiscord.tsx` "Share to Discord" button on both `/cla/:id` and
+    `/rpb/:id` headers — posts `window.location.href` + report title/zone straight to the webhook
+    (`lib/discord.ts`: `isValidWebhookUrl` regex-validates discord(app).com/ptb/canary hosts,
+    `buildShareMessage`, `postToDiscord` POSTs `{content}` JSON, throws on non-2xx). No API change —
+    Discord webhook endpoints send `Access-Control-Allow-Origin: *`. Webhook field added to the
+    Settings page (validates on save). When no webhook is set, the button is replaced by a
+    "Set a Discord webhook" link to Settings. **Webhook URL handling is flagged for the M9 security
+    review** (it's user-supplied and only client-side regex-validated today).
 - **M5b (RPB class/role-specific ability rows + M5a deferred items): on `main` (code).**
   **254 tests pass** — core 130, data 28, api 62, web 34 — web build + tsc clean. Manual
   E2E + Wowhead id verification still pending (see follow-ups under Next milestones → M5b).
@@ -212,8 +235,11 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
     is unioned across all enemies, can inflate).
   - Optional: surface a `self-buff-uptime` test with real buff intervals; the double-filter micro-nit in
     `classMetrics` (cast list filtered twice for cast-count) is cosmetic.
-- **M6 — polish (features):** Discord webhook (post the generated report link, like the
-  original's export step) + dark mode. *(Only these two — deploy/CORS moved to M10.)*
+- **M6 — polish (features): DONE (code) on `main`.** Discord webhook (browser→Discord direct;
+  URL in localStorage; "Share to Discord" on both report pages + Settings field) + dark mode
+  (`[data-theme="dark"]` CSS-var override, OS-default-then-remembered toggle in the sidebar).
+  See Current state for detail. *(Only these two — deploy/CORS moved to M10.)*
+  Follow-up for M9: the webhook URL is user-supplied, client-side-validated only.
 - **M7 — E2E validation + tuning follow-ups:** run the creds-backed E2E pass
   (`apps/api/scripts/e2e-m5b.ts` + `probe-damage.ts`) to validate the assumed `Debuffs`/absorb
   shapes; flip `classAbilities`/`avoidableAbilities` `verified` flags as ids are Wowhead-confirmed

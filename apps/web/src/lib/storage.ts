@@ -6,6 +6,33 @@ export interface StoredToken { accessToken: string; expiresAt: number; }
 const CREDS_KEY = "wcl.credentials";
 const TOKEN_KEY = "wcl.token";
 const LAST_REPORT_KEY = "wcl.lastReportId";
+const WEBHOOK_KEY = "wcl.discordWebhook";
+const THEME_KEY = "wcl.theme";
+
+export type Theme = "light" | "dark";
+
+// Discord webhook URL — stored only in this browser, like credentials. The
+// browser posts share links straight to Discord (it allows cross-origin
+// webhook posts), so the URL never reaches our API.
+export function saveWebhookUrl(url: string): void {
+  const trimmed = url.trim();
+  if (trimmed) localStorage.setItem(WEBHOOK_KEY, trimmed);
+  else clearWebhookUrl();
+}
+export function loadWebhookUrl(): string | null {
+  return localStorage.getItem(WEBHOOK_KEY);
+}
+export function clearWebhookUrl(): void {
+  localStorage.removeItem(WEBHOOK_KEY);
+}
+
+export function saveTheme(t: Theme): void {
+  localStorage.setItem(THEME_KEY, t);
+}
+export function loadTheme(): Theme | null {
+  const v = localStorage.getItem(THEME_KEY);
+  return v === "light" || v === "dark" ? v : null;
+}
 
 export function saveLastReportId(id: string): void {
   localStorage.setItem(LAST_REPORT_KEY, id);

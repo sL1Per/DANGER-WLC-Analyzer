@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { loadLastReportId } from "../lib/storage";
+import { ThemeToggle } from "./ThemeToggle";
 
 function IconHome() {
   return (
@@ -114,7 +115,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="sidebar__footer">
-          Rebuild of Shariva&apos;s CLA &amp; RPB tools
+          <ThemeToggle />
+          <div>Rebuild of Shariva&apos;s CLA &amp; RPB tools</div>
         </div>
       </aside>
 
