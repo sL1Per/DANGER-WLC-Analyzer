@@ -289,7 +289,10 @@ describe("normalizeReport — RPB events", () => {
         { timestamp: 130, type: "damage", sourceID: 800, targetID: 1, abilityGameID: 13022, amount: 75, fight: 2 },
       ],
       interrupts: [
-        { timestamp: 140, type: "interrupt", sourceID: 800, targetID: 1, abilityGameID: 1, extraAbilityGameID: 12471, fight: 2 },
+        // player 1 interrupts enemy 800 (Hydross): source = interrupter, target = enemy caster.
+        { timestamp: 140, type: "interrupt", sourceID: 1, targetID: 800, abilityGameID: 25454, extraAbilityGameID: 12471, fight: 2 },
+        // enemy 800 "interrupting" player 1 must be dropped (we only credit player interrupters).
+        { timestamp: 145, type: "interrupt", sourceID: 800, targetID: 1, abilityGameID: 9999, extraAbilityGameID: 555, fight: 2 },
       ],
       deaths: [
         { timestamp: 150, type: "death", targetID: 2, fight: 2 },

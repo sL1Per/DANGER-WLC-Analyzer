@@ -43,7 +43,7 @@ export function RpbView({ report }: { report: ReportData }) {
               <table>
                 <thead>
                   <tr>
-                    <th>player</th><th>role</th><th>deaths</th><th>interrupted</th>
+                    <th>player</th><th>role</th><th>deaths</th><th>interrupts</th>
                     <th>total dmg taken</th><th>friendly fire</th>
                     <th>engi dmg</th><th>oil dmg</th><th>shout uptime</th>
                     <th>active % (ST/AoE)</th><th>haste s saved</th>
@@ -66,7 +66,7 @@ export function RpbView({ report }: { report: ReportData }) {
                           </select>
                         </td>
                         <td className={r.deaths > 0 ? "sev-major" : ""}>{r.deaths}</td>
-                        <td>{r.interruptedSpells > 0 ? `${r.interruptedSpells} (${r.interruptSources.join(", ")})` : 0}</td>
+                        <td title={r.interruptedSpells > 0 ? `enemies whose casts were interrupted: ${r.interruptSources.join(", ")}` : "no interrupts"}>{r.interruptedSpells > 0 ? `${r.interruptedSpells} (${r.interruptSources.join(", ")})` : 0}</td>
                         <td title={`all boss damage taken: ${r.totalPartlyAvoidable.toLocaleString()}`}>{r.totalAvoidableDamageTaken.toLocaleString()}</td>
                         <td>{r.friendlyFire.toLocaleString()}</td>
                         <td>{r.engineeringDamage.toLocaleString()}</td>

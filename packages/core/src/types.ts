@@ -129,14 +129,15 @@ export interface PlayerTotals {
 /** A boss-fight death of a player (Kalecgos already excluded upstream). */
 export interface PlayerDeath { playerId: number; fightId: number; }
 
-/** A player's spell that was interrupted (target = the player). */
+/** An enemy spell a player interrupted. In WCL the interrupt event's source is the
+ *  interrupter (the player) and the target is the enemy whose cast was stopped. */
 export interface InterruptEvent {
   fightId: number;
-  /** the player whose cast was interrupted */
-  targetPlayerId: number;
-  /** the spell that got interrupted */
+  /** the player who did the interrupting (the WCL event source) */
+  interrupterPlayerId: number;
+  /** the spell that got interrupted (WCL extraAbilityGameID) */
   interruptedSpellId: number;
-  /** display name of the interrupter (player or NPC) */
+  /** display name of the enemy whose cast was interrupted (the WCL event target) */
   sourceName: string;
 }
 

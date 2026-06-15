@@ -114,10 +114,10 @@ export async function fetchCombatantInfo(
 }
 
 const EVENTS_QUERY = `
-query Events($code: String!, $dataType: EventDataType!, $filter: String, $start: Float, $fightIds: [Int]) {
+query Events($code: String!, $dataType: EventDataType!, $filter: String, $start: Float, $fightIds: [Int], $hostilityType: HostilityType) {
   reportData {
     report(code: $code) {
-      events(dataType: $dataType, filterExpression: $filter, fightIDs: $fightIds, startTime: $start, endTime: 100000000000) {
+      events(dataType: $dataType, filterExpression: $filter, fightIDs: $fightIds, startTime: $start, endTime: 100000000000, hostilityType: $hostilityType) {
         data
         nextPageTimestamp
       }
@@ -224,8 +224,11 @@ export interface RawDebuffEvent {
 export async function fetchEnemyDebuffs(
   code: string, accessToken: string, fightIds: number[],
 ): Promise<RawDebuffEvent[]> {
+  // hostilityType: Enemies → debuffs ON enemy units (sourced by players). Without it
+  // WCL defaults to Friendlies and returns debuffs on players (~all 797 in the Gruul
+  // E2E), collapsing enemy-debuff uptime to ~0.
   return await fetchAllEvents(code, accessToken, "Debuffs",
-    new Set(["applydebuff", "removedebuff", "refreshdebuff"]), fightIds) as unknown as RawDebuffEvent[];
+    new Set(["applydebuff", "removedebuff", "refreshdebuff"]), fightIds, "Enemies") as unknown as RawDebuffEvent[];
 }
 
 /** Absorb amounts on players. WCL surfaces shield absorbs as DamageTaken events
@@ -239,16 +242,17 @@ export async function fetchAbsorbs(
   return events.filter((e) => (e.absorbed ?? 0) > 0);
 }
 
-/** Like fetchEvents but with no ability filter (filter: null). */
+/** Like fetchEvents but with no ability filter (filter: null). `hostilityType`
+ *  defaults to WCL's Friendlies; pass "Enemies" for debuffs players apply to bosses. */
 async function fetchAllEvents(
   code: string, accessToken: string, dataType: string, keepTypes: Set<string>,
-  fightIds?: number[],
+  fightIds?: number[], hostilityType?: "Friendlies" | "Enemies",
 ): Promise<Record<string, unknown>[]> {
   const out: Record<string, unknown>[] = [];
   let start = 0;
   for (;;) {
     const data = await gql<{ reportData: { report: { events: { data: Record<string, unknown>[]; nextPageTimestamp: number | null } } } }>(
-      EVENTS_QUERY, { code, dataType, filter: null, start, fightIds: fightIds ?? null }, accessToken);
+      EVENTS_QUERY, { code, dataType, filter: null, start, fightIds: fightIds ?? null, hostilityType: hostilityType ?? null }, accessToken);
     const page = data.reportData.report.events;
     for (const e of page.data) if (keepTypes.has(e.type as string)) out.push(e);
     if (page.nextPageTimestamp == null || page.nextPageTimestamp <= start) break;

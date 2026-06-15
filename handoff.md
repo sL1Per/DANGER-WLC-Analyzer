@@ -10,6 +10,57 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
 
 ## Current state (2026-06-15)
 
+- **M7 (E2E validation + tuning): creds-free half DONE (code) on `main`; live-data half queued.
+  280 tests pass** (data 28→31). Split because the live scripts need WCL creds (user runs them,
+  I never touch the secret — agreed 2026-06-15).
+  - **`classAbilities` fully verified + 1 bug fixed.** Audited all 80 curated ids against the
+    **TBC 2.5.4.44833 client DB** (`wago.tools` `SpellName` CSV — the project's trusted source,
+    stronger than a Wowhead UI check). 79/80 resolved to the expected spell; **Judgement of the
+    Crusader was wrong** — `20304` doesn't exist and `20305–20308` are *Seal* of the Crusader (the
+    paladin self-buff), not the enemy debuff. Fixed `spellIds` → `[20188,20300,20301,20302,20303,
+    21183,27159]`. Confirmed each rank-checked ability's max-rank id is the genuine TBC top rank
+    (Sunder 25225 / Hunter's Mark 14325 / Expose Armor 26866 / CoE 27228 / Curse of Shadow 27229).
+    **All 20 abilities flipped `verified:true`.** New regression suite `classAbilities.test.ts`-style
+    block in `data.test.ts` (all-verified, JoC-not-Seal, max-rank-id-listed).
+  - **`avoidableAbilities` placeholder bug fixed + seeded.** The old single entry (`37098`
+    "Static Charge", `encounterId:undefined`) was doubly wrong — `37098` is actually **"Rain of
+    Bones"**, and it was mis-marked global. Replaced with a name-verified seed of unambiguous
+    stand-out-of/dodge mechanics (Void Reaver Arcane Orb, Kael Flame Strike, Shahraz Fatal
+    Attraction, Illidan Flame Crash, Naj'entus Needle Spine), `verified:false`, no `encounterId`
+    (ids are boss-unique so global is safe). **Full per-boss population + flip stays for the live
+    pass** (which exact same-named id lands as the DamageTaken event needs real logs).
+  - **`e2e-m5b.ts` harness extended** with a "TUNING DIAGNOSTICS" stage so the user's single run
+    yields everything the live commit needs: (1) raw **interrupt** event shape + sample + a
+    source-is-player vs target-is-player tally (proves the `normalize.ts` direction bug —
+    interrupts should key on `sourceID`, see below); (2) **top-25 DamageTaken ability ids per boss**
+    with a ★ marker for currently-curated avoidable ids (confirm seeds + pick the zone's real ones);
+    (3) **role assignment by class** (surfaces warriors/feral landing `physical` instead of `tank`).
+- **M7 live pass — run 1 (Gruul/Magtheridon, 26 players): in progress.** Findings + fixes applied:
+  - ✅ **Absorbs shape VALIDATED** — `DamageTaken` events with `absorbed>0`, keys as assumed
+    (15 events, 16,006 absorbed). No change.
+  - ✅ **DamageDone/DamageTaken + summary-table shapes VALIDATED** via `probe-damage.ts` (keys,
+    `hitType` distribution, table `abilities/gear/talents` all as assumed).
+  - ✅ **Interrupt-direction fix APPLIED + validated.** Real shape confirmed: `sourceID`=interrupter
+    (player) `2/2`, `targetID`=enemy `0/2`, `extraAbilityGameID`=interrupted spell. The code/fixtures
+    had it **backwards**. Flipped across the stack: core `InterruptEvent.targetPlayerId` →
+    `interrupterPlayerId` (+ `sourceName` now the enemy whose cast was kicked); `normalize.ts` keys on
+    `sourceID`; `rpb.ts` filters `interrupterPlayerId`; RpbView header `interrupted`→`interrupts` + a
+    title; fixtures flipped; added a normalize regression (enemy-sourced interrupt is dropped).
+  - ✅ **Avoidable — Gruul ids added (verified).** Real `DamageTaken` top-25 mapped via the SpellName
+    CSV: **Cave In (36240)** + **Shatter (33671)** are the avoidable Gruul mechanics (the rest are
+    tank/targeted/self-inflicted: Hurtful Strike, Arcing Smash, Greater Fireball, Death Coil, Seal of
+    Blood, Sapper Charges, Dark Rune…). Added both `verified:true`.
+  - ✅ **`enemyDebuffs` root-caused + FIXED (fetch layer).** Run-2's `[enemyDebuffs]` breakdown was
+    decisive: of 797 raw events, **719 *targeted players* and only 4 were player→enemy** (1 apply) —
+    so normalize was *correct* to produce 1 interval; the bug was the fetch returning debuffs **on
+    friendlies**. WCL's `events(dataType: Debuffs)` defaults to `hostilityType: Friendlies`; we now
+    pass **`hostilityType: Enemies`** (debuffs on enemy units, sourced by players). Added an optional
+    `hostilityType` to `EVENTS_QUERY`/`fetchAllEvents` (defaults null→Friendlies for casts/damage/
+    interrupts/deaths, which were already correct) + a `wcl.test.ts` assertion. **A confirming
+    harness re-run is the only remaining validation** (expect class-debuff uptimes to populate;
+    Sunder/Faerie Fire/Curses should now be non-zero).
+  - ⏳ Tank under-detection: run-1 showed `Warrior:{physical:2}` but this raid's tanks were a feral
+    druid + prot pala (2 warriors plausibly DPS), so inconclusive — revisit with a clearer report.
 - **M6 (Discord webhook + dark mode): DONE (code) on `main`. 277 tests pass** — core 130,
   data 28, api 62, **web 57** (+23) — web build + tsc clean; the one `eslint` error is
   pre-existing in `useReport.ts` (a newer `react-hooks/set-state-in-effect` rule), untouched by M6.
@@ -240,12 +291,21 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
   (`[data-theme="dark"]` CSS-var override, OS-default-then-remembered toggle in the sidebar).
   See Current state for detail. *(Only these two — deploy/CORS moved to M10.)*
   Follow-up for M9: the webhook URL is user-supplied, client-side-validated only.
-- **M7 — E2E validation + tuning follow-ups:** run the creds-backed E2E pass
-  (`apps/api/scripts/e2e-m5b.ts` + `probe-damage.ts`) to validate the assumed `Debuffs`/absorb
-  shapes; flip `classAbilities`/`avoidableAbilities` `verified` flags as ids are Wowhead-confirmed
-  and fix wrong ranks; populate `avoidableAbilities` per boss. Also fold in the still-open **M4 E2E**
-  (npcKills vs WCL Deaths, shadow-resi on Shahraz/Hyjal, two-log timeline, correct MH/BT/ZA npc ids)
-  and the **M5a tuning** items (tank under-detection, interrupt direction, melee activity inflation).
+- **M7 — E2E validation + tuning follow-ups: creds-free half DONE (on `main`); live-data half
+  queued** (see Current state for what landed). **Remaining (needs the user's creds + reports):**
+  - Run the harness once per representative report and read the new diagnostics:
+    `! WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api exec tsx scripts/e2e-m5b.ts <code>`
+    (a casters + SR-boss report, e.g. the old `C4Zm2Rcgq6Tb7Mxn`), plus `probe-damage.ts <code>` for
+    the raw DamageDone/Taken key+hitType dump.
+  - **Apply the interrupt-direction fix** (`normalize.ts` key on `sourceID`; update core
+    `InterruptEvent` shape + tests) once the harness confirms source-is-player is the larger tally.
+  - **Populate `avoidableAbilities` per boss** from the ★/top-DamageTaken dump; flip `verified:true`
+    for ids confirmed present as damage events.
+  - Validate the assumed **`Debuffs` + absorb** shapes from the harness's RAW SHAPE DIAGNOSTICS.
+  - **Tank under-detection** (warriors/feral in `physical`): add a Defensive/Bear-form signal or a
+    damage-taken-ratio heuristic, tuned against the `[roles]` dump.
+  - Still-open **M4 E2E** (npcKills vs WCL Deaths, shadow-resi on Shahraz/Hyjal, two-log timeline,
+    correct MH/BT/ZA npc ids) and **melee activity** inflation (documented-approximate).
   This is the gate that turns M4/M5a/M5b from "code-complete, shapes assumed" into "verified."
 - **M8 — code + dependencies cleanup:** unify duplicated types (`BossRequirement`/`ZoneValidation`,
   `RoleSignal`) across `@wcl/core`/`@wcl/data`; remove dead exports (`PlayerTotals.magicDamageDone`,

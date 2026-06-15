@@ -68,7 +68,7 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
     const id = player.id;
     const myDmgTaken = dmgTaken.filter((d) => d.targetPlayerId === id);
     const myDamage = (report.playerDamage ?? []).filter((d) => d.sourceId === id && bossFightIds.has(d.fightId));
-    const myInterrupts = interrupts.filter((i) => i.targetPlayerId === id);
+    const myInterrupts = interrupts.filter((i) => i.interrupterPlayerId === id);
 
     const friendlyFire = myDmgTaken.filter((d) => d.fromFriendly).reduce((s, d) => s + d.amount, 0);
     const totalPartlyAvoidable = myDmgTaken.reduce((s, d) => s + d.amount, 0);

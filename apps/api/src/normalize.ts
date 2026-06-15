@@ -98,12 +98,14 @@ function buildRpb(
     .filter((d) => playerIds.has(d.targetID) && fightIds.has(d.fight))
     .map((d) => ({ playerId: d.targetID, fightId: d.fight }));
 
+  // WCL interrupt events: source = the interrupter (player), target = the enemy
+  // whose cast was stopped, extraAbilityGameID = the interrupted spell.
   const interrupts: InterruptEvent[] = (events.interrupts ?? [])
-    .filter((i) => playerIds.has(i.targetID) && fightIds.has(i.fight))
+    .filter((i) => playerIds.has(i.sourceID) && fightIds.has(i.fight))
     .map((i) => ({
-      fightId: i.fight, targetPlayerId: i.targetID,
+      fightId: i.fight, interrupterPlayerId: i.sourceID,
       interruptedSpellId: i.extraAbilityGameID ?? 0,
-      sourceName: names[i.sourceID] ?? `#${i.sourceID}`,
+      sourceName: names[i.targetID] ?? `#${i.targetID}`,
     }));
 
   const damageTakenEvents: DamageTakenEvent[] = (events.damageTaken ?? [])

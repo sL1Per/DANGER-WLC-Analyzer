@@ -5,6 +5,7 @@ import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
 import { validateRules, zoneCodeByName } from "./index";
 import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
+import { classAbilities } from "./classAbilities";
 
 describe("reference data", () => {
   it("loads item sockets with plausible volume and values", () => {
@@ -150,5 +151,34 @@ describe("rpb curated data", () => {
     expect(roleSignals.some((s) => s.spellId === 71 && s.role === "tank")).toBe(true);
     expect(hasteBuffs.find((h) => h.spellId === 2825)?.pct).toBe(0.3);
     expect(engineeringDamageIds.length).toBeGreaterThan(0);
+  });
+});
+
+describe("classAbilities (M7: verified against TBC 2.5.4 client DB)", () => {
+  it("flags every ability verified after the M7 id audit", () => {
+    expect(classAbilities.length).toBeGreaterThan(0);
+    for (const a of classAbilities) {
+      expect(a.verified, `${a.key} should be verified`).toBe(true);
+    }
+  });
+
+  it("uses the Judgement (not Seal) of the Crusader debuff ids", () => {
+    const joc = classAbilities.find((a) => a.key === "judgement-of-the-crusader")!;
+    // 27159 is the TBC max-rank Judgement debuff; 20303 is its base rank.
+    expect(joc.spellIds).toContain(27159);
+    expect(joc.spellIds).toContain(20303);
+    // must NOT include the Seal of the Crusader self-buff ids, nor the nonexistent 20304.
+    for (const sealId of [20304, 20305, 20306, 20307, 20308]) {
+      expect(joc.spellIds, `${sealId} is Seal/invalid, not the debuff`).not.toContain(sealId);
+    }
+  });
+
+  it("assigns each rank-checked ability's highest rank to a listed spell id", () => {
+    for (const a of classAbilities) {
+      if (!a.ranks || a.optimalRank !== "max") continue;
+      const maxRank = Math.max(...a.ranks.map((r) => r.rank));
+      const maxIds = a.ranks.filter((r) => r.rank === maxRank).map((r) => r.spellId);
+      for (const id of maxIds) expect(a.spellIds).toContain(id);
+    }
   });
 });

@@ -229,6 +229,9 @@ describe("fetchEnemyDebuffs", () => {
     const out = await fetchEnemyDebuffs("RPT", "tok", [5]);
     expect(out.map((e) => e.type)).toEqual(["applydebuff"]);
     expect(calls[0].variables.fightIds).toEqual([5]);
+    // must query enemy-side debuffs (debuffs players apply to bosses); without this WCL
+    // defaults to Friendlies and returns debuffs ON players → enemy-debuff uptime ~0.
+    expect(calls[0].variables.hostilityType).toBe("Enemies");
     vi.unstubAllGlobals();
   });
 });

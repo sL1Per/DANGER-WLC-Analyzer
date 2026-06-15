@@ -61,7 +61,8 @@ export const reportFixture: ReportData = {
   ],
   playerDeaths: [{ playerId: 2, fightId: 3 }],
   interrupts: [
-    { fightId: 3, targetPlayerId: 1, interruptedSpellId: 12471, sourceName: "Hydross the Unstable" },
+    // Playerone (id 1) interrupted Hydross's cast 12471.
+    { fightId: 3, interrupterPlayerId: 1, interruptedSpellId: 12471, sourceName: "Hydross the Unstable" },
   ],
   damageTakenEvents: [
     { fightId: 3, targetPlayerId: 1, abilityId: 13022, amount: 1500, fromFriendly: false },
