@@ -109,6 +109,23 @@ describe("normalizeReport — players limited to fight participants", () => {
     const data = normalizeReport("a1B2c3D4e5F6g7H8", noInfo);
     expect(data.players).toHaveLength(3);
   });
+
+  it("drops friendlyPlayers with no combat footprint when activity data exists", () => {
+    // ids 7 and 9 are both friendly-flagged, but only 7 actually did anything
+    // (a DamageDone table entry). 9 is an inert flagged-but-didn't-raid player.
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rawWithBystanders, [], {}, {
+      damageDoneTable: [{ id: 7, total: 1000, type: "Fire" }],
+    });
+    expect(data.players.map((p) => p.name)).toEqual(["Playerone"]);
+  });
+
+  it("keeps a friendlyPlayer active via any signal (e.g. only damage taken)", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rawWithBystanders, [], {}, {
+      damageDoneTable: [{ id: 7, total: 1000 }],
+      damageTaken: [{ timestamp: 1, type: "damage", sourceID: 800, targetID: 9, abilityGameID: 1, amount: 50, fight: 2 }],
+    });
+    expect(data.players.map((p) => p.name).sort()).toEqual(["Playerone", "Playertwo"]);
+  });
 });
 
 describe("normalizeReport — buff intervals and drum events", () => {

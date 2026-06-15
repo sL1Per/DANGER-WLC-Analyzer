@@ -189,7 +189,13 @@ export function normalizeReport(
   }));
   const buffEvents = events.buffEvents ?? [];
   const drumBuffIds = new Set(events.drumBuffIds ?? []);
-  const players = filterToParticipants(raw);
+  // Two-stage roster: friendlyPlayers ∩ actors, then keep only those who actually
+  // did something. When no activity signal exists (trash-only / minimal cache), keep all.
+  const allParticipants = filterToParticipants(raw);
+  const activeIds = collectActiveIds(combatants, events);
+  const players = activeIds.size > 0
+    ? allParticipants.filter((p) => activeIds.has(p.id))
+    : allParticipants;
   return {
     reportId,
     title: raw.title,
@@ -325,4 +331,26 @@ function filterToParticipants(raw: RawReport) {
   const actors = raw.masterData!.actors;
   const kept = hasInfo ? actors.filter((a) => participants.has(a.id)) : actors;
   return kept.map((a) => ({ id: a.id, name: a.name, class: a.subType }));
+}
+
+/**
+ * WCL's friendlyPlayers can include people who were briefly grouped/flagged but
+ * never actually raided (no combatantInfo, no damage/healing/casts) — they show up
+ * as extra chips, often class "Unknown". Collect every actor id that left a combat
+ * footprint so we can drop the inert ones. Returns an empty set when we have no
+ * activity signal at all (e.g. trash-only reports), so callers fall back gracefully.
+ */
+function collectActiveIds(combatants: RawCombatantInfo[], events: NormalizeEventInputs): Set<number> {
+  const ids = new Set<number>();
+  for (const c of combatants) ids.add(c.sourceID);
+  for (const e of events.damageDoneTable ?? []) ids.add(e.id);
+  for (const e of events.healingTable ?? []) ids.add(e.id);
+  for (const e of events.damageTakenTable ?? []) ids.add(e.id);
+  for (const c of events.allCasts ?? []) ids.add(c.sourceID);
+  for (const d of events.damageDone ?? []) ids.add(d.sourceID);
+  for (const d of events.damageTaken ?? []) ids.add(d.targetID);
+  for (const c of events.castEvents ?? []) ids.add(c.sourceID);
+  for (const e of events.buffEvents ?? []) { ids.add(e.sourceID); ids.add(e.targetID); }
+  for (const d of events.deaths ?? []) ids.add(d.targetID);
+  return ids;
 }

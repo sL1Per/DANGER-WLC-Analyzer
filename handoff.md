@@ -10,6 +10,18 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
 
 ## Current state (2026-06-15)
 
+- **Roster fix (post-M7):** WCL `friendlyPlayers` can include people who were briefly
+  raid-flagged but never actually raided — they showed up as extra player chips (often class
+  "Unknown"), e.g. report `rc4FNbCG3t6TzWKA` listed 29 players for a 25-man (5 inert: Adorjan,
+  Lilljägarn, Lillvalpen, Aquamendir, Delindru — all zero damage/healing/casts/gear). `normalize.ts`
+  now applies a **second roster gate** after `filterToParticipants`: `collectActiveIds()` unions every
+  combat footprint (combatantInfo, DamageDone/Healing/DamageTaken tables, casts, damage events, drum
+  casts, buffs, deaths) and keeps only friendly players with ≥1 signal; falls back to the full
+  friendly list when there's no activity data (trash-only / minimal caches). Verified against the
+  real report: 24 kept / 5 dropped, no real raider affected. 282 tests (api 62→64). **Cached reports
+  re-normalize on refresh** — to see it, restart the API and hit "Refresh from WCL" (or wait out the
+  24h cache).
+
 - **M7 (E2E validation + tuning): creds-free half DONE (code) on `main`; live-data half queued.
   280 tests pass** (data 28→31). Split because the live scripts need WCL creds (user runs them,
   I never touch the secret — agreed 2026-06-15).
