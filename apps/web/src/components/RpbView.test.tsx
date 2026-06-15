@@ -1,12 +1,11 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-
-afterEach(cleanup);
 import { RpbView } from "./RpbView";
 import { reportFixture } from "@wcl/core";
 
 describe("RpbView", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(cleanup);
 
   it("renders players grouped under their class band", () => {
     render(<RpbView report={reportFixture} />);

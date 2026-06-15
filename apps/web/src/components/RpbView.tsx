@@ -47,7 +47,7 @@ export function RpbView({ report }: { report: ReportData }) {
     <div>
       <p><small>Roles are auto-detected and adjustable per character (saved in your browser). Players are grouped and colored by class. Kalecgos is excluded. Activity is spell-haste corrected; melee activity is approximate.</small></p>
 
-      <div className="segmented" role="group" aria-label="RPB layout">
+      <div className="segmented" role="group" aria-label="View mode">
         {(["rows", "cards"] as const).map((m) => (
           <label key={m} className={view === m ? "active" : ""}>
             <input
