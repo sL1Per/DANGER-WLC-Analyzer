@@ -212,8 +212,23 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
     is unioned across all enemies, can inflate).
   - Optional: surface a `self-buff-uptime` test with real buff intervals; the double-filter micro-nit in
     `classMetrics` (cast list filtered twice for cast-count) is cosmetic.
-- **M6 — polish:** Discord webhook, dark mode, Cloudflare Workers deploy (swap
-  TtlCache → KV), lock down CORS.
+- **M6 — polish (features):** Discord webhook (post the generated report link, like the
+  original's export step) + dark mode. *(Only these two — deploy/CORS moved to M10.)*
+- **M7 — E2E validation + tuning follow-ups:** run the creds-backed E2E pass
+  (`apps/api/scripts/e2e-m5b.ts` + `probe-damage.ts`) to validate the assumed `Debuffs`/absorb
+  shapes; flip `classAbilities`/`avoidableAbilities` `verified` flags as ids are Wowhead-confirmed
+  and fix wrong ranks; populate `avoidableAbilities` per boss. Also fold in the still-open **M4 E2E**
+  (npcKills vs WCL Deaths, shadow-resi on Shahraz/Hyjal, two-log timeline, correct MH/BT/ZA npc ids)
+  and the **M5a tuning** items (tank under-detection, interrupt direction, melee activity inflation).
+  This is the gate that turns M4/M5a/M5b from "code-complete, shapes assumed" into "verified."
+- **M8 — code + dependencies cleanup:** unify duplicated types (`BossRequirement`/`ZoneValidation`,
+  `RoleSignal`) across `@wcl/core`/`@wcl/data`; remove dead exports (`PlayerTotals.magicDamageDone`,
+  `ZoneTrashRule`, the `classMetrics` double-filter nit); add an `apps/api` `typecheck` script and fix
+  the pre-existing `@wcl/data` `data.test.ts` tsc error; dependency audit/bump.
+- **M9 — security review:** run `/security-review` over the branch; lock down anything it flags
+  (input validation on report ids, the DELETE-cache auth trade-off, webhook URL handling from M6, etc.).
+- **M10 — Cloudflare Workers deploy:** swap the in-memory `TtlCache` → Workers KV and lock down CORS
+  for the deployed origin.
 
 ## UI conventions (apply to every new tab)
 
