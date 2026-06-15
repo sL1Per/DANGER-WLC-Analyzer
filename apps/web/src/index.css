@@ -554,6 +554,10 @@ tr td.sev-neutral { background: transparent; color: var(--text); font-weight: no
 .pcard-class { color: var(--text-subtle); font-size: 0.82em; }
 .pcard-head select { margin-left: auto; }
 .pcard-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; padding: 0; }
+.pcard-chips li { padding: 1px 8px; border-radius: var(--radius-pill); font-size: 0.78em; font-weight: 550; }
+.pcard-chips li.sev-major { background: var(--danger-bg); color: var(--danger); }
+.pcard-chips li.sev-moderate { background: var(--warn-bg); color: var(--warn); }
+.pcard-chips li.sev-minor, .pcard-chips li.sev-ok { background: var(--positive-bg); color: var(--positive); }
 .pcard-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin: 0; }
 .pcard-metrics div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85em; }
 .pcard-metrics dt { color: var(--text-muted); }
