@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classColor, CLASS_ORDER } from "./classColors";
+import { classColor, classColorVar, CLASS_ORDER } from "./classColors";
 
 describe("classColors", () => {
   it("returns the standard color for a known class", () => {
@@ -14,5 +14,11 @@ describe("classColors", () => {
     expect(CLASS_ORDER[0]).toBe("Warrior");
     expect(CLASS_ORDER).toContain("Druid");
     expect(CLASS_ORDER).toHaveLength(9);
+  });
+  it("exposes the class color as the --class-color custom property", () => {
+    expect(classColorVar("Mage")).toEqual({ "--class-color": "#69CCF0" });
+  });
+  it("uses the neutral fallback color in --class-color for an unknown class", () => {
+    expect(classColorVar("Tinker")).toEqual({ "--class-color": "#9aa3b2" });
   });
 });

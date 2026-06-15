@@ -4,7 +4,7 @@ import type { RpbSeverity } from "@wcl/core";
 export type Heat = "good" | "watch" | "bad" | "neutral";
 
 // Reuse the shared severity color classes (green / yellow / red); `sev-neutral`
-// is added in the CSS task as a transparent, non-alarming cell.
+// is a transparent, non-alarming cell (defined in index.css).
 const HEAT_CLASS: Record<Heat, string> = {
   good: "sev-minor",
   watch: "sev-moderate",

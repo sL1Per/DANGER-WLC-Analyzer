@@ -34,6 +34,10 @@ describe("groupByClass", () => {
     const groups = groupByClass([mk("X", "Tinker"), mk("Y", "Priest")]);
     expect(groups.map((g) => g.className)).toEqual(["Priest", "Tinker"]);
   });
+  it("sorts multiple unknown classes by name among themselves", () => {
+    const groups = groupByClass([mk("X", "Wizard"), mk("Y", "Tinker"), mk("Z", "Priest")]);
+    expect(groups.map((g) => g.className)).toEqual(["Priest", "Tinker", "Wizard"]);
+  });
   it("returns an empty list for no rows", () => {
     expect(groupByClass([])).toEqual([]);
   });

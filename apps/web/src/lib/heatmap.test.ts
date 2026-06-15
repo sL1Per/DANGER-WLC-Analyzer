@@ -12,14 +12,18 @@ describe("heatmap", () => {
     expect(friendlyFireHeat(0)).toBe("good");
     expect(friendlyFireHeat(5)).toBe("watch");
   });
-  it("buckets uptime fractions", () => {
+  it("buckets uptime fractions, including the bucket boundaries", () => {
     expect(uptimeHeat(0.95)).toBe("good");
+    expect(uptimeHeat(0.9)).toBe("good"); // boundary
     expect(uptimeHeat(0.6)).toBe("watch");
+    expect(uptimeHeat(0.5)).toBe("watch"); // boundary
     expect(uptimeHeat(0.2)).toBe("bad");
   });
-  it("buckets activity fractions", () => {
+  it("buckets activity fractions, including the bucket boundaries", () => {
     expect(activeHeat(0.9)).toBe("good");
+    expect(activeHeat(0.85)).toBe("good"); // boundary
     expect(activeHeat(0.7)).toBe("watch");
+    expect(activeHeat(0.6)).toBe("watch"); // boundary
     expect(activeHeat(0.4)).toBe("bad");
   });
   it("maps core severity buckets to heat", () => {
