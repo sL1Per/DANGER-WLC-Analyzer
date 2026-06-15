@@ -183,8 +183,8 @@ console.log(`\n[enemyDebuffs] raw ${rawDebuffs.length} events; normalize produce
   const curatedDebuffIds = new Set(classAbilities.filter((a) => a.measure === "enemy-debuff-uptime").flatMap((a) => a.spellIds));
   console.log("  curated debuff ids seen player→enemy:", [...p2eSpells.keys()].filter((id) => curatedDebuffIds.has(id)).join(", ") || "NONE");
   const combos = new Set(p2eApplies.map((e) => `${e.fight}:${e.targetID}:${e.abilityGameID}`));
-  console.log(`  distinct (fight:enemy:spell) combos among player→enemy applies = expected interval count ≈ ${combos.size}`);
-  console.log("  → if expected ≫ 1 but intervals = 1, the normalize merge is the bug; if ≈ 1, it's a source/target-space issue.");
+  console.log(`  distinct (fight:enemy:spell) combos among player→enemy applies = ${combos.size} (lower bound; reapplies after a removedebuff add more intervals)`);
+  console.log("  → near-zero player→enemy here means the fetch returned friendly-target debuffs (need hostilityType: Enemies).");
 }
 
 // 1. Interrupt direction — proves source=player vs target=player (the 'interrupts always 0' bug).

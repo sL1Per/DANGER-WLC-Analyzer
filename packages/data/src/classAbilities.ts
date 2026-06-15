@@ -58,8 +58,12 @@ export const classAbilities: ClassAbility[] = [
   // ---- Priest ----
   { className: "Priest", key: "misery", name: "Misery", measure: "enemy-debuff-uptime",
     spellIds: [33196, 33197, 33198, 33199, 33200], verified: true },
+  // The enemy debuff is "Shadow Vulnerability" (15258), applied by the Shadow Weaving
+  // talent — NOT the talent ranks themselves (15257/15331-15334), which never land on a
+  // target. (Warlock Improved Shadow Bolt uses the distinct 17794-17800.) M7-confirmed:
+  // 15258 appeared 72× player-sourced in the Gruul E2E; 15334 read 0%.
   { className: "Priest", key: "shadow-weaving", name: "Shadow Weaving", measure: "enemy-debuff-uptime",
-    spellIds: [15334], verified: true },
+    spellIds: [15258], verified: true },
   { className: "Priest", key: "inner-fire", name: "Inner Fire", measure: "self-buff-uptime",
     spellIds: [588, 7128, 602, 1006, 10951, 10952, 25431], verified: true },
 

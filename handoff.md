@@ -50,15 +50,28 @@ webapp. The two xlsx files in the repo root are the read-only functional spec
     CSV: **Cave In (36240)** + **Shatter (33671)** are the avoidable Gruul mechanics (the rest are
     tank/targeted/self-inflicted: Hurtful Strike, Arcing Smash, Greater Fireball, Death Coil, Seal of
     Blood, Sapper Charges, Dark Rune…). Added both `verified:true`.
-  - ✅ **`enemyDebuffs` root-caused + FIXED (fetch layer).** Run-2's `[enemyDebuffs]` breakdown was
-    decisive: of 797 raw events, **719 *targeted players* and only 4 were player→enemy** (1 apply) —
-    so normalize was *correct* to produce 1 interval; the bug was the fetch returning debuffs **on
-    friendlies**. WCL's `events(dataType: Debuffs)` defaults to `hostilityType: Friendlies`; we now
-    pass **`hostilityType: Enemies`** (debuffs on enemy units, sourced by players). Added an optional
-    `hostilityType` to `EVENTS_QUERY`/`fetchAllEvents` (defaults null→Friendlies for casts/damage/
-    interrupts/deaths, which were already correct) + a `wcl.test.ts` assertion. **A confirming
-    harness re-run is the only remaining validation** (expect class-debuff uptimes to populate;
-    Sunder/Faerie Fire/Curses should now be non-zero).
+  - ✅ **`enemyDebuffs` root-caused, FIXED (fetch layer), and CONFIRMED.** Run-2's breakdown was
+    decisive: of 797 raw events, 719 *targeted players* and only 4 were player→enemy — normalize was
+    *correct*; the fetch was returning debuffs **on friendlies**. WCL's `events(dataType: Debuffs)`
+    defaults to `hostilityType: Friendlies`; we now pass **`hostilityType: Enemies`** (added an
+    optional `hostilityType` to `EVENTS_QUERY`/`fetchAllEvents` — null→Friendlies default keeps
+    casts/damage/interrupts/deaths correct) + a `wcl.test.ts` assertion. **Run-3 confirmed:** 989
+    player→enemy debuffs → **274 intervals**, and 11 curated debuffs now show real uptimes (Curse of
+    Recklessness 94%, JoC 93%, Misery 87%, CoE 74%, Faerie Fire 69%, Expose Armor 57%, JoW 47%,
+    Flame Shock 37%, Feral FF 15%, Hunter's Mark 9%, Sunder 6%). Real player→enemy ids include
+    **27159 (JoC) and 27164 (JoW)** — re-confirming the M7 JoC id fix.
+  - ✅ **Shadow Weaving id corrected (15334 → 15258).** Run-3 showed Shadow Weaving at 0% despite a
+    shadow priest present (Mind Flay observed). Root cause: `15334` is a *talent rank* (self-aura,
+    never lands on enemies); the applied enemy debuff is **"Shadow Vulnerability" `15258`** (distinct
+    from warlock ISB `17794-17800`), which appeared 72× player-sourced. Fixed + `verified:true`.
+  - **The still-zero curated debuffs are legitimate comp/spec zeros, not id bugs** (DB-confirmed ids):
+    Curse of Shadow (warlocks ran CoE + CoRecklessness), Demoralizing Shout (DPS warriors), Inner
+    Fire / Molten Armor (self-buffs, spec-dependent), Winter's Chill / Improved Scorch (mage spec),
+    Expose Weakness (no survival hunter). No action needed.
+  - **M7 verification gate essentially CLOSED** for M5b shapes (Debuffs/absorbs validated, class-row
+    uptimes live, ids confirmed). Remaining tuning (non-blocking): tank under-detection
+    (run-1/3 inconclusive — warriors plausibly DPS here), M4 E2E (npcKills/shadow-resi/timeline),
+    melee-activity inflation.
   - ⏳ Tank under-detection: run-1 showed `Warrior:{physical:2}` but this raid's tanks were a feral
     druid + prot pala (2 warriors plausibly DPS), so inconclusive — revisit with a clearer report.
 - **M6 (Discord webhook + dark mode): DONE (code) on `main`. 277 tests pass** — core 130,
