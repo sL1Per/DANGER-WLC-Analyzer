@@ -504,6 +504,73 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 .class-ability-list li { padding: 0 0.4rem; border-radius: 3px; font-size: 0.85em; }
 .class-ability-list .badge { font-size: 0.75em; opacity: 0.7; }
 
+/* ---------------------------------------------- RPB redesign (M8) */
+
+/* neutral heatmap cell: no value judgment, plain surface */
+tr td.sev-neutral { background: transparent; color: var(--text); font-weight: normal; }
+
+/* class band heading above each per-class table */
+.class-group { margin-top: 14px; }
+.class-band {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 4px 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: var(--radius-control);
+  border-left: 4px solid var(--class-color, var(--border));
+  background: color-mix(in srgb, var(--class-color, transparent) 14%, var(--surface-sunken));
+}
+
+.class-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--class-color, var(--text-subtle));
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  flex: none;
+}
+
+.player-cell { border-left: 3px solid var(--class-color, transparent); }
+.player-cell .class-dot { margin-right: 6px; vertical-align: middle; }
+
+/* cards view */
+.cardgrid { display: flex; flex-wrap: wrap; gap: 12px; }
+.pcard {
+  flex: 1 1 260px;
+  max-width: 340px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--class-color, var(--border));
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  padding: 12px 14px;
+}
+.pcard-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.pcard-name { font-weight: 600; }
+.pcard-class { color: var(--text-subtle); font-size: 0.82em; }
+.pcard-head select { margin-left: auto; }
+.pcard-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; padding: 0; }
+.pcard-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin: 0; }
+.pcard-metrics div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85em; }
+.pcard-metrics dt { color: var(--text-muted); }
+.pcard-metrics dd { margin: 0; font-weight: 550; }
+.pcard-abilities { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 3px 6px; }
+.pcard-abilities li { padding: 0 5px; border-radius: 3px; font-size: 0.8em; }
+.pcard-abilities li.sev-major { background: var(--danger-bg); color: var(--danger); }
+.pcard-abilities li.sev-moderate { background: var(--warn-bg); color: var(--warn); }
+.pcard-abilities li.sev-minor, .pcard-abilities li.sev-ok { background: var(--positive-bg); color: var(--positive); }
+
 /* ----------------------------------------------------------- responsive */
 
 @media (max-width: 720px) {
