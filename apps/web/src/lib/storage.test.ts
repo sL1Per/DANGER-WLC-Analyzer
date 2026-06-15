@@ -9,6 +9,8 @@ import {
   clearWebhookUrl,
   loadTheme,
   saveTheme,
+  loadRpbViewMode,
+  saveRpbViewMode,
 } from "./storage";
 
 beforeEach(() => localStorage.clear());
@@ -68,5 +70,19 @@ describe("theme storage", () => {
   it("ignores a junk stored value", () => {
     localStorage.setItem("wcl.theme", "neon");
     expect(loadTheme()).toBeNull();
+  });
+});
+
+describe("rpb view-mode storage", () => {
+  it("defaults to rows when nothing stored", () => {
+    expect(loadRpbViewMode()).toBe("rows");
+  });
+  it("round-trips a view mode", () => {
+    saveRpbViewMode("cards");
+    expect(loadRpbViewMode()).toBe("cards");
+  });
+  it("falls back to rows for a junk stored value", () => {
+    localStorage.setItem("wcl.rpbViewMode", "spreadsheet");
+    expect(loadRpbViewMode()).toBe("rows");
   });
 });
