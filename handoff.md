@@ -8,7 +8,24 @@ Rebuild of Shariva's CLA + RPB Google Sheets (WoW Classic TBC raid analysis) as 
 webapp. The two xlsx files in the repo root are the read-only functional spec
 (see `CLAUDE.md`). Design: `docs/superpowers/specs/2026-06-11-wcl-raid-analyzer-design.md`.
 
-## Current state (2026-06-15)
+## Current state (2026-06-17)
+
+- **M7 (E2E validation + tuning): CLOSED.** A final confirmation run of `e2e-m5b.ts` against
+  `Mcva2nh39kHzfjqC` (Gruul/Magtheridon, 25 players) re-validated every M7 fix on live data:
+  Debuffs all source-is-player (989/989 → 274 intervals, `hostilityType: Enemies` holds), absorbs
+  shape (15 events / 16,006), interrupt direction (source-is-player 2/2), all curated debuff ids
+  present player→enemy (incl. 27159 JoC / 27164 JoW / 15258 Shadow Weaving), Gruul avoidable ★ ids
+  fire (36240 Cave In, 33671 Shatter), all 13 expected class abilities at sane uptimes (7 zeros are
+  documented comp/spec zeros), role split healthy `{caster:10,healer:4,physical:9,tank:2}`, 0 NaN.
+  **No data/code fixes needed.** The lone open item — warrior tank under-detection (`Warrior:{physical:2}`)
+  — stays a **known limitation, not a bug**: this comp already has 2 real tanks (bear + prot pala), so
+  the 2 warriors are plausibly DPS and no heuristic is validatable here. Manual per-character role
+  override is the escape hatch. Revisit only if a report with a *known warrior main-tank* surfaces
+  (then tune a damage-taken-ratio signal, or add a shield-in-offhand signal — needs a shields-itemId
+  DB extraction). **M4 E2E (npcKills/shadow-resi/timeline + MH/BT/ZA npc-id correction) is deferred to
+  its own pass** — needs a speedrun report (user had none on hand); harness `apps/api/scripts/e2e-m4.ts`
+  is written + import-verified, ready to run `WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api
+  exec tsx scripts/e2e-m4.ts <speedrunCode> [secondCode]`.
 
 - **Roster fix (post-M7):** WCL `friendlyPlayers` can include people who were briefly
   raid-flagged but never actually raided — they showed up as extra player chips (often class
@@ -316,8 +333,11 @@ chosen **merge to main locally**. Plans live in `docs/superpowers/plans/`.
   (`[data-theme="dark"]` CSS-var override, OS-default-then-remembered toggle in the sidebar).
   See Current state for detail. *(Only these two — deploy/CORS moved to M10.)*
   Follow-up for M9: the webhook URL is user-supplied, client-side-validated only.
-- **M7 — E2E validation + tuning follow-ups: creds-free half DONE (on `main`); live-data half
-  queued** (see Current state for what landed). **Remaining (needs the user's creds + reports):**
+- **M7 — E2E validation + tuning follow-ups: CLOSED** (2026-06-17; see Current state). Final
+  `e2e-m5b.ts` run on `Mcva2nh39kHzfjqC` re-validated every assumed shape + curated id on live data
+  with no fixes needed. Warrior tank under-detection is now a documented known limitation (manual
+  override), not a blocker. **M4 E2E split out as a deferred pass** (needs a speedrun report; harness
+  `apps/api/scripts/e2e-m4.ts` is ready). Historical remaining-items list (now closed/deferred):
   - Run the harness once per representative report and read the new diagnostics:
     `! WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api exec tsx scripts/e2e-m5b.ts <code>`
     (a casters + SR-boss report, e.g. the old `C4Zm2Rcgq6Tb7Mxn`), plus `probe-damage.ts <code>` for
