@@ -156,6 +156,8 @@ export function createApp(deps: AppDeps = {
       let damageTakenTable: RawTableEntry[] = [];
       let enemyDebuffs: RawDebuffEvent[] = [];
       let absorbEvents: RawDamageEvent[] = [];
+      // undefined (not []) on purpose: normalize distinguishes "never fetched /
+      // pre-feature cache" (undefined) from "fetched, no ranked kills" ([]).
       let rankings: RawRankingEntry[] | undefined;
       if (bossFightIds.length > 0) {
         const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR] = await Promise.allSettled([
