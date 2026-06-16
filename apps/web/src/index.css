@@ -499,6 +499,40 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 
 /* ---------------------------------------------- RPB redesign (M8) */
 
+/* collapsible role section (native disclosure) */
+.role-section { margin: 18px 0; }
+.role-section > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none; /* drop the default triangle; we draw our own caret */
+  user-select: none;
+}
+.role-section > summary::-webkit-details-marker { display: none; }
+.role-section > summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--text-subtle);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transition: transform 0.15s ease;
+  flex: none;
+}
+.role-section[open] > summary::before { transform: rotate(90deg); }
+.role-section > summary > h3 { margin: 0; }
+.role-section > summary:hover > h3 { color: var(--primary); }
+.role-count {
+  font-size: 0.78em;
+  font-weight: 550;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0 8px;
+}
+
 /* neutral heatmap cell: no value judgment, plain surface */
 tr td.sev-neutral { background: transparent; color: var(--text); font-weight: normal; }
 

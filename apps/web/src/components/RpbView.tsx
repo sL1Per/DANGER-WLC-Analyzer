@@ -69,12 +69,15 @@ export function RpbView({ report }: { report: ReportData }) {
         if (group.length === 0) return null;
         const groups = groupByClass(group);
         return (
-          <section key={role}>
-            <h3 style={{ textTransform: "capitalize" }}>{role}</h3>
+          <details key={role} className="role-section" open>
+            <summary>
+              <h3 style={{ textTransform: "capitalize" }}>{role}</h3>
+              <span className="role-count">{group.length}</span>
+            </summary>
             {view === "rows"
               ? <RpbRowsView groups={groups} onRoleChange={onRoleChange} />
               : <RpbCardsView groups={groups} onRoleChange={onRoleChange} />}
-          </section>
+          </details>
         );
       })}
 

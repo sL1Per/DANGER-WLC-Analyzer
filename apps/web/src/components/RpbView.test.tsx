@@ -56,4 +56,18 @@ describe("RpbView", () => {
     const band = screen.getByRole("heading", { name: "Mage" });
     expect(band.getAttribute("style")).toContain("--class-color");
   });
+
+  it("renders each role section as a disclosure that is open by default and collapses", () => {
+    const { container } = render(<RpbView report={reportFixture} />);
+    const sections = container.querySelectorAll<HTMLDetailsElement>("details.role-section");
+    expect(sections.length).toBeGreaterThan(0);
+
+    const first = sections[0]!;
+    expect(first.open).toBe(true); // expanded by default
+    const summary = first.querySelector("summary")!;
+    fireEvent.click(summary);
+    expect(first.open).toBe(false); // collapses on click
+    fireEvent.click(summary);
+    expect(first.open).toBe(true); // and expands again
+  });
 });
