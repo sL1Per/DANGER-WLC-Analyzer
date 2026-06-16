@@ -8,6 +8,7 @@ const TOKEN_KEY = "wcl.token";
 const LAST_REPORT_KEY = "wcl.lastReportId";
 const WEBHOOK_KEY = "wcl.discordWebhook";
 const THEME_KEY = "wcl.theme";
+const RPB_VIEW_KEY = "wcl.rpbViewMode";
 
 export type Theme = "light" | "dark";
 
@@ -32,6 +33,15 @@ export function saveTheme(t: Theme): void {
 export function loadTheme(): Theme | null {
   const v = localStorage.getItem(THEME_KEY);
   return v === "light" || v === "dark" ? v : null;
+}
+
+export type RpbViewMode = "rows" | "cards";
+
+export function saveRpbViewMode(m: RpbViewMode): void {
+  localStorage.setItem(RPB_VIEW_KEY, m);
+}
+export function loadRpbViewMode(): RpbViewMode {
+  return localStorage.getItem(RPB_VIEW_KEY) === "cards" ? "cards" : "rows";
 }
 
 export function saveLastReportId(id: string): void {

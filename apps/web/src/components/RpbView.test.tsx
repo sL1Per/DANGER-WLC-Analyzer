@@ -1,15 +1,18 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { RpbView } from "./RpbView";
 import { reportFixture } from "@wcl/core";
 
 describe("RpbView", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(cleanup);
 
-  it("renders role groups and player rows", () => {
+  it("renders players grouped under their class band", () => {
     render(<RpbView report={reportFixture} />);
     expect(screen.getByText("Playerone")).toBeInTheDocument();
     expect(screen.getByText("Playertwo")).toBeInTheDocument();
+    // class bands present (Mage for Playerone, Warrior for Playertwo)
+    expect(screen.getByRole("heading", { name: "Mage" })).toBeInTheDocument();
   });
 
   it("shows a refresh notice for a pre-M5 report", () => {
@@ -26,8 +29,31 @@ describe("RpbView", () => {
     expect(JSON.parse(localStorage.getItem("wcl.roles")!)).toMatchObject({ Playerone: "tank" });
   });
 
-  it("renders class-specific ability rows", () => {
+  it("renders class-specific ability metrics", () => {
     render(<RpbView report={reportFixture} />);
     expect(screen.getAllByText(/Winter's Chill/).length).toBeGreaterThan(0);
+  });
+
+  it("toggles to cards view and persists the choice", () => {
+    render(<RpbView report={reportFixture} />);
+    expect(document.querySelector(".cardgrid")).toBeNull(); // rows by default
+    fireEvent.click(screen.getByLabelText(/cards view/i));
+    expect(document.querySelector(".cardgrid")).not.toBeNull();
+    expect(localStorage.getItem("wcl.rpbViewMode")).toBe("cards");
+  });
+
+  it("starts in cards view when that was persisted", () => {
+    localStorage.setItem("wcl.rpbViewMode", "cards");
+    render(<RpbView report={reportFixture} />);
+    expect(document.querySelector(".cardgrid")).not.toBeNull();
+  });
+
+  it("applies a class color to a player marker", () => {
+    const { container } = render(<RpbView report={reportFixture} />);
+    const dot = container.querySelector(".class-dot") as HTMLElement | null;
+    expect(dot).not.toBeNull();
+    // the --class-color custom property is set on the band/cell via inline style
+    const band = screen.getByRole("heading", { name: "Mage" });
+    expect(band.getAttribute("style")).toContain("--class-color");
   });
 });
