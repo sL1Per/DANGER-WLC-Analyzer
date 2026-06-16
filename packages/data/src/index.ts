@@ -27,3 +27,4 @@ export * from "./shadowResistance";
 export * from "./rpb";
 export * from "./classAbilities";
 export * from "./avoidableAbilities";
+export * from "./rpbConsumables";

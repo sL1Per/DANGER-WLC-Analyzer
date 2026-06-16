@@ -15,4 +15,5 @@ export * from "./roles";
 export * from "./activity";
 export * from "./classMetrics";
 export * from "./rpb";
+export * from "./rpbConsumables";
 export { reportFixture } from "./fixtures/report.fixture";

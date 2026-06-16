@@ -9,6 +9,7 @@ const LAST_REPORT_KEY = "wcl.lastReportId";
 const WEBHOOK_KEY = "wcl.discordWebhook";
 const THEME_KEY = "wcl.theme";
 const RPB_VIEW_KEY = "wcl.rpbViewMode";
+const RPB_TAB_KEY = "wcl.rpbTab";
 
 export type Theme = "light" | "dark";
 
@@ -42,6 +43,15 @@ export function saveRpbViewMode(m: RpbViewMode): void {
 }
 export function loadRpbViewMode(): RpbViewMode {
   return localStorage.getItem(RPB_VIEW_KEY) === "cards" ? "cards" : "rows";
+}
+
+export type RpbTab = "general" | "roles";
+
+export function saveRpbTab(t: RpbTab): void {
+  localStorage.setItem(RPB_TAB_KEY, t);
+}
+export function loadRpbTab(): RpbTab {
+  return localStorage.getItem(RPB_TAB_KEY) === "roles" ? "roles" : "general";
 }
 
 export function saveLastReportId(id: string): void {

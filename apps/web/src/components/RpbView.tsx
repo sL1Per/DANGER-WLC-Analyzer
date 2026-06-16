@@ -1,35 +1,92 @@
 import { useMemo, useState } from "react";
-import { rpb, type Role, type ReportData } from "@wcl/core";
+import { rpb, rpbConsumables, type Role, type ReportData } from "@wcl/core";
 import {
   spellCastTimes, roleSignals, casterClasses, hasteBuffs, engineeringDamageIds,
   oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
   classAbilities, avoidableAbilityIds,
+  rpbConsumables as rpbConsumablesData,
 } from "@wcl/data";
 import { SeverityLegend } from "./SeverityLegend";
 import { RpbRowsView } from "./RpbRowsView";
 import { RpbCardsView } from "./RpbCardsView";
+import { ConsumableMatrix } from "./ConsumableMatrix";
 import { groupByClass } from "../lib/rpbGrouping";
 import {
   loadRoleOverrides, saveRoleOverride,
   loadRpbViewMode, saveRpbViewMode, type RpbViewMode,
+  loadRpbTab, saveRpbTab, type RpbTab,
 } from "../lib/storage";
 
 const ROLES: Role[] = ["tank", "healer", "caster", "physical"];
+const REFRESH_NOTICE = "This report was cached before RPB support — refresh it from WCL (requires credentials).";
 
 export function RpbView({ report }: { report: ReportData }) {
   const [, force] = useState(0);
+  const [tab, setTab] = useState<RpbTab>(() => loadRpbTab());
   const [view, setView] = useState<RpbViewMode>(() => loadRpbViewMode());
   const overrides = loadRoleOverrides();
+
   const result = useMemo(() => rpb(report, {
     roles: { signals: roleSignals, casterClasses },
     activity: { castTimes: spellCastTimes, hasteBuffs, aoeWindowMs: 500 },
     engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
     classAbilities, avoidableAbilityIds,
   }), [report]);
+  const consumables = useMemo(() => rpbConsumables(report, rpbConsumablesData), [report]);
 
-  if (result === null) {
-    return <p>This report was cached before RPB support — refresh it from WCL (requires credentials).</p>;
-  }
+  const selectTab = (t: RpbTab) => { setTab(t); saveRpbTab(t); };
+
+  return (
+    <div>
+      <div className="segmented" role="group" aria-label="RPB section">
+        {(["general", "roles"] as const).map((t) => (
+          <label key={t} className={tab === t ? "active" : ""}>
+            <input
+              type="radio"
+              name="rpb-tab"
+              aria-label={`${t} tab`}
+              checked={tab === t}
+              onChange={() => selectTab(t)}
+            />
+            {t}
+          </label>
+        ))}
+      </div>
+
+      {tab === "general"
+        ? <GeneralTab consumables={consumables} />
+        : <RolesTab
+            result={result}
+            overrides={overrides}
+            view={view}
+            setView={setView}
+            force={force}
+          />}
+    </div>
+  );
+}
+
+function GeneralTab({ consumables }: { consumables: ReturnType<typeof rpbConsumables> }) {
+  if (consumables === null) return <p>{REFRESH_NOTICE}</p>;
+  const catalog = rpbConsumablesData.map((c) => ({ key: c.key, name: c.name }));
+  return (
+    <div>
+      <p><small>Per-player consumable use counts on boss fights (Kalecgos excluded). Each row is a relative heatmap across the raid: green = top user, red = least. An all-zero row (nobody used it) stays neutral.</small></p>
+      <ConsumableMatrix rows={consumables.rows} catalog={catalog} />
+    </div>
+  );
+}
+
+function RolesTab({
+  result, overrides, view, setView, force,
+}: {
+  result: ReturnType<typeof rpb>;
+  overrides: Record<string, Role>;
+  view: RpbViewMode;
+  setView: (m: RpbViewMode) => void;
+  force: (fn: (n: number) => number) => void;
+}) {
+  if (result === null) return <p>{REFRESH_NOTICE}</p>;
 
   // apply per-character overrides on top of auto-detected roles
   const rows = result.rows.map((r) => ({ ...r, role: overrides[r.playerName] ?? r.role }));

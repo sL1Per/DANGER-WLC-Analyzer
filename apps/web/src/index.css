@@ -564,6 +564,24 @@ tr td.sev-neutral { background: transparent; color: var(--text); font-weight: no
 .player-cell { border-left: 3px solid var(--class-color, transparent); }
 .player-cell .class-dot { margin-right: 6px; vertical-align: middle; }
 
+/* consumable counts matrix (RPB General tab): consumables down, players across */
+.consumable-matrix { border-collapse: collapse; }
+.consumable-matrix th.player-col {
+  border-bottom: 3px solid var(--class-color, var(--border));
+  white-space: nowrap;
+  font-weight: 600;
+}
+.consumable-matrix th.player-col .class-dot { margin-right: 6px; vertical-align: middle; }
+.consumable-matrix th.consumable-label {
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 550;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
+.consumable-matrix td { text-align: center; font-variant-numeric: tabular-nums; }
+
 /* cards view */
 .cardgrid { display: flex; flex-wrap: wrap; gap: 12px; }
 .pcard {

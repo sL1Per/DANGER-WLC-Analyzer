@@ -36,6 +36,20 @@ export function activeHeat(pct: number): Heat {
   return "bad";
 }
 
+/** Relative (per-row) heat: min-max scale a value across a set of peers. Used by
+ *  the consumable matrix where there is no absolute "good" count — only relative
+ *  to the raid. Non-users (the row min) land at the red end, top users (the row
+ *  max) at the green end. A row where every value is 0 is neutral (no judgment);
+ *  an all-equal non-zero row has no laggards, so everyone is good. */
+export function relativeHeat(value: number, min: number, max: number): Heat {
+  if (max <= 0) return "neutral"; // whole row is zero
+  if (max === min) return "good"; // all equal & non-zero
+  const t = (value - min) / (max - min); // 0..1
+  if (t >= 0.67) return "good";
+  if (t >= 0.34) return "watch";
+  return "bad";
+}
+
 /** Reuse a class-ability row's already-computed core severity. */
 export function severityHeat(s: RpbSeverity): Heat {
   switch (s) {

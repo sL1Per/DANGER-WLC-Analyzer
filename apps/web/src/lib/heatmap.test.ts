@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   heatClass, deathsHeat, friendlyFireHeat, uptimeHeat, activeHeat, severityHeat,
+  relativeHeat,
 } from "./heatmap";
 
 describe("heatmap", () => {
@@ -31,6 +32,17 @@ describe("heatmap", () => {
     expect(severityHeat("moderate")).toBe("watch");
     expect(severityHeat("minor")).toBe("good");
     expect(severityHeat("ok")).toBe("good");
+  });
+  it("scales a value relative to the row min/max: min→bad, max→good, middle→watch", () => {
+    expect(relativeHeat(0, 0, 5)).toBe("bad");   // non-user, bottom of the row
+    expect(relativeHeat(5, 0, 5)).toBe("good");  // top user
+    expect(relativeHeat(2, 0, 5)).toBe("watch"); // mid-row
+  });
+  it("treats an all-zero row as neutral (no value judgment)", () => {
+    expect(relativeHeat(0, 0, 0)).toBe("neutral");
+  });
+  it("treats an all-equal non-zero row as good (no laggards)", () => {
+    expect(relativeHeat(3, 3, 3)).toBe("good");
   });
   it("maps heat buckets to sev css classes", () => {
     expect(heatClass("good")).toBe("sev-minor");
