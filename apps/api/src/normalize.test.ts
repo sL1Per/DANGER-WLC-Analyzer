@@ -445,4 +445,23 @@ describe("normalizeReport — rankings", () => {
     const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {});
     expect(data.rankings).toBeUndefined();
   });
+
+  it("keeps rankings as [] when fetched but empty (no ranked kills)", () => {
+    // [] (fetched, empty) must stay [] — distinct from undefined (old cache) so
+    // the UI shows "no ranked kills" rather than the refresh notice.
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, { rankings: [] });
+    expect(data.rankings).toEqual([]);
+  });
+
+  it("drops entries missing fightID or encounter id", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [
+        { encounter: { name: "No id" }, fightID: 3, roles: { dps: { characters: [] } } },
+        { encounter: { id: 623, name: "Hydross the Unstable" }, roles: { dps: { characters: [] } } },
+        { encounter: { id: 623, name: "Hydross the Unstable" }, fightID: 3, roles: { dps: { characters: [] } } },
+      ],
+    });
+    expect(data.rankings).toHaveLength(1);
+    expect(data.rankings![0]!.fightID).toBe(3);
+  });
 });
