@@ -79,6 +79,20 @@ export const reportFixture: ReportData = {
   absorbs: [
     { fightId: 3, playerId: 1, spellId: 17252, amount: 1200 },
   ],
+  rankings: [
+    {
+      fightID: 3, encounterId: 623, encounterName: "Hydross the Unstable",
+      dps: [{ name: "Playerone", class: "Mage", spec: "Fire", rankPercent: 95, bracketPercent: 88 }],
+      healers: [{ name: "Healerone", class: "Priest", spec: "Holy", rankPercent: 72, bracketPercent: 70 }],
+      tanks: [{ name: "Playertwo", class: "Warrior", spec: "Protection", rankPercent: 40, bracketPercent: 55 }],
+    },
+    {
+      fightID: 5, encounterId: 624, encounterName: "The Lurker Below",
+      dps: [{ name: "Playerone", class: "Mage", spec: "Fire", rankPercent: 99, bracketPercent: 90 }],
+      healers: [{ name: "Healerone", class: "Priest", spec: "Holy", rankPercent: 60, bracketPercent: 64 }],
+      tanks: [],
+    },
+  ],
   // names only — WCL's gameData exposes no quality; gem quality comes from a static
   // table passed via GearIssueConfig.gemQuality (see testConfig in gearIssues.test.ts).
   itemMeta: {

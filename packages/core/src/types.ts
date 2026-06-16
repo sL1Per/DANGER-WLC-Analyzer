@@ -28,6 +28,9 @@ export interface ReportData {
   absorbs?: AbsorbEvent[];
   /** enemy-debuff intervals sourced by a player (M5b+); undefined = cached before M5b */
   enemyDebuffs?: EnemyDebuffInterval[];
+  /** WCL parse-percentile rankings per ranked boss, grouped by WCL role
+   *  (rankings feature); undefined = report cached before this feature. */
+  rankings?: ReportRanking[];
   /** itemId/gemId → name+quality, for every id appearing in gear */
   itemMeta: Record<string, ItemMeta>;
 }
@@ -166,3 +169,25 @@ export interface PlayerDamageEvent {
 
 /** An absorb credited to a player. */
 export interface AbsorbEvent { fightId: number; playerId: number; spellId: number; amount: number; }
+
+/** One character's parse in a boss ranking (from WCL's rankings JSON). */
+export interface RankingCharacter {
+  name: string;
+  /** WoW class string, e.g. "Mage" (matches Player.class) */
+  class: string;
+  spec?: string;
+  /** damage/healing parse percentile, 0–100 */
+  rankPercent: number;
+  /** item-level (bracket) parse percentile, 0–100 */
+  bracketPercent: number;
+}
+
+/** WCL parse rankings for one ranked (killed) boss fight, grouped by WCL role. */
+export interface ReportRanking {
+  fightID: number;
+  encounterId: number;
+  encounterName: string;
+  tanks: RankingCharacter[];
+  healers: RankingCharacter[];
+  dps: RankingCharacter[];
+}
