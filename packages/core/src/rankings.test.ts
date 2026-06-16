@@ -25,8 +25,8 @@ describe("buildRankingsGrid", () => {
     const grid = buildRankingsGrid(reportFixture.rankings)!;
     const dps = grid.sections.find((s) => s.role === "dps")!;
     const playerone = dps.players.find((p) => p.name === "Playerone")!;
-    expect(playerone.perBoss[3].rankPercent).toBe(95);
-    expect(playerone.perBoss[5].rankPercent).toBe(99);
+    expect(playerone.perBoss[3]!.rankPercent).toBe(95);
+    expect(playerone.perBoss[5]!.rankPercent).toBe(99);
     expect(playerone.overall).toBe(97); // (95 + 99) / 2
   });
 
@@ -34,7 +34,7 @@ describe("buildRankingsGrid", () => {
     const grid = buildRankingsGrid(reportFixture.rankings)!;
     const tanks = grid.sections.find((s) => s.role === "tanks")!;
     const tank = tanks.players.find((p) => p.name === "Playertwo")!;
-    expect(tank.perBoss[3].rankPercent).toBe(40);
+    expect(tank.perBoss[3]!.rankPercent).toBe(40);
     expect(tank.perBoss[5]).toBeUndefined(); // no Lurker tank entry
   });
 
@@ -50,6 +50,6 @@ describe("buildRankingsGrid", () => {
       },
     ];
     const grid = buildRankingsGrid(rankings)!;
-    expect(grid.sections[0].players.map((p) => p.name)).toEqual(["High", "Low"]);
+    expect(grid.sections[0]!.players.map((p) => p.name)).toEqual(["High", "Low"]);
   });
 });
