@@ -25,6 +25,15 @@
   --positive: #1f7a3e;
   --positive-bg: #e7f6ee;
 
+  /* parse percentile bands (WCL 7-tier scale) */
+  --parse-common: #6b7280;
+  --parse-uncommon: #1a8f3c;
+  --parse-rare: #1f6fd6;
+  --parse-epic: #8b2fd6;
+  --parse-legendary: #d96b00;
+  --parse-astounding: #d6479b;
+  --parse-artifact: #b8932f;
+
   /* subtle row tint (e.g. nested class rows) */
   --row-tint: rgba(0, 0, 0, 0.02);
 
@@ -66,6 +75,15 @@
   --warn-bg: #322a13;
   --positive: #5fcf86;
   --positive-bg: #14301e;
+
+  /* parse percentile bands (WCL 7-tier scale, brightened for dark surfaces) */
+  --parse-common: #9d9d9d;
+  --parse-uncommon: #1eff00;
+  --parse-rare: #3b9bff;
+  --parse-epic: #c77dff;
+  --parse-legendary: #ff8000;
+  --parse-astounding: #ff79c6;
+  --parse-artifact: #e5cc80;
 
   /* subtle row tint */
   --row-tint: rgba(255, 255, 255, 0.04);

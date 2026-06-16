@@ -416,3 +416,52 @@ describe("normalizeReport — enemy debuffs + absorbs (M5b)", () => {
     expect(data.absorbs).toEqual([{ fightId: F, playerId: 1, spellId: 29166, amount: 1200 }]);
   });
 });
+
+describe("normalizeReport — rankings", () => {
+  const rankRaw = {
+    title: "T5", startTime: 0, endTime: 1000, zone: { name: "Serpentshrine Cavern" },
+    fights: [{ id: 3, name: "Hydross the Unstable", encounterID: 623, kill: true, startTime: 0, endTime: 1000, friendlyPlayers: [1] }],
+    masterData: { actors: [{ id: 1, name: "Dpsone", subType: "Mage" }] },
+  } as unknown as RawReport;
+
+  it("maps raw rankings into ReportData.rankings (class from class|type, rounded)", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [{
+        encounter: { id: 623, name: "Hydross the Unstable" },
+        fightID: 3,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: { characters: [{ name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: 95.8, bracketPercent: 88.4 }] },
+        },
+      }],
+    });
+    expect(data.rankings).toHaveLength(1);
+    expect(data.rankings![0]!.encounterName).toBe("Hydross the Unstable");
+    expect(data.rankings![0]!.dps[0]).toEqual({ name: "Dpsone", class: "Mage", spec: "Fire", rankPercent: 96, bracketPercent: 88 });
+  });
+
+  it("leaves rankings undefined when not provided", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {});
+    expect(data.rankings).toBeUndefined();
+  });
+
+  it("keeps rankings as [] when fetched but empty (no ranked kills)", () => {
+    // [] (fetched, empty) must stay [] — distinct from undefined (old cache) so
+    // the UI shows "no ranked kills" rather than the refresh notice.
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, { rankings: [] });
+    expect(data.rankings).toEqual([]);
+  });
+
+  it("drops entries missing fightID or encounter id", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [
+        { encounter: { name: "No id" }, fightID: 3, roles: { dps: { characters: [] } } },
+        { encounter: { id: 623, name: "Hydross the Unstable" }, roles: { dps: { characters: [] } } },
+        { encounter: { id: 623, name: "Hydross the Unstable" }, fightID: 3, roles: { dps: { characters: [] } } },
+      ],
+    });
+    expect(data.rankings).toHaveLength(1);
+    expect(data.rankings![0]!.fightID).toBe(3);
+  });
+});

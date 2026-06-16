@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { loadCredentials } from "../lib/storage";
 import { useReport } from "../lib/useReport";
-import { ReportSummary } from "../components/ReportSummary";
 import { GearListingView } from "../components/GearListingView";
 import { GearIssuesView } from "../components/GearIssuesView";
 import { ConsumablesView } from "../components/ConsumablesView";
@@ -15,7 +14,7 @@ import { ShareToDiscord } from "../components/ShareToDiscord";
 export function ReportPage() {
   const { reportId = "" } = useParams();
   const { result, error, loading, reload } = useReport(reportId);
-  const [tab, setTab] = useState<"summary" | "gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("summary");
+  const [tab, setTab] = useState<"gear issues" | "gear listing" | "buff consumables" | "drums" | "validate" | "shadow resi" | "fight timeline">("gear issues");
 
   if (loading) return <p>Loading report…</p>;
   if (error) {
@@ -35,7 +34,7 @@ export function ReportPage() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <nav className="segmented">
-          {(["summary", "gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
+          {(["gear issues", "gear listing", "buff consumables", "drums", "validate", "shadow resi", "fight timeline"] as const).map((t) => (
             <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>{t}</button>
           ))}
         </nav>
@@ -53,7 +52,6 @@ export function ReportPage() {
         </div>
       </div>
       <div className="card">
-        {tab === "summary" && <ReportSummary report={result.data} cachedAt={result.cachedAt} />}
         {tab === "gear issues" && <GearIssuesView key={result.data.reportId} report={result.data} />}
         {tab === "gear listing" && <GearListingView key={result.data.reportId} report={result.data} />}
         {tab === "buff consumables" && <ConsumablesView key={result.data.reportId} report={result.data} />}

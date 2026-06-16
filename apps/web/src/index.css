@@ -536,6 +536,15 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 /* neutral heatmap cell: no value judgment, plain surface */
 tr td.sev-neutral { background: transparent; color: var(--text); font-weight: normal; }
 
+/* WCL parse-percentile color bands (separate from sev-* — no background tint) */
+tr td.parse-common { color: var(--parse-common); font-weight: 600; }
+tr td.parse-uncommon { color: var(--parse-uncommon); font-weight: 600; }
+tr td.parse-rare { color: var(--parse-rare); font-weight: 600; }
+tr td.parse-epic { color: var(--parse-epic); font-weight: 600; }
+tr td.parse-legendary { color: var(--parse-legendary); font-weight: 600; }
+tr td.parse-astounding { color: var(--parse-astounding); font-weight: 600; }
+tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
+
 /* class band heading above each per-class table */
 .class-group { margin-top: 14px; }
 .class-band {

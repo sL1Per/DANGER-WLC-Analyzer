@@ -1,7 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { loadCredentials } from "../lib/storage";
 import { useReport } from "../lib/useReport";
-import { ReportSummary } from "../components/ReportSummary";
 import { RpbView } from "../components/RpbView";
 import { ShareToDiscord } from "../components/ShareToDiscord";
 
@@ -39,9 +38,6 @@ export function RpbPage() {
             </button>
           )}
         </div>
-      </div>
-      <div className="card">
-        <ReportSummary report={result.data} cachedAt={result.cachedAt} />
       </div>
       <div className="card">
         <RpbView key={result.data.reportId} report={result.data} />

@@ -12,6 +12,8 @@ import {
   type PlayerDamageEvent,
   type EnemyDebuffInterval,
   type AbsorbEvent,
+  type ReportRanking,
+  type RankingCharacter,
 } from "@wcl/core";
 import {
   WclError,
@@ -24,6 +26,8 @@ import {
   type RawDamageEvent,
   type RawTableEntry,
   type RawDebuffEvent,
+  type RawRankingEntry,
+  type RawRankingCharacter,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -48,6 +52,8 @@ export interface NormalizeEventInputs {
   enemyDebuffs?: RawDebuffEvent[];
   /** absorb-bearing damage-taken events on players (M5b) */
   absorbEvents?: RawDamageEvent[];
+  /** raw WCL rankings entries (per boss, grouped by role); undefined = not fetched */
+  rankings?: RawRankingEntry[];
 }
 
 function buildNpcKills(
@@ -161,6 +167,26 @@ function buildRpb(
   };
 }
 
+function buildRankings(entries: RawRankingEntry[]): ReportRanking[] {
+  const mapChar = (c: RawRankingCharacter): RankingCharacter => ({
+    name: c.name,
+    class: c.class ?? c.type ?? "Unknown",
+    spec: c.spec,
+    rankPercent: Math.round(c.rankPercent ?? 0),
+    bracketPercent: Math.round(c.bracketPercent ?? 0),
+  });
+  return entries
+    .filter((e) => e.fightID != null && e.encounter?.id != null)
+    .map((e) => ({
+      fightID: e.fightID!,
+      encounterId: e.encounter!.id!,
+      encounterName: e.encounter!.name ?? `Boss ${e.encounter!.id}`,
+      tanks: (e.roles?.tanks?.characters ?? []).map(mapChar),
+      healers: (e.roles?.healers?.characters ?? []).map(mapChar),
+      dps: (e.roles?.dps?.characters ?? []).map(mapChar),
+    }));
+}
+
 export function normalizeReport(
   reportId: string,
   raw: RawReport,
@@ -236,6 +262,7 @@ export function normalizeReport(
       ? buildNpcKills(events.deaths, raw.masterData!.npcs ?? [], fights)
       : {}),
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
+    rankings: events.rankings ? buildRankings(events.rankings) : undefined,
     itemMeta,
   };
 }

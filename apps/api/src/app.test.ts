@@ -20,6 +20,7 @@ const testDeps: Parameters<typeof createApp>[0] = {
   fetchTable: vi.fn().mockResolvedValue([]),
   fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
   fetchAbsorbs: vi.fn().mockResolvedValue([]),
+  fetchRankings: vi.fn().mockResolvedValue([]),
   cacheTtlMs: 60_000,
 };
 
@@ -44,6 +45,7 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
     fetchTable: vi.fn().mockResolvedValue([]),
     fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
     fetchAbsorbs: vi.fn().mockResolvedValue([]),
+    fetchRankings: vi.fn().mockResolvedValue([]),
     cacheTtlMs: 60_000,
     ...overrides,
   });
@@ -296,5 +298,44 @@ describe("GET /api/report/:id — enemy debuffs + absorbs (M5b)", () => {
     const body = await res.json();
     expect(body.data.enemyDebuffs).toBeDefined();
     expect(body.data.absorbs).toBeDefined();
+  });
+});
+
+describe("GET /api/report/:id — rankings", () => {
+  it("includes rankings in the normalized report", async () => {
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue({
+        title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
+        fights: [{ id: 7, name: "Attumen the Huntsman", encounterID: 16151, kill: true, startTime: 0, endTime: 1000, friendlyPlayers: [1] }],
+        masterData: { actors: [{ id: 1, name: "Dpsone", subType: "Mage" }], npcs: [] },
+      } satisfies RawReport),
+      fetchRankings: vi.fn().mockResolvedValue([{
+        encounter: { id: 16151, name: "Attumen the Huntsman" },
+        fightID: 7,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: { characters: [{ name: "Dpsone", class: "Mage", rankPercent: 95, bracketPercent: 88 }] },
+        },
+      }]),
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
+      headers: { Authorization: "Bearer tok" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.rankings[0].dps[0].name).toBe("Dpsone");
+  });
+
+  it("yields rankings: [] (not undefined) for a freshly-fetched boss-less report", async () => {
+    // The default raw report has no boss fights → rankings is never fetched, but
+    // a fresh fetch must still produce [] ("no ranked kills"), not undefined
+    // (which is reserved for pre-feature caches → the refresh notice).
+    const res = await makeApp().request("/api/report/a1B2c3D4e5F6g7H8", {
+      headers: { Authorization: "Bearer tok" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.rankings).toEqual([]);
   });
 });
