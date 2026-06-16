@@ -235,3 +235,35 @@ describe("fetchEnemyDebuffs", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("fetchRankings", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("returns the rankings data array from the JSON field", async () => {
+    const entry = {
+      encounter: { id: 623, name: "Hydross the Unstable" },
+      fightID: 3,
+      roles: {
+        tanks: { characters: [{ name: "Tankone", class: "Warrior", spec: "Protection", rankPercent: 64.2, bracketPercent: 70.1 }] },
+        healers: { characters: [] },
+        dps: { characters: [{ name: "Dpsone", class: "Mage", spec: "Fire", rankPercent: 95.8, bracketPercent: 88.4 }] },
+      },
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { reportData: { report: { rankings: { data: [entry] } } } } })),
+    );
+    const { fetchRankings } = await import("./wcl");
+    const result = await fetchRankings("abc", "tok");
+    expect(result).toHaveLength(1);
+    expect(result[0]!.fightID).toBe(3);
+    expect(result[0]!.roles?.dps?.characters?.[0]!.name).toBe("Dpsone");
+  });
+
+  it("returns [] when rankings is null", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { reportData: { report: { rankings: null } } } })),
+    );
+    const { fetchRankings } = await import("./wcl");
+    expect(await fetchRankings("abc", "tok")).toEqual([]);
+  });
+});

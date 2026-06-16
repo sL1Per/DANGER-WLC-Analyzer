@@ -284,6 +284,43 @@ export async function fetchTable(
   return data.reportData.report.table?.data?.entries ?? [];
 }
 
+const RANKINGS_QUERY = `
+query Rankings($code: String!) {
+  reportData {
+    report(code: $code) {
+      rankings
+    }
+  }
+}`;
+
+export interface RawRankingCharacter {
+  name: string;
+  /** WCL may key the class as `class` or `type` depending on the field set */
+  class?: string;
+  type?: string;
+  spec?: string;
+  rankPercent?: number;
+  bracketPercent?: number;
+}
+
+export interface RawRankingEntry {
+  encounter?: { id?: number; name?: string };
+  fightID?: number;
+  roles?: {
+    tanks?: { characters?: RawRankingCharacter[] };
+    healers?: { characters?: RawRankingCharacter[] };
+    dps?: { characters?: RawRankingCharacter[] };
+  };
+}
+
+/** Fetch WCL parse rankings (one JSON field, grouped per boss by role).
+ *  Returns [] when the report has no rankings. */
+export async function fetchRankings(code: string, accessToken: string): Promise<RawRankingEntry[]> {
+  const data = await gql<{ reportData?: { report?: { rankings?: { data?: RawRankingEntry[] } | null } } }>(
+    RANKINGS_QUERY, { code }, accessToken);
+  return data.reportData?.report?.rankings?.data ?? [];
+}
+
 // WCL's GameItem type exposes only id/name/icon — there is no `quality` field, so we
 // resolve names here and look gem quality up from a static table (@wcl/data) instead.
 export async function fetchItemMeta(
