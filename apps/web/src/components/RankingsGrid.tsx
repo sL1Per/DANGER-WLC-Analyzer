@@ -1,5 +1,5 @@
 import { buildRankingsGrid, type RankingsRole, type ReportData } from "@wcl/core";
-import { classColor } from "../lib/classColors";
+import { classColorVar } from "../lib/classColors";
 import { parseClass } from "../lib/parseColor";
 
 const ROLE_LABEL: Record<RankingsRole, string> = {
@@ -21,6 +21,7 @@ export function RankingsGrid({ report }: { report: ReportData }) {
       {grid.sections.map((section) => (
         <section key={section.role}>
           <h3>{ROLE_LABEL[section.role]}</h3>
+          <div className="scroll-x">
           <table>
             <thead>
               <tr>
@@ -33,8 +34,8 @@ export function RankingsGrid({ report }: { report: ReportData }) {
             <tbody>
               {section.players.map((p) => (
                 <tr key={p.name}>
-                  <td>
-                    <span style={{ color: classColor(p.class), fontWeight: 600 }}>{p.name}</span>
+                  <td className="player-cell" style={classColorVar(p.class)}>
+                    <span className="class-dot" aria-hidden /> {p.name}
                   </td>
                   {grid.bosses.map((b) => {
                     const cell = p.perBoss[b.fightID];
@@ -52,6 +53,7 @@ export function RankingsGrid({ report }: { report: ReportData }) {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       ))}
     </div>

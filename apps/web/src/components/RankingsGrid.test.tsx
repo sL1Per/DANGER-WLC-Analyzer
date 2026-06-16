@@ -26,9 +26,10 @@ describe("RankingsGrid", () => {
   });
 
   it("shows an em dash where a player has no parse for a boss", () => {
+    // Fixture: tank Playertwo has a parse on Hydross (fight 3) but none on the
+    // Lurker (fight 5) → exactly one em-dash cell in Playertwo's row.
     render(<RankingsGrid report={reportFixture} />);
-    const tanksHeading = screen.getByRole("heading", { name: "Tanks" });
-    const tankTable = tanksHeading.parentElement!.querySelector("table")!;
-    expect(within(tankTable).getByText("—")).toBeTruthy();
+    const row = screen.getByText("Playertwo").closest("tr")!;
+    expect(within(row).getByText("—")).toBeTruthy();
   });
 });
