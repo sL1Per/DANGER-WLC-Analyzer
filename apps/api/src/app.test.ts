@@ -326,4 +326,16 @@ describe("GET /api/report/:id — rankings", () => {
     const body = await res.json();
     expect(body.data.rankings[0].dps[0].name).toBe("Dpsone");
   });
+
+  it("yields rankings: [] (not undefined) for a freshly-fetched boss-less report", async () => {
+    // The default raw report has no boss fights → rankings is never fetched, but
+    // a fresh fetch must still produce [] ("no ranked kills"), not undefined
+    // (which is reserved for pre-feature caches → the refresh notice).
+    const res = await makeApp().request("/api/report/a1B2c3D4e5F6g7H8", {
+      headers: { Authorization: "Bearer tok" },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.rankings).toEqual([]);
+  });
 });

@@ -156,9 +156,11 @@ export function createApp(deps: AppDeps = {
       let damageTakenTable: RawTableEntry[] = [];
       let enemyDebuffs: RawDebuffEvent[] = [];
       let absorbEvents: RawDamageEvent[] = [];
-      // undefined (not []) on purpose: normalize distinguishes "never fetched /
-      // pre-feature cache" (undefined) from "fetched, no ranked kills" ([]).
-      let rankings: RawRankingEntry[] | undefined;
+      // Default []: a freshly-fetched report always has a defined rankings array
+      // (empty = "no ranked kills", e.g. a trash-only report we don't even query).
+      // `undefined` is reserved for pre-feature caches (the field is absent in
+      // their cached JSON) → the UI's "refresh to load rankings" notice.
+      let rankings: RawRankingEntry[] = [];
       if (bossFightIds.length > 0) {
         const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR] = await Promise.allSettled([
           deps.fetchInterrupts(id, token, bossFightIds),
