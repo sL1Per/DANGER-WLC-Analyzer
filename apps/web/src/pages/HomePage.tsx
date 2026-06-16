@@ -4,6 +4,7 @@ import { parseReportInput } from "@wcl/core";
 import { loadCredentials, loadLastReportId, saveLastReportId } from "../lib/storage";
 import { useReport } from "../lib/useReport";
 import { ReportSummary } from "../components/ReportSummary";
+import { RankingsGrid } from "../components/RankingsGrid";
 
 export function HomePage() {
   const [input, setInput] = useState("");
@@ -62,15 +63,20 @@ function HomeSummary({ reportId }: { reportId: string }) {
   }
   if (!result) return null;
   return (
-    <div className="card" style={{ marginTop: 24 }}>
-      {loadCredentials() !== null && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <button className="btn-outline" onClick={reload}>
-            Refresh from WCL
-          </button>
-        </div>
-      )}
-      <ReportSummary report={result.data} cachedAt={result.cachedAt} />
-    </div>
+    <>
+      <div className="card" style={{ marginTop: 24 }}>
+        <RankingsGrid report={result.data} />
+      </div>
+      <div className="card" style={{ marginTop: 24 }}>
+        {loadCredentials() !== null && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <button className="btn-outline" onClick={reload}>
+              Refresh from WCL
+            </button>
+          </div>
+        )}
+        <ReportSummary report={result.data} cachedAt={result.cachedAt} />
+      </div>
+    </>
   );
 }
