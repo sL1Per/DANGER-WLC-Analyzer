@@ -756,3 +756,18 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .cat-subnav { display: flex; gap: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 .cat-subnav button { background: none; border: none; padding: 8px 2px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
 .cat-subnav button.active { color: var(--text); border-bottom-color: var(--accent-gold, var(--primary)); }
+
+/* ── home / paste-link screen ─────────────────────────────── */
+.home { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 24px; background: radial-gradient(120% 80% at 80% 0%, var(--surface-sunken), var(--canvas)); }
+.home-brand { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.home-mark { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 14px; background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff); font-family: var(--font-display); font-size: 28px; }
+.home-title { font-family: var(--font-display); font-size: 27px; font-weight: 400; margin: 0; }
+.home-tag { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--text-subtle); margin: 0; }
+.home-card { width: 100%; max-width: 560px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 30px; box-shadow: var(--shadow-card); }
+.home-card h2 { font-family: var(--font-display); font-size: 23px; font-weight: 400; margin: 0 0 6px; }
+.home-input { display: flex; align-items: center; gap: 8px; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: 11px; padding: 10px 12px; margin: 14px 0; }
+.home-input input { flex: 1; background: none; border: none; color: var(--text); outline: none; }
+.home-actions { display: flex; align-items: center; gap: 14px; }
+.btn-gold { background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff); border: none; border-radius: 9px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+.btn-text { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+.home-footer { display: flex; justify-content: space-between; margin-top: 18px; font-size: 12px; color: var(--text-muted); }
