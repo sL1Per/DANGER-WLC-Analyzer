@@ -750,3 +750,9 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
 .dot.good { background: var(--positive); } .dot.watch { background: var(--warn); } .dot.bad { background: var(--danger); }
 @media (max-width: 880px) { .profile-body { grid-template-columns: 1fr; } }
+
+/* ── report body + category subnav ────────────────────────── */
+.report-body { padding: 22px 28px; }
+.cat-subnav { display: flex; gap: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.cat-subnav button { background: none; border: none; padding: 8px 2px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.cat-subnav button.active { color: var(--text); border-bottom-color: var(--accent-gold, var(--primary)); }
