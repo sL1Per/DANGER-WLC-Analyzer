@@ -724,3 +724,6 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .role-band[data-role="caster"] { border-color: var(--role-caster); }
 .role-band[data-role="physical"] { border-color: var(--role-physical); }
 .role-count { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-sunken); color: var(--text-muted); }
+
+/* ── gear matrix ──────────────────────────────────────────── */
+.gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
