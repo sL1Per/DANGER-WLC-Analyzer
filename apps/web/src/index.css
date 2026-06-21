@@ -704,3 +704,11 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .player-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }
 .player-chip.selected { border-color: var(--class-color); background: var(--primary-tint); }
 .player-chip .class-dot { background: var(--class-color); box-shadow: 0 0 6px var(--class-color); }
+
+/* ── summary rankings ─────────────────────────────────────── */
+.intro, .notice { color: var(--text-muted); font-size: 13px; margin: 0 0 14px; }
+.notice { color: var(--warn); }
+.player-link { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.player-link:hover { text-decoration: underline; }
+.rank-table th:first-child, .rank-table td:first-child { position: sticky; left: 0; background: var(--surface); }
+.rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); }
