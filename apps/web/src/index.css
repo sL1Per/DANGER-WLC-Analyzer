@@ -205,7 +205,7 @@ body {
 /* ----------------------------------------------------------------- type */
 
 h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -213,10 +213,19 @@ h1 {
 }
 
 h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 600;
   margin: 28px 0 10px;
+}
+
+h3, h4 {
+  font-family: var(--font-display);
+}
+
+.mono, td.mono, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .subhead {
