@@ -67,12 +67,13 @@ One route replaces the two; selection lives in the URL so links stay shareable.
   notice when `report.rankings` is undefined. (Restyle of existing `RankingsGrid`.)
   **Report-level — ignores the selected fight.**
 - `components/report/PerformanceView.tsx` — the hero view. Runs the **fight-scoped**
-  `rpb` + `rpbConsumables`, groups by `row.role` (Tanks → Healers → Casters → Melee),
-  README's slim columns: Player · Spec · Deaths · Avoidable dmg · Interrupts · Uptime ·
-  Consumables · Gear flags. Avoidable/Uptime via `relativeHeat` over that fight's raid
-  min–max; deaths/flags via absolute heat. Interrupts show "—" for tank/healer. Player
-  cells link to the By-Player lens. Summary banner: boss name + Kill/Wipe pill +
-  Duration / Deaths / Under-consumed / Gear flags readouts.
+  `rpb` + `consumables` + `gearIssues`, groups by `row.role` (Tanks → Healers → Casters
+  → Melee), README's slim columns: Player · Spec · Deaths · Avoidable dmg · Interrupts ·
+  Uptime · Consumables · Gear flags. Avoidable/Uptime via `relativeHeat` over that
+  fight's raid min–max; deaths/flags via absolute heat. Interrupts show "—" for
+  tank/healer. The Consumables cell shows the Full/Partial/Missing **status rollup**
+  (see By-Player). Player cells link to the By-Player lens. Summary banner: boss name +
+  Kill/Wipe pill + Duration / Deaths / Under-consumed / Gear flags readouts.
 - `components/report/GearMatrix.tsx` — restyled gear table from `gearListing(report,
   fightId)` + `gearIssues(report, cfg)`; README's 8-slot subset (Head, Neck, Shoulders,
   Cloak, Chest, Hands, Legs, Weapon); flagged cells tinted (major/moderate) with a
@@ -123,12 +124,17 @@ Keyed by player, composing existing outputs — no new analysis:
   (clean-flag summary + per-slot item + issue pill).
 
 Two **web-layer presentation rollups** (the only new judgement logic; documented
-thresholds; pure functions of existing values, not core analysis):
+thresholds; pure functions of existing core outputs, not new core analysis):
 
-- **Consumables status** (Full / Partial / Missing) — derived from `RpbConsumableRow`
-  counts.
+- **Consumables status** (Full / Partial / Missing) — derived from the buff-`consumables()`
+  `ConsumableRow` (`elixirOrFlask` / `food` / `weaponEnhancement` uptimes). This is the
+  meaningful discipline source; the Consumables **matrix tab** keeps using
+  `rpbConsumables` (utility-potion counts heatmap) per the handoff.
 - **Verdict pill** (Exemplary / Solid / Needs attention / Major concerns) — derived from
   `RpbRow.severity` + death/flag counts.
+
+The By-Player "Consumables & buffs" list shows the same buff-`consumables()` disciplines
+(elixir/flask, food, weapon enhancement, scrolls) colored good/ok/missing via `uptimeHeat`.
 
 ## Theming
 
