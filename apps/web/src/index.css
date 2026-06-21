@@ -727,3 +727,26 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── gear matrix ──────────────────────────────────────────── */
 .gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
+
+/* ── player profile ───────────────────────────────────────── */
+.profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.profile-avatar { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 14px; background: var(--surface-sunken); color: var(--class-color); border: 1px solid var(--class-color); box-shadow: 0 0 14px -4px var(--class-color); font-family: var(--font-display); font-size: 22px; }
+.profile-id h2 { font-family: var(--font-display); font-size: 27px; margin: 0; color: var(--class-color); }
+.profile-sub { font-size: 13px; color: var(--text-muted); }
+.profile-verdict { margin-left: auto; text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.profile-note { font-size: 12px; color: var(--text-muted); }
+.profile-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.profile-tile { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--text-subtle); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.profile-tile.tile-good { border-left-color: var(--positive); } .profile-tile__value { color: var(--text); }
+.profile-tile.tile-watch { border-left-color: var(--warn); }
+.profile-tile.tile-bad { border-left-color: var(--danger); }
+.profile-tile__value { font-size: 24px; }
+.profile-tile__label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-subtle); }
+.profile-body { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.profile-col { display: flex; flex-direction: column; gap: 18px; }
+.profile-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.profile-list li { display: flex; align-items: center; gap: 8px; }
+.slot-label { width: 90px; color: var(--text-subtle); font-size: 12px; }
+.dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+.dot.good { background: var(--positive); } .dot.watch { background: var(--warn); } .dot.bad { background: var(--danger); }
+@media (max-width: 880px) { .profile-body { grid-template-columns: 1fr; } }
