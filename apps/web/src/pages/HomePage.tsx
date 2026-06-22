@@ -1,82 +1,55 @@
 import { type FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { parseReportInput } from "@wcl/core";
-import { loadCredentials, loadLastReportId, saveLastReportId } from "../lib/storage";
-import { useReport } from "../lib/useReport";
-import { ReportSummary } from "../components/ReportSummary";
-import { RankingsGrid } from "../components/RankingsGrid";
+import { saveLastReportId } from "../lib/storage";
+
+const SAMPLE_ID = "JrYP2qfMmxBpD9ha"; // demo report (16-char WCL code)
 
 export function HomePage() {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [reportId, setReportId] = useState<string>(() => loadLastReportId() ?? "");
+  const navigate = useNavigate();
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const id = parseReportInput(input);
-    if (!id) {
-      setError("That doesn't look like a WCL report URL or id.");
-      return;
-    }
+  function open(raw: string) {
+    const id = parseReportInput(raw);
+    if (!id) { setError("That doesn't look like a WCL report URL or id."); return; }
     setError(null);
     saveLastReportId(id);
-    setReportId(id);
+    navigate(`/report/${id}`);
   }
 
+  function onSubmit(e: FormEvent) { e.preventDefault(); open(input); }
+
   return (
-    <div>
-      <form className="card card--center" onSubmit={onSubmit}>
-        <h1>WCL Raid Analyzer</h1>
+    <div className="home">
+      <div className="home-brand">
+        <span className="home-mark" aria-hidden>W</span>
+        <h1 className="home-title">Raid Analyzer</h1>
+        <p className="home-tag">TBC Classic · Combat Log Analytics</p>
+      </div>
+      <form className="home-card" onSubmit={onSubmit}>
+        <h2>Analyze a raid</h2>
         <p className="subhead">Paste a WarcraftLogs report URL or id to begin.</p>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="https://classic.warcraftlogs.com/reports/…"
-          size={60}
-          aria-label="report url or id"
-        />
-        <button type="submit" style={{ marginTop: 16 }}>
-          Analyze
-        </button>
-        {error && <p role="alert">{error}</p>}
+        <div className="home-input">
+          <span aria-hidden>↗</span>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="https://classic.warcraftlogs.com/reports/…"
+            aria-label="report url or id"
+            className="mono"
+          />
+        </div>
+        <div className="home-actions">
+          <button type="submit" className="btn-gold">Analyze</button>
+          <button type="button" className="btn-text" onClick={() => open(SAMPLE_ID)}>or load a sample report →</button>
+        </div>
+        {error && <p role="alert" className="sev-major">{error}</p>}
+        <div className="home-footer">
+          <span>Reports are cached for 24h.</span>
+          <Link to="/settings">⚙ Settings</Link>
+        </div>
       </form>
-      {reportId && <HomeSummary reportId={reportId} />}
     </div>
-  );
-}
-
-function HomeSummary({ reportId }: { reportId: string }) {
-  const { result, error, loading, reload } = useReport(reportId);
-
-  if (loading) return <p>Loading report…</p>;
-  if (error) {
-    return (
-      <div role="alert">
-        <p>{error.message}</p>
-        {error.needsKey && (
-          <p>
-            <Link to="/settings">Add your WCL credentials</Link> to load this report.
-          </p>
-        )}
-      </div>
-    );
-  }
-  if (!result) return null;
-  return (
-    <>
-      <div className="card" style={{ marginTop: 24 }}>
-        <RankingsGrid report={result.data} />
-      </div>
-      <div className="card" style={{ marginTop: 24 }}>
-        {loadCredentials() !== null && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-            <button className="btn-outline" onClick={reload}>
-              Refresh from WCL
-            </button>
-          </div>
-        )}
-        <ReportSummary report={result.data} cachedAt={result.cachedAt} />
-      </div>
-    </>
   );
 }
