@@ -771,3 +771,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .btn-gold { background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff); border: none; border-radius: 9px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
 .btn-text { background: none; border: none; color: var(--text-muted); cursor: pointer; }
 .home-footer { display: flex; justify-content: space-between; margin-top: 18px; font-size: 12px; color: var(--text-muted); }
+
+/* ── settings ─────────────────────────────────────────────── */
+.settings-col { max-width: 620px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.app-theme { position: fixed; right: 14px; bottom: 14px; z-index: 40; }
