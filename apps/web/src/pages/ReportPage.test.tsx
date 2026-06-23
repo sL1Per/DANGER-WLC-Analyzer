@@ -17,14 +17,23 @@ function renderAt(url: string) {
 }
 
 describe("ReportPage", () => {
-  it("defaults to the Summary category", () => {
+  it("defaults to the Rankings category", () => {
     renderAt("/report/abc");
     expect(screen.getByText(/Damage Dealers/i)).toBeInTheDocument();
   });
   it("switches category from the subnav", async () => {
     renderAt("/report/abc");
-    fireEvent.click(screen.getByRole("button", { name: /^Performance$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Summary$/i }));
     await waitFor(() => expect(screen.getAllByText("Deaths").length).toBeGreaterThan(0));
+  });
+  it("hides combatantInfo-only tabs on the TRASH card and falls back from a hidden tab", () => {
+    // fight=-2 is ALL_TRASH; cat=gear is hidden there, so it must fall back to a visible tab
+    renderAt("/report/abc?fight=-2&cat=gear");
+    expect(screen.queryByRole("button", { name: /^Rankings$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Gear$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Shadow Resi$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Consumables$/i })).toBeInTheDocument();
   });
   it("honors ?lens=player by showing the profile", () => {
     const report = reportFixture;

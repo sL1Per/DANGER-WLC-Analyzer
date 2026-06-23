@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   rpb, consumables, gearIssues, type ReportData, type Role, type RpbRow,
 } from "@wcl/core";
-import { scopeReportToFight } from "../../lib/scopeReport";
+import { scopeReportToFight, ALL_TRASH } from "../../lib/scopeReport";
 import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
 import { consumablesStatus, statusHeat, type ConsumablesStatus } from "../../lib/playerRollups";
 import { heatClass, relativeHeat, deathsHeat, type Heat } from "../../lib/heatmap";
@@ -13,8 +13,11 @@ const ROLE_LABEL: Record<Role, string> = { tank: "Tanks", healer: "Healers", cas
 const STATUS_LABEL: Record<ConsumablesStatus, string> = { full: "Full", partial: "Partial", missing: "Missing" };
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
-export function PerformanceView({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
+export function SummaryView({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
   const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
+  // Consumables status and gear flags come from combatantInfo (boss-pull only),
+  // so they carry no meaning on trash — drop those two columns for the TRASH card.
+  const combatantInfo = fightId !== ALL_TRASH;
 
   const result = useMemo(() => rpb(scoped, buildRpbConfig()), [scoped]);
   const consRows = useMemo(() => consumables(scoped, consumablesConfig)?.rows ?? [], [scoped]);
@@ -53,7 +56,8 @@ export function PerformanceView({ report, fightId, onPlayer }: { report: ReportD
                 <thead>
                   <tr>
                     <th>Player</th><th>Spec</th><th>Deaths</th><th>Avoidable dmg</th>
-                    <th>Interrupts</th><th>Uptime</th><th>Consumables</th><th>Gear flags</th>
+                    <th>Interrupts</th><th>Uptime</th>
+                    {combatantInfo && <><th>Consumables</th><th>Gear flags</th></>}
                   </tr>
                 </thead>
                 <tbody>
@@ -65,7 +69,6 @@ export function PerformanceView({ report, fightId, onPlayer }: { report: ReportD
                     return (
                       <tr key={r.playerId}>
                         <td className="player-cell" style={classColorVar(r.className)}>
-                          <span className="class-dot" />
                           <button className="player-link" onClick={() => onPlayer(r.playerName)}>{r.playerName}</button>
                         </td>
                         <td>{specOf(r)}</td>
@@ -77,8 +80,10 @@ export function PerformanceView({ report, fightId, onPlayer }: { report: ReportD
                         <td className={u === null ? "sev-neutral" : `mono ${heat(relativeHeat(u, uMin, uMax))}`}>
                           {u === null ? "—" : pct(u)}
                         </td>
-                        <td className={heat(statusHeat(status))}>{STATUS_LABEL[status]}</td>
-                        <td className={heat(flags > 0 ? "bad" : "good")}>{flags}</td>
+                        {combatantInfo && <>
+                          <td className={heat(statusHeat(status))}>{STATUS_LABEL[status]}</td>
+                          <td className={heat(flags > 0 ? "bad" : "good")}>{flags}</td>
+                        </>}
                       </tr>
                     );
                   })}
