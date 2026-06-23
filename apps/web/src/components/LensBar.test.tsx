@@ -21,6 +21,13 @@ describe("LensBar", () => {
     fireEvent.click(screen.getByRole("button", { name: /by player/i }));
     expect(p.onLens).toHaveBeenCalledWith("player");
   });
+  it("shows an ALL chip first that selects all bosses combined", () => {
+    const p = setup();
+    const names = screen.getAllByText(/^ALL$|.+/).filter((n) => n.className === "fight-chip__name");
+    expect(names[0]).toHaveTextContent("ALL");
+    fireEvent.click(screen.getByText("ALL"));
+    expect(p.onFight).toHaveBeenCalledWith(-1);
+  });
   it("selects a fight chip", () => {
     const p = setup();
     const boss = p.report.fights.find((f) => f.isBoss)!;

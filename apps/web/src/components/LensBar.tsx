@@ -1,5 +1,6 @@
 import type { Fight, ReportData } from "@wcl/core";
 import { CLASS_ORDER, classColorVar, classSlug } from "../lib/classColors";
+import { ALL_FIGHTS } from "../lib/scopeReport";
 
 export type Lens = "fight" | "player";
 
@@ -44,6 +45,24 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
 
       {lens === "fight" ? (
         <div className="lens-strip">
+          {(() => {
+            const bosses = bossFights(report);
+            const totalSecs = Math.round(
+              bosses.reduce((s, f) => s + (f.endTime - f.startTime), 0) / 1000,
+            );
+            const kills = bosses.filter((f) => f.kill).length;
+            return (
+              <button
+                key="all"
+                className={`fight-chip fight-chip--all${fightId === ALL_FIGHTS ? " selected" : ""}`}
+                onClick={() => onFight(ALL_FIGHTS)}
+              >
+                <span className="fight-chip__name">ALL</span>
+                <span className="pill pill--all">{kills}/{bosses.length} kills</span>
+                <span className="mono fight-chip__meta">{totalSecs}s · {report.players.length} players</span>
+              </button>
+            );
+          })()}
           {bossFights(report).map((f) => (
             <button
               key={f.id}

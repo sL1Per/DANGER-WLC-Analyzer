@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { rpb, consumables, gearIssues, type ReportData } from "@wcl/core";
-import { scopeReportToFight } from "../../lib/scopeReport";
+import { scopeReportToFight, ALL_FIGHTS } from "../../lib/scopeReport";
 import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
 import { consumablesStatus } from "../../lib/playerRollups";
 import { heatClass, deathsHeat, type Heat } from "../../lib/heatmap";
@@ -14,7 +14,15 @@ function fmtDuration(ms: number): string {
 /** Per-pull overview shown above every category tab: who was here and how the
  *  pull went at a glance (duration, deaths, under-consumed, gear flags). */
 export function FightHeader({ report, fightId }: { report: ReportData; fightId: number }) {
+  const isAll = fightId === ALL_FIGHTS;
   const fight = report.fights.find((f) => f.id === fightId);
+  const bosses = report.fights.filter((f) => f.isBoss);
+  const kills = bosses.filter((f) => f.kill).length;
+  const durationMs = isAll
+    ? bosses.reduce((s, f) => s + (f.endTime - f.startTime), 0)
+    : fight
+      ? fight.endTime - fight.startTime
+      : 0;
   const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
 
   const stats = useMemo(() => {
@@ -40,15 +48,17 @@ export function FightHeader({ report, fightId }: { report: ReportData; fightId: 
   return (
     <header className="fight-header">
       <div className="fight-header__title">
-        <h2>{fight?.name ?? "Boss"}</h2>
-        {fight && (
+        <h2>{isAll ? "All bosses" : fight?.name ?? "Boss"}</h2>
+        {isAll ? (
+          <span className="pill pill--all">{kills}/{bosses.length} kills</span>
+        ) : fight ? (
           <span className={`pill ${fight.kill ? "pill--kill" : "pill--wipe"}`}>
             {fight.kill ? "Kill" : "Wipe"}
           </span>
-        )}
+        ) : null}
       </div>
       <dl className="fight-header__stats">
-        <Stat value={fight ? fmtDuration(fight.endTime - fight.startTime) : "—"} label="Duration" />
+        <Stat value={isAll || fight ? fmtDuration(durationMs) : "—"} label="Duration" />
         <Stat value={stats.deaths} label="Deaths" heat={deathsHeat(stats.deaths)} />
         <Stat
           value={stats.underConsumed}

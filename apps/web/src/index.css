@@ -782,8 +782,10 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 6px; }
 .pill--kill { color: var(--positive); background: var(--positive-bg); }
 .pill--wipe { color: var(--danger); background: var(--danger-bg); }
+.pill--all { color: var(--on-accent, #1a1206); background: var(--accent-gold, var(--primary)); font-weight: 600; }
 .fight-chip:hover .pill--kill { color: #fff; background: #1f7a3e; font-weight: 600; }
 .fight-chip:hover .pill--wipe { color: #fff; background: #b3261e; font-weight: 600; }
+.fight-chip--all { border-color: var(--accent-gold, var(--primary)); }
 .lens-roster { display: flex; flex-direction: column; gap: 10px; }
 .roster-search { max-width: 240px; }
 .player-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }

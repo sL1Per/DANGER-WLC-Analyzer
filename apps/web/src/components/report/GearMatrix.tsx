@@ -3,12 +3,18 @@ import {
   gearIssues, gearListing, SLOT_NAMES, SEVERITY_RANK, type IssueSeverity, type ReportData,
 } from "@wcl/core";
 import { gearIssueConfig } from "../../lib/analysisConfig";
+import { ALL_FIGHTS } from "../../lib/scopeReport";
 import { classColorVar } from "../../lib/classColors";
 
 const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 9, 6, 15]; // Head Neck Shoulders Cloak Chest Hands Legs Weapon
 
 export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
-  const { fight, rows } = useMemo(() => gearListing(report, fightId), [report, fightId]);
+  // Gear is a per-pull snapshot, so ALL falls back to the latest pull with gear.
+  const isAll = fightId === ALL_FIGHTS;
+  const { fight, rows } = useMemo(
+    () => gearListing(report, isAll ? undefined : fightId),
+    [report, fightId, isAll],
+  );
 
   const issues = useMemo(() => {
     const map = new Map<number, Map<number, { severity: IssueSeverity; reason: string }>>();
@@ -31,7 +37,9 @@ export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; 
   if (!fight) return <p className="notice">No gear data for this pull (combatantInfo missing).</p>;
 
   return (
-    <div className="scroll-x">
+    <>
+      {isAll && <p className="notice">Gear is a snapshot per pull — showing {fight.name}.</p>}
+      <div className="scroll-x">
       <table className="gear-matrix">
         <thead>
           <tr><th>Player</th>{PROFILE_GEAR_SLOTS.map((s) => <th key={s}>{SLOT_NAMES[s]}</th>)}</tr>
@@ -56,6 +64,7 @@ export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; 
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

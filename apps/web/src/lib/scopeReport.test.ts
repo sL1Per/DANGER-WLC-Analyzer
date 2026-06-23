@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reportFixture } from "@wcl/core";
-import { scopeReportToFight } from "./scopeReport";
+import { scopeReportToFight, ALL_FIGHTS } from "./scopeReport";
 
 describe("scopeReportToFight", () => {
   it("keeps only the chosen fight but preserves every other field by reference", () => {
@@ -16,6 +16,13 @@ describe("scopeReportToFight", () => {
   });
 
   it("yields an empty fights array for an unknown id", () => {
-    expect(scopeReportToFight(reportFixture, -1).fights).toEqual([]);
+    expect(scopeReportToFight(reportFixture, 999999).fights).toEqual([]);
+  });
+
+  it("scopes to every boss fight for ALL_FIGHTS", () => {
+    const scoped = scopeReportToFight(reportFixture, ALL_FIGHTS);
+    expect(scoped.fights).toEqual(reportFixture.fights.filter((f) => f.isBoss));
+    expect(scoped.fights.every((f) => f.isBoss)).toBe(true);
+    expect(scoped.players).toBe(reportFixture.players);
   });
 });

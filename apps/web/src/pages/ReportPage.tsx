@@ -1,7 +1,8 @@
 import { useSearchParams, useParams, Link } from "react-router-dom";
 import { useReport } from "../lib/useReport";
 import { ReportHeader } from "../components/ReportHeader";
-import { LensBar, bossFights, type Lens } from "../components/LensBar";
+import { LensBar, type Lens } from "../components/LensBar";
+import { ALL_FIGHTS } from "../lib/scopeReport";
 import { SummaryRankings } from "../components/report/SummaryRankings";
 import { PerformanceView } from "../components/report/PerformanceView";
 import { GearMatrix } from "../components/report/GearMatrix";
@@ -35,11 +36,10 @@ export function ReportPage() {
   if (!result) return null;
   const report = result.data;
 
-  const bosses = bossFights(report);
   const lens = (params.get("lens") as Lens) ?? "fight";
   const cat = (params.get("cat") as Cat) ?? "summary";
   const query = params.get("q") ?? "";
-  const fightId = Number(params.get("fight")) || bosses[bosses.length - 1]?.id || 0;
+  const fightId = Number(params.get("fight")) || ALL_FIGHTS; // ALL card by default
   const playerId = Number(params.get("player")) || report.players[0]?.id || 0;
 
   const patch = (next: Record<string, string>) => {
