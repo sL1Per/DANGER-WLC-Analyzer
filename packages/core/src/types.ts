@@ -27,6 +27,12 @@ export interface ReportData {
   /** WCL parse-percentile rankings per ranked boss, grouped by WCL role
    *  (rankings feature); undefined = report cached before this feature. */
   rankings?: ReportRanking[];
+  /** per-fight effective healing by source (performance breakdown);
+   *  undefined = report cached before this feature (drives refresh notice). */
+  healingEvents?: HealingEvent[];
+  /** WCL abilityGameID → name, for damage-taken/death ability labels;
+   *  undefined/absent on pre-feature caches. */
+  abilityMeta?: Record<string, { name: string }>;
   /** itemId/gemId → name+quality, for every id appearing in gear */
   itemMeta: Record<string, ItemMeta>;
 }
@@ -125,8 +131,17 @@ export interface PlayerTotals {
   magicDamageDone: number;
 }
 
-/** A boss-fight death of a player (Kalecgos already excluded upstream). */
-export interface PlayerDeath { playerId: number; fightId: number; }
+/** A boss/trash-fight death of a player (Kalecgos already excluded upstream).
+ *  killingAbilityId/timestamp are present from the performance-breakdown feature
+ *  onward; undefined on reports cached before it. */
+export interface PlayerDeath {
+  playerId: number;
+  fightId: number;
+  /** WCL killingAbilityGameID of the killing blow; undefined when unknown */
+  killingAbilityId?: number;
+  /** event timestamp, report-relative ms; undefined on pre-feature caches */
+  timestamp?: number;
+}
 
 /** An enemy spell a player interrupted. In WCL the interrupt event's source is the
  *  interrupter (the player) and the target is the enemy whose cast was stopped. */
@@ -165,6 +180,9 @@ export interface PlayerDamageEvent {
 
 /** An absorb credited to a player. */
 export interface AbsorbEvent { fightId: number; playerId: number; spellId: number; amount: number; }
+
+/** Effective healing done by a player in one fight (HealingDone events). */
+export interface HealingEvent { fightId: number; sourceId: number; amount: number; }
 
 /** One character's parse in a boss ranking (from WCL's rankings JSON). */
 export interface RankingCharacter {

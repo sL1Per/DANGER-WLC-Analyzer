@@ -59,7 +59,7 @@ export const reportFixture: ReportData = {
     { playerId: 1, healingDone: 0, damageDone: 100000, damageTaken: 2000, magicDamageDone: 95000 },
     { playerId: 2, healingDone: 0, damageDone: 80000, damageTaken: 9000, magicDamageDone: 500 },
   ],
-  playerDeaths: [{ playerId: 2, fightId: 3 }],
+  playerDeaths: [{ playerId: 2, fightId: 3, killingAbilityId: 13022, timestamp: 200_000 }],
   interrupts: [
     // Playerone (id 1) interrupted Hydross's cast 12471.
     { fightId: 3, interrupterPlayerId: 1, interruptedSpellId: 12471, sourceName: "Hydross the Unstable" },
@@ -79,6 +79,15 @@ export const reportFixture: ReportData = {
   absorbs: [
     { fightId: 3, playerId: 1, spellId: 17252, amount: 1200 },
   ],
+  healingEvents: [
+    { fightId: 3, sourceId: 2, amount: 5000 },
+    { fightId: 3, sourceId: 1, amount: 1000 },
+  ],
+  abilityMeta: {
+    "13022": { name: "Frostbolt" },
+    "99999": { name: "Friendly Fire" },
+    "30451": { name: "Arcane Blast" },
+  },
   rankings: [
     {
       fightID: 3, encounterId: 623, encounterName: "Hydross the Unstable",

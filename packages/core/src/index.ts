@@ -14,5 +14,6 @@ export * from "./activity";
 export * from "./classMetrics";
 export * from "./rpb";
 export * from "./rpbConsumables";
+export * from "./performance";
 export * from "./rankings";
 export { reportFixture } from "./fixtures/report.fixture";
