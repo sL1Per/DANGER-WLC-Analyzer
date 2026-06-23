@@ -26,6 +26,13 @@ describe("ReportPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Summary$/i }));
     await waitFor(() => expect(screen.getAllByText("Deaths").length).toBeGreaterThan(0));
   });
+  it("renders the Performance tab and shows panel titles when clicked", async () => {
+    renderAt("/report/abc");
+    expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Performance$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Performance$/i }));
+    await waitFor(() => expect(screen.getByText("Damage Done By Source")).toBeInTheDocument());
+  });
   it("hides combatantInfo-only tabs on the TRASH card and falls back from a hidden tab", () => {
     // fight=-2 is ALL_TRASH; cat=gear is hidden there, so it must fall back to a visible tab
     renderAt("/report/abc?fight=-2&cat=gear");

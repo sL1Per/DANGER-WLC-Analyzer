@@ -424,7 +424,7 @@ tbody tr:last-child td {
 }
 
 tbody tr:hover td {
-  background: var(--surface-sunken);
+  background: var(--row-hover, var(--surface-sunken));
 }
 
 /* ----------------------------------------------------------------- lists */
@@ -590,7 +590,8 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 }
 
 .player-cell { border-left: 3px solid var(--class-color, transparent); }
-.player-cell .class-dot { margin-right: 6px; vertical-align: middle; }
+/* Color the player name by class (matches the consumables matrix); persists on hover. */
+.player-cell .player-link, .player-cell .player-link:hover { color: var(--class-color, inherit); font-weight: 600; }
 
 /* consumable counts matrix (RPB General tab): consumables down, players across.
    Players are angled column headers (class-colored); each row is a heatmap. */
@@ -764,7 +765,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .report-switcher__item .mono { font-size: 12px; color: var(--text-muted); }
 
 /* ── lens bar ─────────────────────────────────────────────── */
-.lens-bar { position: sticky; top: 67px; z-index: 20; background: var(--canvas); padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+.lens-bar { background: var(--canvas); padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
 .lens-toggle { display: flex; align-items: center; gap: 12px; }
 .lens-toggle > button { padding: 7px 16px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; }
 .lens-toggle > button.active { background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff); border-color: var(--accent-gold, var(--primary)); }
@@ -798,7 +799,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .intro, .notice { color: var(--text-muted); font-size: 13px; margin: 0 0 14px; }
 .notice { color: var(--warn); }
 .player-link { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.player-link:hover { text-decoration: underline; }
+.player-link:hover { text-decoration: underline; background: none; color: inherit; }
 .rank-table th:first-child, .rank-table td:first-child { position: sticky; left: 0; background: var(--surface); }
 .rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); }
 
@@ -825,6 +826,27 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── gear matrix ──────────────────────────────────────────── */
 .gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
+/* Opt these tables out of the generic row-hover highlight (see `tbody tr:hover td`).
+   Plain cells fall back to transparent (their natural bg); colored sev/parse cells
+   and sticky first columns keep their own backgrounds via later/higher-specificity rules. */
+.gear-matrix, .rank-table, .perf table { --row-hover: transparent; }
+.gear-issue-cell { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; text-decoration: underline dotted; text-underline-offset: 2px; }
+.gear-issue-cell:hover { text-decoration-style: solid; background: none; color: inherit; }
+
+/* ── modal ────────────────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(10, 12, 24, 0.55); backdrop-filter: blur(2px); }
+.modal-card { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 20px 22px; }
+.modal-card__head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.modal-card__head h3 { margin: 0; font-size: 16px; color: var(--text); }
+.modal-card__sub { margin: 3px 0 0; font-size: 12px; color: var(--text-muted); }
+.modal-card__close { margin-left: auto; background: none; border: none; font-size: 22px; line-height: 1; color: var(--text-muted); cursor: pointer; padding: 0 4px; }
+.modal-card__close:hover { color: var(--text); }
+.modal-issue-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.modal-issue-list li { display: flex; align-items: baseline; gap: 10px; font-size: 13px; color: var(--text); }
+.modal-issue-badge { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; }
+.modal-issue-list li.sev-major .modal-issue-badge { background: var(--danger-bg); color: var(--danger); }
+.modal-issue-list li.sev-moderate .modal-issue-badge { background: var(--warn-bg); color: var(--warn); }
+.modal-issue-list li.sev-minor .modal-issue-badge { background: var(--positive-bg); color: var(--positive); }
 
 /* ── player profile ───────────────────────────────────────── */
 .profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
@@ -899,3 +921,25 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 /* ── settings ─────────────────────────────────────────────── */
 .settings-col { max-width: 620px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
 .app-theme { position: fixed; right: 14px; bottom: 14px; z-index: 40; }
+
+/* Performance summary — WCL-style four-panel layout */
+.perf-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .perf-summary { grid-template-columns: 1fr; }
+}
+.perf-panel h3 { margin: 0 0 8px; }
+.perf-table { width: 100%; border-collapse: collapse; }
+.perf-table th, .perf-table td { padding: 4px 8px; text-align: left; white-space: nowrap; }
+.perf-table th:nth-child(n+2), .perf-table td.mono { text-align: right; }
+.perf-amount { position: relative; min-width: 160px; }
+.perf-amount .mono { position: relative; z-index: 1; float: right; }
+.perf-bar {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 16px; width: var(--w, 0%);
+  background: color-mix(in srgb, var(--primary, #4f8cff) 35%, transparent);
+  border-radius: 3px;
+}
