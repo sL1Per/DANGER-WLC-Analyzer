@@ -14,7 +14,7 @@ export function ConsumablesCategory({ report, fightId }: { report: ReportData; f
   const catalog = rpbConsumableSpecs.map((s) => ({ key: s.key, name: s.name }));
   return (
     <div>
-      <p className="intro">Each row is one consumable; each column a raider. Cells are colored relative to the heaviest user on this pull — red means they used it least.</p>
+      <p className="intro">Consumable counts across the night. Each row is a relative heatmap — green = top user, red = nobody home. A blank row means nobody used it.</p>
       <ConsumableMatrix rows={result.rows} catalog={catalog} />
     </div>
   );

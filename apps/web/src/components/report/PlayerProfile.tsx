@@ -12,6 +12,8 @@ import { classColorVar, classSlug } from "../../lib/classColors";
 const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 9, 6, 15];
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const initials = (name: string) => name.slice(0, 2).toUpperCase();
+/** Compact number for tile values: 28600 → "28.6k". */
+const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n));
 
 export function PlayerProfile({ report, playerId }: { report: ReportData; playerId: number }) {
   const player = report.players.find((p) => p.id === playerId);
@@ -51,6 +53,9 @@ export function PlayerProfile({ report, playerId }: { report: ReportData; player
   const v = verdict(row, flagCount);
   const status = consumablesStatus(consRow);
   const avgUptime = row.activity?.relativeActiveST ?? null;
+  const bossCount = bossFights.length;
+  const consAvg = consRow ? consRow.totalAverage : null;
+  const noInterrupts = row.role === "tank" || row.role === "healer";
 
   return (
     <div className="profile">
@@ -61,18 +66,18 @@ export function PlayerProfile({ report, playerId }: { report: ReportData; player
           <span className="profile-sub">{player.class} · {row.role}</span>
         </div>
         <div className="profile-verdict">
-          <span className={`pill ${heatClass(v.heat)}`}>{v.label}</span>
+          <span className={`profile-badge ${heatClass(v.heat)}`}>{v.label}</span>
           <span className="profile-note">{v.note}</span>
         </div>
       </header>
 
       <div className="profile-tiles">
-        <Tile label="Deaths" value={String(row.deaths)} heat={deathsHeat(row.deaths)} />
-        <Tile label="Avoidable dmg" value={row.totalAvoidableDamageTaken.toLocaleString()} />
-        <Tile label="Avg uptime" value={avgUptime === null ? "—" : pct(avgUptime)} heat={avgUptime === null ? undefined : uptimeHeat(avgUptime)} />
-        <Tile label="Interrupts" value={String(row.interruptedSpells)} />
-        <Tile label="Consumables" value={status[0].toUpperCase() + status.slice(1)} heat={statusHeat(status)} />
-        <Tile label="Gear flags" value={String(flagCount)} heat={flagCount > 0 ? "bad" : "good"} />
+        <Tile label="Deaths" value={String(row.deaths)} sub={`across ${bossCount} pull${bossCount === 1 ? "" : "s"}`} heat={deathsHeat(row.deaths)} />
+        <Tile label="Avoidable dmg" value={compact(row.totalAvoidableDamageTaken)} sub="stood in stuff" />
+        <Tile label="Avg uptime" value={avgUptime === null ? "—" : pct(avgUptime)} sub="active time" heat={avgUptime === null ? undefined : uptimeHeat(avgUptime)} />
+        <Tile label="Interrupts" value={String(row.interruptedSpells)} sub={noInterrupts ? "n/a for role" : "casts stopped"} />
+        <Tile label="Consumables" value={consAvg === null ? "—" : pct(consAvg)} sub="flask/food/oil" heat={statusHeat(status)} />
+        <Tile label="Gear flags" value={String(flagCount)} sub="enchants/gems" heat={flagCount > 0 ? "bad" : "good"} />
       </div>
 
       <div className="profile-body">
@@ -133,11 +138,12 @@ export function PlayerProfile({ report, playerId }: { report: ReportData; player
   );
 }
 
-function Tile({ label, value, heat }: { label: string; value: string; heat?: Heat }) {
+function Tile({ label, value, sub, heat }: { label: string; value: string; sub?: string; heat?: Heat }) {
   return (
     <div className={`profile-tile${heat ? ` tile-${heat}` : ""}`}>
       <span className="profile-tile__value mono">{value}</span>
       <span className="profile-tile__label">{label}</span>
+      {sub && <span className="profile-tile__sub">{sub}</span>}
     </div>
   );
 }

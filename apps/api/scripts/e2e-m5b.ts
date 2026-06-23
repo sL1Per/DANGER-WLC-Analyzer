@@ -21,7 +21,7 @@ import { normalizeReport } from "../src/normalize";
 import { rpb } from "@wcl/core";
 import {
   consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs,
-  battleShoutBuffIds, spellCastTimes, roleSignals, casterClasses,
+  battleShoutBuffIds, spellCastTimes, roleSignals, casterClasses, physicalSpecs, casterSpecs,
   engineeringDamageIds, oilOfImmolationSpellId, absorbExcludedSpellIds,
   classAbilities, avoidableAbilityIds,
 } from "@wcl/data";
@@ -117,7 +117,7 @@ const data = normalizeReport(code, raw, val(combatantsR, []) as never, {}, {
 console.log(`players: ${data.players.length} | enemyDebuffs intervals: ${data.enemyDebuffs?.length ?? 0} | absorbs: ${data.absorbs?.length ?? 0}`);
 
 const result = rpb(data, {
-  roles: { signals: roleSignals, casterClasses },
+  roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },
   activity: { castTimes: spellCastTimes, hasteBuffs, aoeWindowMs: 500 },
   engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
   classAbilities, avoidableAbilityIds,

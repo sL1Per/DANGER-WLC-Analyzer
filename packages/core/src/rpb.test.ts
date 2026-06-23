@@ -4,7 +4,7 @@ import { reportFixture } from "./fixtures/report.fixture";
 import type { RpbRow } from "./rpb";
 
 const cfg: RpbConfig = {
-  roles: { signals: [{ spellId: 5487, role: "tank", name: "Bear Form" }], casterClasses: ["Mage", "Warlock", "Priest", "Shaman"] },
+  roles: { signals: [{ spellId: 5487, role: "tank", name: "Bear Form" }], casterClasses: ["Mage", "Warlock", "Priest", "Shaman"], physicalSpecs: ["Enhancement"], casterSpecs: ["Balance"] },
   activity: { castTimes: { "30451": 25 }, hasteBuffs: [], aoeWindowMs: 500 },
   engineeringDamageIds: [30461],
   oilOfImmolationSpellId: 11350,

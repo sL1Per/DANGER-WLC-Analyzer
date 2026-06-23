@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { rpb, rpbConsumables, type Role, type ReportData } from "@wcl/core";
 import {
-  spellCastTimes, roleSignals, casterClasses, hasteBuffs, engineeringDamageIds,
+  spellCastTimes, roleSignals, casterClasses, physicalSpecs, casterSpecs, hasteBuffs, engineeringDamageIds,
   oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
   classAbilities, avoidableAbilityIds,
   rpbConsumables as rpbConsumablesData,
@@ -27,7 +27,7 @@ export function RpbView({ report }: { report: ReportData }) {
   const overrides = loadRoleOverrides();
 
   const result = useMemo(() => rpb(report, {
-    roles: { signals: roleSignals, casterClasses },
+    roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },
     activity: { castTimes: spellCastTimes, hasteBuffs, aoeWindowMs: 500 },
     engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
     classAbilities, avoidableAbilityIds,

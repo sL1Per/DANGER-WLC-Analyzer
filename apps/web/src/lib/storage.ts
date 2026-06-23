@@ -61,6 +61,37 @@ export function loadLastReportId(): string | null {
   return localStorage.getItem(LAST_REPORT_KEY);
 }
 
+// Recently-viewed reports for this browser. The API cache is in-memory and
+// keyed by id with no per-client listing, so the "cached raids" the user can
+// switch between are the ones they've opened here, most-recent first.
+const RECENT_REPORTS_KEY = "wcl.recentReports";
+const RECENT_REPORTS_MAX = 12;
+
+export interface RecentReport {
+  id: string;
+  title: string;
+  zoneName: string;
+  players: number;
+  startTime: number;
+  viewedAt: number;
+}
+
+export function loadRecentReports(): RecentReport[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_REPORTS_KEY) ?? "[]");
+    return Array.isArray(list) ? (list as RecentReport[]) : [];
+  } catch {
+    localStorage.removeItem(RECENT_REPORTS_KEY);
+    return [];
+  }
+}
+
+export function addRecentReport(r: Omit<RecentReport, "viewedAt">): void {
+  const others = loadRecentReports().filter((e) => e.id !== r.id);
+  const next = [{ ...r, viewedAt: Date.now() }, ...others].slice(0, RECENT_REPORTS_MAX);
+  localStorage.setItem(RECENT_REPORTS_KEY, JSON.stringify(next));
+}
+
 export function saveCredentials(c: Credentials): void {
   localStorage.setItem(CREDS_KEY, JSON.stringify(c));
 }

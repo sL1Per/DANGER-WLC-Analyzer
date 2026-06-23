@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="18" fill="#0c0d11"/>
+  <rect x="30" y="30" width="40" height="40" rx="10" fill="#d4a84a"/>
+  <text x="50" y="64" font-family="Georgia,serif" font-size="30" fill="#1a1206" text-anchor="middle">W</text>
+</svg>
+</template>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0c0d11;color:#e8e9ee;font-family:Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{height:10px;width:10px}
+  ::-webkit-scrollbar-thumb{background:#2a2f3a;border-radius:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:radial-gradient(1200px 600px at 80% -10%, #15171f 0%, #0c0d11 60%);">
+
+  <!-- ===== HOME / PASTE LINK ===== -->
+  <sc-if value="{{ notLoaded }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px">
+      <div style="display:flex;align-items:center;gap:15px;margin-bottom:34px">
+        <div style="width:52px;height:52px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(150deg,{{ accent }},#7a5a18);box-shadow:0 0 0 1px rgba(212,168,74,.35),0 8px 22px rgba(212,168,74,.22);font-family:Marcellus;font-size:30px;color:#1a1206">W</div>
+        <div style="text-align:left">
+          <div style="font-family:Marcellus;font-size:27px;line-height:1;letter-spacing:.3px">Raid Analyzer</div>
+          <div style="font-size:11px;color:#7c818d;letter-spacing:.6px;text-transform:uppercase;margin-top:5px">TBC Classic · Combat Log Analytics</div>
+        </div>
+      </div>
+
+      <div style="width:100%;max-width:560px;background:#101218;border:1px solid #1c1f29;border-radius:18px;padding:30px 30px 26px;box-shadow:0 24px 70px rgba(0,0,0,.45)">
+        <h1 style="font-family:Marcellus;font-weight:400;font-size:23px;margin:0 0 6px">Analyze a raid</h1>
+        <p style="font-size:13.5px;color:#9aa0ac;margin:0 0 18px">Paste a WarcraftLogs report URL or id to begin.</p>
+        <div style="display:flex;align-items:center;gap:10px;background:#15171f;border:1px solid #2a2f3b;border-radius:11px;padding:0 6px 0 14px">
+          <span style="font-family:'JetBrains Mono';font-size:14px;color:#5b616d">↗</span>
+          <input value="{{ reportUrl }}" onInput="{{ onUrlInput }}" onKeyDown="{{ onUrlKey }}" placeholder="https://classic.warcraftlogs.com/reports/…" style="flex:1;font-family:'JetBrains Mono';font-size:13px;color:#e8e9ee;background:none;border:none;outline:none;padding:13px 0" />
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:16px">
+          <button onClick="{{ analyze }}" style="font-family:Archivo;font-weight:700;font-size:13.5px;letter-spacing:.2px;color:#1a1206;background:linear-gradient(150deg,{{ accent }},#a8842e);border:1px solid {{ accent }};padding:11px 26px;border-radius:9px;cursor:pointer;box-shadow:0 6px 18px rgba(212,168,74,.2)">Analyze</button>
+          <button onClick="{{ loadSample }}" style="font-family:Archivo;font-weight:600;font-size:12.5px;color:#9aa0ac;background:none;border:none;cursor:pointer">or load a sample report →</button>
+        </div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #1c1f29;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:11.5px;color:#6f7480;line-height:1.5">Reports are cached for 24h — guildmates can open the same link with no API key of their own.</span>
+          <button onClick="{{ openSettings }}" style="flex:none;font-family:Archivo;font-weight:600;font-size:12px;color:#9aa0ac;background:none;border:none;cursor:pointer;white-space:nowrap">⚙ Settings</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== LOADED REPORT ===== -->
+  <sc-if value="{{ loaded }}" hint-placeholder-val="{{ true }}">
+
+  <!-- ===== HEADER ===== -->
+  <header style="display:flex;align-items:center;gap:20px;padding:16px 28px;border-bottom:1px solid #1c1f29;background:#0d0e13;position:sticky;top:0;z-index:30">
+    <div onClick="{{ goHome }}" title="Load another report" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+      <div style="width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(150deg,{{ accent }},#7a5a18);box-shadow:0 0 0 1px rgba(212,168,74,.35),0 6px 16px rgba(212,168,74,.18);font-family:Marcellus;font-size:22px;color:#1a1206">W</div>
+      <div>
+        <div style="font-family:Marcellus;font-size:19px;line-height:1;letter-spacing:.3px">Raid Analyzer</div>
+        <div style="font-size:11px;color:#7c818d;letter-spacing:.6px;text-transform:uppercase;margin-top:3px">TBC Classic · Combat Log Analytics</div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding-left:18px;border-left:1px solid #1c1f29">
+      <div style="min-width:0">
+        <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tuesday Prog · Gruul &amp; Magtheridon</div>
+        <div style="font-size:12px;color:#7c818d">Gruul's Lair / Magtheridon's Lair · 25 players · Jun 17</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:#7c818d">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(214,90,90,.5);box-shadow:inset 0 0 0 1px rgba(240,144,143,.6)"></span>problem</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(214,168,60,.5);box-shadow:inset 0 0 0 1px rgba(230,189,86,.6)"></span>watch</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:rgba(91,191,134,.5);box-shadow:inset 0 0 0 1px rgba(127,214,160,.6)"></span>fine</span>
+      </div>
+      <button onClick="{{ openSettings }}" title="Settings" style="font-family:Archivo;font-size:12px;font-weight:600;color:#c9ccd4;background:#161922;border:1px solid #262a35;padding:8px 14px;border-radius:8px;cursor:pointer">Settings</button>
+      <button onClick="{{ goHome }}" style="font-family:Archivo;font-size:12px;font-weight:600;color:#c9ccd4;background:#161922;border:1px solid #262a35;padding:8px 14px;border-radius:8px;cursor:pointer">New report</button>
+      <button style="font-family:Archivo;font-size:12px;font-weight:600;color:#c9ccd4;background:#161922;border:1px solid #262a35;padding:8px 14px;border-radius:8px;cursor:pointer">Refresh from WCL</button>
+    </div>
+  </header>
+
+  <!-- ===== LENS BAR ===== -->
+  <div style="position:sticky;top:71px;z-index:20;background:#0d0e13;border-bottom:1px solid #1c1f29;padding:16px 28px 0">
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <div style="display:inline-flex;padding:4px;background:#15171f;border:1px solid #242935;border-radius:11px;gap:4px">
+        <button onClick="{{ pickFight }}" style="display:flex;align-items:center;gap:8px;font-family:Archivo;font-weight:700;font-size:13.5px;letter-spacing:.2px;padding:9px 18px;border-radius:8px;border:1px solid {{ fightTabBd }};background:{{ fightTabBg }};color:{{ fightTabFg }};cursor:pointer;transition:.15s">
+          <span style="width:15px;height:15px;border-radius:3px;border:1.6px solid currentColor;display:inline-block;position:relative;opacity:.85"></span>
+          By Boss Fight
+        </button>
+        <button onClick="{{ pickPlayer }}" style="display:flex;align-items:center;gap:8px;font-family:Archivo;font-weight:700;font-size:13.5px;letter-spacing:.2px;padding:9px 18px;border-radius:8px;border:1px solid {{ playerTabBd }};background:{{ playerTabBg }};color:{{ playerTabFg }};cursor:pointer;transition:.15s">
+          <span style="width:14px;height:14px;border-radius:50%;border:1.6px solid currentColor;display:inline-block;opacity:.85"></span>
+          By Player
+        </button>
+      </div>
+      <div style="font-size:12.5px;color:#8b909d;line-height:1.4">{{ lensHint }}</div>
+    </div>
+
+    <!-- CONTEXT STRIP: fights -->
+    <sc-if value="{{ lensFight }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;padding:16px 0 18px">
+        <sc-for list="{{ fightChips }}" as="f" hint-placeholder-count="4">
+          <button onClick="{{ f.onClick }}" style="text-align:left;cursor:pointer;font-family:Archivo;padding:10px 14px;border-radius:10px;border:1px solid {{ f.bd }};background:{{ f.bg }};min-width:170px;transition:.15s">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-weight:700;font-size:13px;color:{{ f.nameFg }}">{{ f.name }}</span>
+              <span style="font-family:'JetBrains Mono';font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:{{ f.badgeBg }};color:{{ f.badgeFg }}">{{ f.badge }}</span>
+            </div>
+            <div style="font-family:'JetBrains Mono';font-size:11px;color:#7c818d;margin-top:5px">{{ f.dur }} · {{ f.players }} players</div>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- CONTEXT STRIP: players -->
+    <sc-if value="{{ lensPlayer }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:14px 0 16px">
+        <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Filter raiders…" style="width:240px;font-family:Archivo;font-size:13px;color:#e8e9ee;background:#15171f;border:1px solid #262a35;border-radius:9px;padding:9px 13px;margin-bottom:13px;outline:none" />
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ playerChips }}" as="p" hint-placeholder-count="25">
+            <button onClick="{{ p.onClick }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:Archivo;font-weight:600;font-size:12.5px;padding:7px 12px 7px 10px;border-radius:8px;border:1px solid {{ p.bd }};background:{{ p.bg }};color:{{ p.fg }};transition:.12s">
+              <span style="width:9px;height:9px;border-radius:50%;background:{{ p.color }};box-shadow:0 0 6px {{ p.color }}"></span>
+              {{ p.name }}
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ===== CONTENT ===== -->
+  <div class="rv" style="padding:24px 28px 60px;max-width:1640px">
+
+    <!-- ===================== FIGHT LENS ===================== -->
+    <sc-if value="{{ lensFight }}" hint-placeholder-val="{{ true }}">
+
+      <!-- summary banner -->
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px">
+        <h2 style="font-family:Marcellus;font-size:24px;margin:0;font-weight:400">{{ fightTitle }}</h2>
+        <span style="font-family:'JetBrains Mono';font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:6px;background:{{ fightBadgeBg }};color:{{ fightBadgeFg }}">{{ fightBadge }}</span>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap">
+          <sc-for list="{{ fightStats }}" as="s" hint-placeholder-count="4">
+            <div style="text-align:right">
+              <div style="font-family:'JetBrains Mono';font-size:18px;font-weight:700;color:{{ s.fg }}">{{ s.value }}</div>
+              <div style="font-size:11px;color:#7c818d;text-transform:uppercase;letter-spacing:.5px">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- category subnav -->
+      <div style="display:inline-flex;gap:2px;margin-bottom:18px;border-bottom:1px solid #1c1f29;width:100%">
+        <sc-for list="{{ categories }}" as="c" hint-placeholder-count="4">
+          <button onClick="{{ c.onClick }}" style="font-family:Archivo;font-weight:600;font-size:13px;padding:9px 16px;cursor:pointer;background:none;border:none;border-bottom:2px solid {{ c.bd }};color:{{ c.fg }};margin-bottom:-1px;transition:.12s">{{ c.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- SUMMARY / RANKINGS -->
+      <sc-if value="{{ catSummary }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12.5px;color:#8b909d;margin:0 0 18px">WarcraftLogs parse percentiles per boss (kills only), grouped by role and ranked by average. <span style="color:#ff8a3d">orange</span>/<span style="color:#b06bf0">purple</span> = top parses · <span style="color:#4a9eff">blue</span>/<span style="color:#5bbf5b">green</span> = mid · grey = room to grow.</p>
+        <sc-for list="{{ rankingsGroups }}" as="grp" hint-placeholder-count="3">
+          <div style="margin-bottom:26px">
+            <div style="font-family:Archivo;font-weight:700;font-size:14px;color:#e8e9ee;margin-bottom:10px">{{ grp.label }}</div>
+            <div style="overflow-x:auto;border:1px solid #1c1f29;border-radius:12px;background:#101218">
+              <table style="border-collapse:collapse;width:100%;min-width:680px">
+                <thead>
+                  <tr style="background:#13151c">
+                    <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px;position:sticky;left:0;background:#13151c;z-index:1">Player</th>
+                    <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px">Avg</th>
+                    <sc-for list="{{ grp.bosses }}" as="b" hint-placeholder-count="3">
+                      <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px">{{ b }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="10">
+                    <tr style="border-top:1px solid #181b23">
+                      <td style="padding:0;position:sticky;left:0;background:#101218;z-index:1;border-left:3px solid {{ r.color }}">
+                        <button onClick="{{ r.openPlayer }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:9px 14px">
+                          <span style="width:8px;height:8px;border-radius:50%;background:{{ r.color }}"></span>
+                          <span style="font-family:Archivo;font-weight:500;font-size:13.5px;color:#d4d6dd">{{ r.name }}</span>
+                        </button>
+                      </td>
+                      <td style="padding:9px 14px;text-align:left;font-family:'JetBrains Mono';font-size:13.5px;font-weight:700;color:{{ r.avg.fg }}">{{ r.avg.text }}</td>
+                      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="3">
+                        <td style="padding:9px 14px;text-align:left;font-family:'JetBrains Mono';font-size:13.5px;font-weight:600;color:{{ c.fg }}">{{ c.text }}</td>
+                      </sc-for>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <!-- PERFORMANCE -->
+      <sc-if value="{{ catPerformance }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ roleSections }}" as="sec" hint-placeholder-count="4">
+          <div style="margin-bottom:26px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+              <span style="width:3px;height:16px;border-radius:2px;background:{{ sec.color }}"></span>
+              <span style="font-family:Archivo;font-weight:700;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:{{ sec.color }}">{{ sec.label }}</span>
+              <span style="font-family:'JetBrains Mono';font-size:11px;color:#6f7480;background:#15171f;border:1px solid #242935;padding:1px 7px;border-radius:5px">{{ sec.count }}</span>
+            </div>
+            <div style="overflow-x:auto;border:1px solid #1c1f29;border-radius:12px;background:#101218">
+              <table style="border-collapse:collapse;width:100%;min-width:820px">
+                <thead>
+                  <tr style="background:#13151c">
+                    <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 14px;position:sticky;left:0;background:#13151c;z-index:1">Player</th>
+                    <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Spec</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Deaths</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Avoidable dmg</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Interrupts</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Uptime</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Consumables</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:9px 12px">Gear flags</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="6">
+                    <tr style="border-top:1px solid #181b23">
+                      <td style="padding:9px 14px;position:sticky;left:0;background:#101218;z-index:1">
+                        <button onClick="{{ r.openPlayer }}" style="display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;padding:0">
+                          <span style="width:9px;height:9px;border-radius:50%;background:{{ r.color }};box-shadow:0 0 6px {{ r.color }}"></span>
+                          <span style="font-family:Archivo;font-weight:600;font-size:13.5px;color:{{ r.color }}">{{ r.name }}</span>
+                        </button>
+                      </td>
+                      <td style="padding:9px 12px;font-size:12px;color:#9aa0ac">{{ r.spec }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.deaths.bg }};color:{{ r.deaths.fg }}">{{ r.deaths.text }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.avoid.bg }};color:{{ r.avoid.fg }}">{{ r.avoid.text }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.intr.bg }};color:{{ r.intr.fg }}">{{ r.intr.text }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.uptime.bg }};color:{{ r.uptime.fg }}">{{ r.uptime.text }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:Archivo;font-size:12px;font-weight:700;background:{{ r.cons.bg }};color:{{ r.cons.fg }}">{{ r.cons.text }}</td>
+                      <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.flags.bg }};color:{{ r.flags.fg }}">{{ r.flags.text }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <!-- GEAR -->
+      <sc-if value="{{ catGear }}" hint-placeholder-val="{{ true }}">
+        <div style="overflow-x:auto;border:1px solid #1c1f29;border-radius:12px;background:#101218">
+          <table style="border-collapse:collapse;width:100%;min-width:1000px">
+            <thead>
+              <tr style="background:#13151c">
+                <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px;position:sticky;left:0;background:#13151c;z-index:1">Player</th>
+                <sc-for list="{{ gearCols }}" as="g" hint-placeholder-count="8">
+                  <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">{{ g }}</th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ gearRows }}" as="r" hint-placeholder-count="20">
+                <tr style="border-top:1px solid #181b23">
+                  <td style="padding:8px 14px;position:sticky;left:0;background:#101218;z-index:1">
+                    <button onClick="{{ r.openPlayer }}" style="display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;padding:0">
+                      <span style="width:8px;height:8px;border-radius:50%;background:{{ r.color }}"></span>
+                      <span style="font-family:Archivo;font-weight:600;font-size:13px;color:{{ r.color }}">{{ r.name }}</span>
+                    </button>
+                  </td>
+                  <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="8">
+                    <td style="padding:7px 12px;font-size:11.5px;line-height:1.3;background:{{ c.bg }};color:{{ c.fg }}" title="{{ c.title }}">{{ c.text }}</td>
+                  </sc-for>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
+
+      <!-- CONSUMABLES -->
+      <sc-if value="{{ catConsumables }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12.5px;color:#8b909d;margin:0 0 14px">Consumable counts across the night. Each row is a relative heatmap — <span style="color:#7fd6a0">green</span> = top user, <span style="color:#f0908f">red</span> = nobody home. A blank row means nobody used it.</p>
+        <div style="overflow-x:auto;border:1px solid #1c1f29;border-radius:12px;background:#101218">
+          <table style="border-collapse:collapse;min-width:1100px">
+            <thead>
+              <tr style="background:#13151c">
+                <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px;position:sticky;left:0;background:#13151c;z-index:1">Consumable</th>
+                <sc-for list="{{ consPlayers }}" as="p" hint-placeholder-count="25">
+                  <th style="padding:10px 6px;writing-mode:vertical-rl;text-orientation:mixed;font-family:Archivo;font-weight:600;font-size:11px;color:{{ p.color }};height:96px;white-space:nowrap">{{ p.name }}</th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ consRows }}" as="row" hint-placeholder-count="9">
+                <tr style="border-top:1px solid #181b23">
+                  <td style="padding:8px 14px;font-size:12.5px;font-weight:600;color:#c9ccd4;white-space:nowrap;position:sticky;left:0;background:#101218;z-index:1">{{ row.label }}</td>
+                  <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="25">
+                    <td style="padding:6px 4px;text-align:center;font-family:'JetBrains Mono';font-size:12px;font-weight:600;background:{{ c.bg }};color:{{ c.fg }}">{{ c.text }}</td>
+                  </sc-for>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
+
+      <!-- DRUMS -->
+      <sc-if value="{{ catDrums }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12.5px;color:#8b909d;margin:0 0 14px">Drum usage by the shaman corps. ⌀ = average raiders buffed per drum. Drums cast while everyone still had Tinnitus buffed nobody — those are wasted.</p>
+        <div style="overflow-x:auto;border:1px solid #1c1f29;border-radius:12px;background:#101218">
+          <table style="border-collapse:collapse;width:100%;min-width:760px">
+            <thead>
+              <tr style="background:#13151c">
+                <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 14px">Player</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">Battle</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">War</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">Restoration</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">Wasted</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">Total</th>
+                <th style="font-family:Archivo;font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:10px 12px">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ drumRows }}" as="r" hint-placeholder-count="4">
+                <tr style="border-top:1px solid #181b23">
+                  <td style="padding:9px 14px"><span style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:8px;border-radius:50%;background:{{ r.color }}"></span><span style="font-family:Archivo;font-weight:600;font-size:13px;color:{{ r.color }}">{{ r.name }}</span></span></td>
+                  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;color:#c9ccd4">{{ r.battle }}</td>
+                  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;color:#c9ccd4">{{ r.war }}</td>
+                  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;color:#c9ccd4">{{ r.resto }}</td>
+                  <td style="padding:7px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:600;background:{{ r.wasted.bg }};color:{{ r.wasted.fg }}">{{ r.wasted.text }}</td>
+                  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:#e8e9ee">{{ r.total }}</td>
+                  <td style="padding:9px 12px;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:{{ accent }}">{{ r.score }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
+
+    </sc-if>
+
+    <!-- ===================== PLAYER LENS ===================== -->
+    <sc-if value="{{ lensPlayer }}" hint-placeholder-val="{{ true }}">
+      <div class="rv">
+        <!-- profile header -->
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:8px">
+          <div style="width:58px;height:58px;border-radius:14px;display:grid;place-items:center;font-family:Marcellus;font-size:24px;color:#0c0d11;background:{{ profile.color }};box-shadow:0 0 22px {{ profile.glow }}">{{ profile.initials }}</div>
+          <div>
+            <div style="font-family:Marcellus;font-size:27px;line-height:1;color:{{ profile.color }}">{{ profile.name }}</div>
+            <div style="font-size:13px;color:#9aa0ac;margin-top:6px">{{ profile.subtitle }}</div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="text-align:right;max-width:320px">
+            <div style="display:inline-block;font-family:Archivo;font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase;padding:5px 12px;border-radius:7px;background:{{ profile.verdictBg }};color:{{ profile.verdictFg }}">{{ profile.verdict }}</div>
+            <div style="font-size:12px;color:#8b909d;margin-top:7px;line-height:1.4">{{ profile.note }}</div>
+          </div>
+        </div>
+
+        <!-- stat tiles -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0 26px">
+          <sc-for list="{{ profile.tiles }}" as="t" hint-placeholder-count="6">
+            <div style="border:1px solid #1c1f29;border-radius:12px;padding:15px 16px;background:#101218;position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0 auto 0 0;width:3px;background:{{ t.accent }}"></div>
+              <div style="font-family:'JetBrains Mono';font-size:23px;font-weight:700;color:{{ t.fg }}">{{ t.value }}</div>
+              <div style="font-size:11px;color:#7c818d;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">{{ t.label }}</div>
+              <div style="font-size:11.5px;color:#9aa0ac;margin-top:6px">{{ t.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start">
+          <!-- per-boss + gear column -->
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <!-- per boss -->
+            <div style="border:1px solid #1c1f29;border-radius:14px;background:#101218;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid #1c1f29;font-family:Archivo;font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9aa0ac">Per-boss breakdown</div>
+              <table style="border-collapse:collapse;width:100%">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;font-family:Archivo;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:8px 16px">Boss</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:8px 10px">Deaths</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:8px 10px">Avoidable</th>
+                    <th style="font-family:Archivo;font-weight:600;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#7c818d;padding:8px 10px">Uptime</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ profile.perBoss }}" as="b" hint-placeholder-count="4">
+                    <tr style="border-top:1px solid #181b23">
+                      <td style="padding:9px 16px;font-size:12.5px;color:#d4d6dd">
+                        <span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ b.badge }};margin-right:8px"></span>{{ b.name }}
+                      </td>
+                      <td style="padding:7px 10px;text-align:center;font-family:'JetBrains Mono';font-size:12.5px;font-weight:600;background:{{ b.deaths.bg }};color:{{ b.deaths.fg }}">{{ b.deaths.text }}</td>
+                      <td style="padding:7px 10px;text-align:center;font-family:'JetBrains Mono';font-size:12.5px;font-weight:600;background:{{ b.avoid.bg }};color:{{ b.avoid.fg }}">{{ b.avoid.text }}</td>
+                      <td style="padding:7px 10px;text-align:center;font-family:'JetBrains Mono';font-size:12.5px;font-weight:600;background:{{ b.uptime.bg }};color:{{ b.uptime.fg }}">{{ b.uptime.text }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- consumables -->
+            <div style="border:1px solid #1c1f29;border-radius:14px;background:#101218;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid #1c1f29;font-family:Archivo;font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9aa0ac">Consumables &amp; buffs</div>
+              <div style="padding:6px 8px">
+                <sc-for list="{{ profile.consumables }}" as="c" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:8px">
+                    <span style="display:flex;align-items:center;gap:9px;font-size:13px;color:#d4d6dd"><span style="width:7px;height:7px;border-radius:50%;background:{{ c.dot }}"></span>{{ c.label }}</span>
+                    <span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:{{ c.fg }}">{{ c.value }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <!-- gear column -->
+          <div style="border:1px solid #1c1f29;border-radius:14px;background:#101218;overflow:hidden">
+            <div style="padding:13px 16px;border-bottom:1px solid #1c1f29;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-family:Archivo;font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9aa0ac">Gear &amp; enchants</span>
+              <span style="font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:{{ profile.gearFlagFg }}">{{ profile.gearFlagText }}</span>
+            </div>
+            <div style="padding:4px 0">
+              <sc-for list="{{ profile.gear }}" as="g" hint-placeholder-count="10">
+                <div style="display:flex;align-items:center;gap:12px;padding:8px 16px;border-top:1px solid #15181f">
+                  <span style="width:62px;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:#6f7480">{{ g.slot }}</span>
+                  <span style="flex:1;font-size:12.5px;color:{{ g.nameFg }}">{{ g.item }}</span>
+                  <sc-if value="{{ g.hasIssue }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap;background:{{ g.issueBg }};color:{{ g.issueFg }}">{{ g.issue }}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+
+  <!-- ===== SETTINGS ===== -->
+  <sc-if value="{{ settingsOpen }}" hint-placeholder-val="{{ true }}">
+    <header style="display:flex;align-items:center;gap:16px;padding:16px 28px;border-bottom:1px solid #1c1f29;background:#0d0e13">
+      <div onClick="{{ closeSettings }}" title="Back" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+        <div style="width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(150deg,{{ accent }},#7a5a18);font-family:Marcellus;font-size:22px;color:#1a1206">W</div>
+        <div style="font-family:Marcellus;font-size:19px">Raid Analyzer</div>
+      </div>
+      <div style="flex:1"></div>
+      <button onClick="{{ closeSettings }}" style="font-family:Archivo;font-size:12px;font-weight:600;color:#c9ccd4;background:#161922;border:1px solid #262a35;padding:8px 14px;border-radius:8px;cursor:pointer">Done</button>
+    </header>
+    <div style="max-width:620px;margin:0 auto;padding:40px 24px 60px">
+      <h2 style="font-family:Marcellus;font-weight:400;font-size:26px;margin:0 0 24px">Settings</h2>
+
+      <!-- WCL creds -->
+      <div style="background:#101218;border:1px solid #1c1f29;border-radius:16px;padding:26px;margin-bottom:22px">
+        <h3 style="font-family:Marcellus;font-weight:400;font-size:19px;margin:0 0 8px">WCL API credentials</h3>
+        <p style="font-size:13px;color:#9aa0ac;line-height:1.55;margin:0 0 20px">Create a free v2 API client at <span style="color:{{ accent }}">classic.warcraftlogs.com/api/clients</span> and paste the client ID and secret here. They're stored only in this browser.</p>
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#8b909d;margin-bottom:7px">Client ID</label>
+        <input value="{{ wclId }}" onInput="{{ onWclId }}" placeholder="a1ffe4e8-e6cc-4f3e-9199-e02b1b3abe43" style="width:100%;font-family:'JetBrains Mono';font-size:13px;color:#e8e9ee;background:#15171f;border:1px solid #2a2f3b;border-radius:9px;padding:11px 13px;outline:none;margin-bottom:18px" />
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#8b909d;margin-bottom:7px">Client secret</label>
+        <input value="{{ wclSecret }}" onInput="{{ onWclSecret }}" type="password" placeholder="••••••••••••••••••••••••" style="width:100%;font-family:'JetBrains Mono';font-size:13px;color:#e8e9ee;background:#15171f;border:1px solid #2a2f3b;border-radius:9px;padding:11px 13px;outline:none;margin-bottom:20px" />
+        <div style="display:flex;align-items:center;gap:14px">
+          <button onClick="{{ saveCreds }}" style="font-family:Archivo;font-weight:700;font-size:13px;color:#1a1206;background:linear-gradient(150deg,{{ accent }},#a8842e);border:none;padding:10px 22px;border-radius:9px;cursor:pointer">Save</button>
+          <sc-if value="{{ credsSaved }}" hint-placeholder-val="{{ true }}"><span style="font-size:12.5px;color:#7fd6a0">✓ Saved to this browser</span></sc-if>
+        </div>
+      </div>
+
+      <!-- Discord webhook -->
+      <div style="background:#101218;border:1px solid #1c1f29;border-radius:16px;padding:26px">
+        <h3 style="font-family:Marcellus;font-weight:400;font-size:19px;margin:0 0 8px">Discord webhook</h3>
+        <p style="font-size:13px;color:#9aa0ac;line-height:1.55;margin:0 0 20px">Paste a Discord channel webhook URL to post report links straight to your guild channel (<em>Channel Settings → Integrations → Webhooks</em>). Stored only in this browser and posted directly to Discord — it never reaches our server. Leave blank to remove.</p>
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#8b909d;margin-bottom:7px">Webhook URL</label>
+        <input value="{{ webhook }}" onInput="{{ onWebhook }}" placeholder="https://discord.com/api/webhooks/…" style="width:100%;font-family:'JetBrains Mono';font-size:13px;color:#e8e9ee;background:#15171f;border:1px solid #2a2f3b;border-radius:9px;padding:11px 13px;outline:none;margin-bottom:20px" />
+        <div style="display:flex;align-items:center;gap:14px">
+          <button onClick="{{ saveWebhook }}" style="font-family:Archivo;font-weight:700;font-size:13px;color:#1a1206;background:linear-gradient(150deg,{{ accent }},#a8842e);border:none;padding:10px 22px;border-radius:9px;cursor:pointer">Save webhook</button>
+          <sc-if value="{{ webhookSaved }}" hint-placeholder-val="{{ true }}"><span style="font-size:12.5px;color:#7fd6a0">✓ Saved to this browser</span></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:940},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#d4a84a&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { lens: "fight", fightId: 2, playerId: 6, cat: "summary", query: "", loaded: false, reportUrl: "", settings: false, wclId: "", wclSecret: "", webhook: "", savedMsg: "" };
+
+  CLASS_COLORS = {
+    Warrior:"#C79C6E", Paladin:"#F58CBA", Hunter:"#ABD473", Rogue:"#FFF569",
+    Priest:"#E6E7EC", Shaman:"#3D8BEF", Mage:"#69CCF0", Warlock:"#9A86D6", Druid:"#FF7D0A",
+  };
+  CLASS_ORDER = ["Warrior","Paladin","Hunter","Rogue","Priest","Shaman","Mage","Warlock","Druid"];
+  ROLE_META = {
+    tank:{label:"Tanks", color:"#d4a84a"},
+    healer:{label:"Healers", color:"#5bbf86"},
+    caster:{label:"Casters", color:"#9A86D6"},
+    physical:{label:"Melee & Ranged", color:"#e0894a"},
+  };
+  ROLE_ORDER = ["tank","healer","caster","physical"];
+
+  PLAYERS = [
+    {id:1,name:"Abafamos",cls:"Druid",role:"tank",spec:"Feral",disc:.82},
+    {id:2,name:"Anjinho",cls:"Hunter",role:"physical",spec:"Beast Mastery",disc:.74},
+    {id:3,name:"Anomanderiz",cls:"Druid",role:"healer",spec:"Restoration",disc:.88},
+    {id:4,name:"Aquazolee",cls:"Mage",role:"caster",spec:"Frost",disc:.22},
+    {id:5,name:"Artesh",cls:"Rogue",role:"physical",spec:"Combat",disc:.80},
+    {id:6,name:"Authentica",cls:"Paladin",role:"tank",spec:"Protection",disc:.91},
+    {id:7,name:"Bamjin",cls:"Shaman",role:"caster",spec:"Elemental",disc:.36},
+    {id:8,name:"Blindberserk",cls:"Shaman",role:"physical",spec:"Enhancement",disc:.70},
+    {id:9,name:"Chipspatten",cls:"Hunter",role:"physical",spec:"Survival",disc:.78},
+    {id:10,name:"Darkminds",cls:"Warlock",role:"caster",spec:"Destruction",disc:.86},
+    {id:11,name:"Divinorum",cls:"Paladin",role:"healer",spec:"Holy",disc:.86},
+    {id:12,name:"Gyzmoff",cls:"Warlock",role:"caster",spec:"Affliction",disc:.83},
+    {id:13,name:"Imhoteph",cls:"Rogue",role:"physical",spec:"Combat",disc:.81},
+    {id:14,name:"Madnap",cls:"Warrior",role:"physical",spec:"Fury",disc:.76},
+    {id:15,name:"Malagueta",cls:"Hunter",role:"physical",spec:"Beast Mastery",disc:.72},
+    {id:16,name:"Manhazitos",cls:"Shaman",role:"caster",spec:"Elemental",disc:.60},
+    {id:17,name:"Moonxlly",cls:"Druid",role:"healer",spec:"Restoration",disc:.84},
+    {id:18,name:"Mynxx",cls:"Priest",role:"healer",spec:"Holy",disc:.87},
+    {id:19,name:"Oblodra",cls:"Shaman",role:"physical",spec:"Enhancement",disc:.50},
+    {id:20,name:"Pandaemonivm",cls:"Warrior",role:"tank",spec:"Protection",disc:.90},
+    {id:21,name:"Sänsho",cls:"Druid",role:"healer",spec:"Restoration",disc:.80},
+    {id:22,name:"Sickadiñ",cls:"Paladin",role:"healer",spec:"Holy",disc:.83},
+    {id:23,name:"Slvckin",cls:"Priest",role:"caster",spec:"Shadow",disc:.78},
+    {id:24,name:"Waldock",cls:"Warlock",role:"caster",spec:"Destruction",disc:.82},
+    {id:25,name:"Xaff",cls:"Priest",role:"healer",spec:"Discipline",disc:.85},
+  ];
+  FIGHTS = [
+    {id:1,name:"High King Maulgar",kill:true,dur:168},
+    {id:2,name:"Gruul the Dragonkiller",kill:true,dur:132},
+    {id:3,name:"Magtheridon",kill:false,dur:214},
+    {id:4,name:"Magtheridon",kill:true,dur:338},
+  ];
+  SLOTS = ["Head","Neck","Shoulders","Cloak","Chest","Hands","Legs","Weapon"];
+  ITEMS = {
+    Head:["Cyclone Faceguard","Cataclysm Helm","Voidheart Crown","Beast Lord Helm","Cowl of Tirisfal","Stag-Helm of Malorne","Crystalforge War-Helm","Destroyer Battle-Helm"],
+    Neck:["Choker of Vile Intent","Pendant of the Perilous","Brooch of Potential","Adornment of Stolen Souls","Teeth of Gruul","The Sun King's Talisman"],
+    Shoulders:["Cyclone Shoulderguards","Voidheart Mantle","Beast Lord Mantle","Destroyer Shoulderblades","Mantle of the Avatar","Nordrassil Wrath-Mantle"],
+    Cloak:["Drape of the Dark Reavers","Vengeance Wrap","Sethekk Oracle Cloak","Ruby Drape of the Mysticant","Blood Knight War Cloak","Cloak of the Pit Stalker"],
+    Chest:["Cyclone Breastplate","Voidheart Robe","Beast Lord Cuirass","Destroyer Breastplate","Vestments of the Avatar","Justicar Chestpiece"],
+    Hands:["Cyclone Handguards","Voidheart Gloves","Gloves of the Avatar","Destroyer Gauntlets","Gauntlets of Enforcement","Liar's Tongue Gloves"],
+    Legs:["Cyclone Legguards","Voidheart Leggings","Beast Lord Leggings","Destroyer Legguards","Leggings of the Avatar","Justicar Legguards"],
+    Weapon:["Gorehowl","The Sun Eater","Talon of Azshara","Bloodmaw Magus-Blade","Continuum Blade","Netherbane","Staff of Disintegration"],
+  };
+  PVP_ITEMS = {
+    Head:"Skywitch Hat", Shoulders:"Destroyers' Mantle", Cloak:"Ogre Slayer's Cover",
+    Chest:"Goldweave Tunic", Hands:"Gladiator's Silk Handguards", Legs:"Gladiator's Silk Trousers",
+    Neck:"Brooch of Potential", Weapon:"Gladiator's War Staff",
+  };
+  REASONS = ["No enchant","Empty socket","Uncommon gem","PvP item","Off-spec","Missing gem"];
+  CONS = [
+    {key:"flask",label:"Flask / Battle Elixir"},
+    {key:"guard",label:"Guardian Elixir"},
+    {key:"food",label:"Well Fed (food)"},
+    {key:"oil",label:"Weapon Oil / Stone"},
+    {key:"manaoil",label:"Superior Mana Oil"},
+    {key:"hpot",label:"Healing Potion"},
+    {key:"mpot",label:"Mana Potion"},
+    {key:"rune",label:"Dark / Demonic Rune"},
+    {key:"drum",label:"Drums of Battle"},
+  ];
+
+  // ---------- seeded helpers ----------
+  hash(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return (h^h>>>16)>>>0;}
+  rng(seed){let a=seed;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  fmt(n){return n>=1000?(n/1000).toFixed(1)+"k":String(Math.round(n));}
+  pct(n){return Math.round(n*100)+"%";}
+  classColor(c){return this.CLASS_COLORS[c]||"#9aa3b2";}
+
+  // goodness 0..1 (1=great) → {bg,fg}
+  heat(g){
+    if(g==null) return {bg:"transparent",fg:"#8b909d"};
+    if(g>=0.66) return {bg:"rgba(91,191,134,.13)",fg:"#7fd6a0"};
+    if(g>=0.40) return {bg:"rgba(214,168,60,.14)",fg:"#e6bd56"};
+    return {bg:"rgba(214,90,90,.16)",fg:"#f0908f"};
+  }
+  cell(text,g){const h=this.heat(g);return {text,bg:h.bg,fg:h.fg};}
+
+  // WCL parse-percentile color scale
+  wclColor(p){
+    if(p>=100)return"#e6c87d";
+    if(p>=99)return"#e87fb0";
+    if(p>=95)return"#ff8a3d";
+    if(p>=75)return"#b06bf0";
+    if(p>=50)return"#4a9eff";
+    if(p>=25)return"#5bbf5b";
+    return"#8b909d";
+  }
+  parseOf(p,boss){const r=this.rng(this.hash(p.name+"@@"+boss));return this.clamp(Math.round(p.disc*100+(r()-0.5)*52),1,99);}
+
+  // per (player, fight) metrics
+  metrics(p,f){
+    const r=this.rng(this.hash(p.name+":"+f.id));
+    const dieP=(f.kill?0.10:0.42)+(1-p.disc)*0.33;
+    let deaths=0; if(r()<dieP)deaths++; if(r()<dieP*0.45)deaths++;
+    const avoid=Math.round((6000+r()*32000)*(1.35-p.disc)*(f.dur/150));
+    const ff=r()<(0.18*(1-p.disc)+0.04)?Math.round(2000+r()*9000):0;
+    const baseUp={physical:.90,caster:.86,healer:.80,tank:.85}[p.role];
+    const uptime=this.clamp(baseUp-(1-p.disc)*0.28+(r()-0.5)*0.10,0.35,0.99);
+    const intr=(p.role==="physical"||p.role==="caster")?Math.floor(r()*5*(p.disc+0.2)):0;
+    const consScore=this.clamp(p.disc*0.85+(r()-0.4)*0.3,0.05,1);
+    return {deaths,avoid,ff,uptime,intr,consScore};
+  }
+
+  // gear for a player: array over SLOTS
+  gear(p){
+    return this.SLOTS.map((slot)=>{
+      const r=this.rng(this.hash(p.name+"|"+slot));
+      const isPvp=p.disc<0.3 && r()<0.7;
+      let item, hasIssue, reason, sev;
+      if(isPvp && this.PVP_ITEMS[slot]){
+        item=this.PVP_ITEMS[slot]; hasIssue=true; reason="PvP item"; sev="major";
+      } else {
+        const pool=this.ITEMS[slot]; item=pool[Math.floor(r()*pool.length)];
+        const issueP=(1-p.disc)*0.55;
+        hasIssue=r()<issueP;
+        sev=r()<0.5?"major":"moderate";
+        reason=this.REASONS[Math.floor(r()*this.REASONS.length)];
+        if(reason==="PvP item")reason="No enchant";
+      }
+      return {slot,item,hasIssue,reason,sev};
+    });
+  }
+  gearIssueCount(p){return this.gear(p).filter((g)=>g.hasIssue).length;}
+
+  consCount(p,key){
+    const r=this.rng(this.hash(p.name+"#"+key));
+    if(key==="manaoil" && p.role==="physical")return 0;
+    if(key==="rune" && p.role==="physical")return 0;
+    if(key==="drum" && p.cls!=="Shaman")return 0;
+    if(key==="oil" && (p.role==="caster"||p.role==="healer"))return r()<0.3?Math.floor(r()*3):0;
+    const max=key==="flask"||key==="food"?4:8;
+    return Math.round(r()*max*(p.disc+0.15));
+  }
+
+  // ---------- actions ----------
+  set(patch){this.setState(patch);}
+
+  renderVals(){
+    const accent=this.props.accent ?? "#d4a84a";
+    const S=this.state;
+    const lensFight=S.lens==="fight", lensPlayer=S.lens==="player";
+    const fight=this.FIGHTS.find((f)=>f.id===S.fightId)||this.FIGHTS[0];
+    const player=this.PLAYERS.find((p)=>p.id===S.playerId)||this.PLAYERS[0];
+    const dur=(s)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+    const toPlayer=(id)=>()=>this.setState({lens:"player",playerId:id});
+
+    // lens toggle styles
+    const onBg=`linear-gradient(150deg, ${accent}, #a8842e)`;
+    const fightTab={bg:lensFight?onBg:"transparent",bd:lensFight?accent:"transparent",fg:lensFight?"#17110260":"#0c0d11"};
+    const playerTab={bg:lensPlayer?onBg:"transparent",bd:lensPlayer?accent:"transparent",fg:lensPlayer?"#171102":"#0c0d11"};
+    // fg text color: active dark, inactive muted
+    const fightTabFg=lensFight?"#1a1206":"#9aa0ac";
+    const playerTabFg=lensPlayer?"#1a1206":"#9aa0ac";
+
+    // ---- fight chips ----
+    const fightChips=this.FIGHTS.map((f)=>{
+      const sel=f.id===S.fightId;
+      const killBadge=f.kill;
+      return {
+        name:f.name, dur:dur(f.dur), players:25,
+        badge:f.kill?"Kill":"Wipe",
+        badgeBg:f.kill?"rgba(91,191,134,.16)":"rgba(214,90,90,.16)",
+        badgeFg:f.kill?"#7fd6a0":"#f0908f",
+        bg:sel?"#1c2030":"#13151c",
+        bd:sel?accent:"#242935",
+        nameFg:sel?"#fff":"#c9ccd4",
+        onClick:()=>this.setState({fightId:f.id}),
+      };
+    });
+
+    // ---- player chips ----
+    const q=S.query.trim().toLowerCase();
+    const sorted=[...this.PLAYERS].sort((a,b)=>this.CLASS_ORDER.indexOf(a.cls)-this.CLASS_ORDER.indexOf(b.cls)||a.name.localeCompare(b.name));
+    const playerChips=sorted.filter((p)=>!q||p.name.toLowerCase().includes(q)).map((p)=>{
+      const sel=p.id===S.playerId, col=this.classColor(p.cls);
+      return {
+        name:p.name, color:col,
+        bg:sel?"#1c2030":"#13151c",
+        bd:sel?col:"#242935",
+        fg:sel?"#fff":"#c9ccd4",
+        onClick:()=>this.setState({playerId:p.id}),
+      };
+    });
+
+    // =============== FIGHT LENS: performance ===============
+    const rowsAll=this.PLAYERS.map((p)=>({p,m:this.metrics(p,fight)}));
+    const avoids=rowsAll.map((x)=>x.m.avoid);
+    const aMin=Math.min(...avoids), aMax=Math.max(...avoids);
+    const ups=rowsAll.map((x)=>x.m.uptime);
+    const uMin=Math.min(...ups), uMax=Math.max(...ups);
+    const relAvoid=(v)=>aMax===aMin?0.6:1-(v-aMin)/(aMax-aMin);
+    const relUp=(v)=>uMax===uMin?0.6:(v-uMin)/(uMax-uMin);
+
+    const mkRow=(p,m)=>{
+      const flags=this.gearIssueCount(p);
+      const consText=m.consScore>=0.75?"Full":m.consScore>=0.45?"Partial":"Missing";
+      const intrGood=(p.role==="physical"||p.role==="caster")?(m.intr>=3?0.8:m.intr>=1?0.55:0.3):null;
+      return {
+        name:p.name, color:this.classColor(p.cls), spec:p.spec,
+        openPlayer:toPlayer(p.id),
+        deaths:this.cell(String(m.deaths), m.deaths===0?1:m.deaths===1?0.42:0.15),
+        avoid:this.cell(this.fmt(m.avoid), relAvoid(m.avoid)),
+        intr:this.cell(p.role==="tank"||p.role==="healer"?"—":String(m.intr), intrGood),
+        uptime:this.cell(this.pct(m.uptime), relUp(m.uptime)),
+        cons:this.cell(consText, m.consScore),
+        flags:this.cell(String(flags), flags<=1?0.85:flags<=3?0.5:0.15),
+      };
+    };
+    const roleSections=this.ROLE_ORDER.map((role)=>{
+      const meta=this.ROLE_META[role];
+      const rows=rowsAll.filter((x)=>x.p.role===role)
+        .sort((a,b)=>this.CLASS_ORDER.indexOf(a.p.cls)-this.CLASS_ORDER.indexOf(b.p.cls)||a.p.name.localeCompare(b.p.name))
+        .map((x)=>mkRow(x.p,x.m));
+      return {label:meta.label, color:meta.color, count:rows.length, rows};
+    }).filter((s)=>s.count>0);
+
+    // fight summary stats
+    const totDeaths=rowsAll.reduce((s,x)=>s+x.m.deaths,0);
+    const underCons=rowsAll.filter((x)=>x.m.consScore<0.45).length;
+    const totFlags=this.PLAYERS.reduce((s,p)=>s+this.gearIssueCount(p),0);
+    const fightStats=[
+      {value:dur(fight.dur), label:"Duration", fg:"#e8e9ee"},
+      {value:String(totDeaths), label:"Deaths", fg:totDeaths===0?"#7fd6a0":totDeaths<=2?"#e6bd56":"#f0908f"},
+      {value:String(underCons), label:"Under-consumed", fg:underCons<=2?"#7fd6a0":underCons<=5?"#e6bd56":"#f0908f"},
+      {value:String(totFlags), label:"Gear flags", fg:"#e6bd56"},
+    ];
+
+    // =============== FIGHT LENS: gear ===============
+    const gearRows=sorted.map((p)=>({
+      name:p.name, color:this.classColor(p.cls), openPlayer:toPlayer(p.id),
+      cells:this.gear(p).map((g)=>{
+        if(!g.hasIssue)return {text:g.item,bg:"transparent",fg:"#c2c5cd",title:g.item};
+        const major=g.sev==="major";
+        return {text:g.item, bg:major?"rgba(214,90,90,.15)":"rgba(214,168,60,.13)", fg:major?"#f0908f":"#e6bd56", title:g.item+" — "+g.reason};
+      }),
+    }));
+
+    // =============== FIGHT LENS: consumables ===============
+    const consPlayers=sorted.map((p)=>({name:p.name,color:this.classColor(p.cls)}));
+    const consRows=this.CONS.map((c)=>{
+      const vals=sorted.map((p)=>this.consCount(p,c.key));
+      const mn=Math.min(...vals), mx=Math.max(...vals);
+      return {
+        label:c.label,
+        cells:vals.map((v)=>{
+          if(mx===0)return {text:"",bg:"transparent",fg:"#6f7480"};
+          const g=mx===mn?0.6:(v-mn)/(mx-mn);
+          const h=this.heat(g);
+          return {text:v||"", bg:v?h.bg:"transparent", fg:v?h.fg:"#6f7480"};
+        }),
+      };
+    });
+
+    // =============== FIGHT LENS: drums ===============
+    const drumRows=this.PLAYERS.filter((p)=>p.cls==="Shaman").map((p)=>{
+      const r=this.rng(this.hash(p.name+"~drums"));
+      const battle=Math.round(r()*14*p.disc), war=Math.round(r()*5), resto=Math.round(r()*3);
+      const total=battle+war+resto;
+      const wasted=Math.round(r()*(1-p.disc)*5);
+      const score=Math.round(total*3.6*(0.7+r()*0.4));
+      return {
+        name:p.name, color:this.classColor(p.cls),
+        battle:`${battle} (⌀ ${(2+r()).toFixed(2)})`,
+        war:war?`${war} (⌀ ${(1.5+r()).toFixed(2)})`:"",
+        resto:resto?`${resto} (⌀ ${(1+r()).toFixed(2)})`:"",
+        wasted:this.cell(String(wasted), wasted===0?1:wasted<=1?0.45:0.15),
+        total:String(total), score:String(score),
+      };
+    });
+
+    // =============== SUMMARY: rankings ===============
+    const rankedBosses=["High King Maulgar","Gruul the Dragonkiller","Magtheridon"];
+    const rankGroups=[
+      {label:"Damage Dealers",roles:["physical","caster"]},
+      {label:"Healers",roles:["healer"]},
+      {label:"Tanks",roles:["tank"]},
+    ];
+    const rankingsGroups=rankGroups.map((g)=>{
+      const rows=this.PLAYERS.filter((p)=>g.roles.includes(p.role)).map((p)=>{
+        const vals=rankedBosses.map((b)=>this.parseOf(p,b));
+        const avg=Math.round(vals.reduce((s,v)=>s+v,0)/vals.length);
+        return {name:p.name, color:this.classColor(p.cls), openPlayer:toPlayer(p.id),
+          avg:{text:String(avg),fg:this.wclColor(avg)},
+          cells:vals.map((v)=>({text:String(v),fg:this.wclColor(v)})), _avg:avg};
+      }).sort((a,b)=>b._avg-a._avg);
+      return {label:g.label, bosses:rankedBosses, rows};
+    });
+
+    // =============== PLAYER LENS: profile ===============
+    const col=this.classColor(player.cls);
+    const allM=this.FIGHTS.map((f)=>({f,m:this.metrics(player,f)}));
+    const sumDeaths=allM.reduce((s,x)=>s+x.m.deaths,0);
+    const sumAvoid=allM.reduce((s,x)=>s+x.m.avoid,0);
+    const sumIntr=allM.reduce((s,x)=>s+x.m.intr,0);
+    const sumFF=allM.reduce((s,x)=>s+x.m.ff,0);
+    const avgUp=allM.reduce((s,x)=>s+x.m.uptime,0)/allM.length;
+    const avgCons=allM.reduce((s,x)=>s+x.m.consScore,0)/allM.length;
+    const gearList=this.gear(player);
+    const gflags=gearList.filter((g)=>g.hasIssue).length;
+
+    // verdict score 0..100
+    let score=100;
+    score-=sumDeaths*8; score-=(1-avgCons)*30; score-=gflags*4; score-=(sumAvoid>120000?15:sumAvoid>70000?7:0);
+    score=this.clamp(score,5,100);
+    let verdict,vbg,vfg,note;
+    if(score>=82){verdict="Exemplary";vbg="rgba(91,191,134,.16)";vfg="#7fd6a0";note="Fully consumed, low avoidable damage, clean gear. Set the standard.";}
+    else if(score>=62){verdict="Solid";vbg="rgba(91,191,134,.12)";vfg="#9bd9b3";note="A good night with a couple of small things to tidy up.";}
+    else if(score>=40){verdict="Needs attention";vbg="rgba(214,168,60,.16)";vfg="#e6bd56";note="Several misses — consumables and avoidable damage are dragging the score.";}
+    else {verdict="Major concerns";vbg="rgba(214,90,90,.16)";vfg="#f0908f";note="PvP/under-geared and under-consumed. Worth a direct conversation.";}
+
+    const roleLabel={tank:"Tank",healer:"Healer",caster:"Caster DPS",physical:"Melee/Ranged DPS"}[player.role];
+    const profile={
+      name:player.name, initials:player.name.slice(0,2).toUpperCase(),
+      color:col, glow:col+"55",
+      subtitle:`${player.cls} · ${player.spec} · ${roleLabel}`,
+      verdict, verdictBg:vbg, verdictFg:vfg, note,
+      gearFlagText:gflags===0?"All clean":`${gflags} flag${gflags>1?"s":""}`,
+      gearFlagFg:gflags===0?"#7fd6a0":gflags<=2?"#e6bd56":"#f0908f",
+      tiles:[
+        {value:String(sumDeaths), label:"Deaths", sub:"across "+this.FIGHTS.length+" pulls", accent:sumDeaths===0?"#5bbf86":"#d65a5a", fg:sumDeaths===0?"#7fd6a0":sumDeaths<=1?"#e6bd56":"#f0908f"},
+        {value:this.fmt(sumAvoid), label:"Avoidable dmg", sub:"stood in stuff", accent:"#e0894a", fg:sumAvoid>120000?"#f0908f":sumAvoid>70000?"#e6bd56":"#7fd6a0"},
+        {value:this.pct(avgUp), label:"Avg uptime", sub:"active time", accent:accent, fg:avgUp>=0.85?"#7fd6a0":avgUp>=0.7?"#e6bd56":"#f0908f"},
+        {value:String(sumIntr), label:"Interrupts", sub:player.role==="tank"||player.role==="healer"?"n/a for role":"casts kicked", accent:"#9A86D6", fg:"#c9ccd4"},
+        {value:this.pct(avgCons), label:"Consumables", sub:"flask/food/oil", accent:"#5bbf86", fg:avgCons>=0.75?"#7fd6a0":avgCons>=0.45?"#e6bd56":"#f0908f"},
+        {value:String(gflags), label:"Gear flags", sub:"enchants/gems", accent:"#d4a84a", fg:gflags<=1?"#7fd6a0":gflags<=3?"#e6bd56":"#f0908f"},
+      ],
+      perBoss:allM.map(({f,m})=>({
+        name:f.name+(f.kill?"":" (wipe)"),
+        badge:f.kill?"#5bbf86":"#d65a5a",
+        deaths:this.cell(String(m.deaths), m.deaths===0?1:m.deaths===1?0.42:0.15),
+        avoid:this.cell(this.fmt(m.avoid), m.avoid>40000?0.2:m.avoid>20000?0.5:0.85),
+        uptime:this.cell(this.pct(m.uptime), m.uptime>=0.85?0.85:m.uptime>=0.7?0.5:0.2),
+      })),
+      consumables:this.CONS.filter((c)=>{
+        if(c.key==="manaoil"&&player.role==="physical")return false;
+        if(c.key==="rune"&&player.role==="physical")return false;
+        if(c.key==="drum"&&player.cls!=="Shaman")return false;
+        return true;
+      }).map((c)=>{
+        const n=this.consCount(player,c.key);
+        const good=n>=3, ok=n>=1;
+        return {label:c.label, value:n?`${n}×`:"none",
+          dot:good?"#5bbf86":ok?"#d6a83c":"#d65a5a",
+          fg:good?"#7fd6a0":ok?"#e6bd56":"#f0908f"};
+      }),
+      gear:gearList.map((g)=>({
+        slot:g.slot, item:g.item, hasIssue:g.hasIssue, issue:g.reason,
+        nameFg:g.hasIssue?(g.sev==="major"?"#f0908f":"#e6bd56"):"#c2c5cd",
+        issueBg:g.sev==="major"?"rgba(214,90,90,.16)":"rgba(214,168,60,.14)",
+        issueFg:g.sev==="major"?"#f0908f":"#e6bd56",
+      })),
+    };
+
+    return {
+      accent,
+      notLoaded: !S.loaded && !S.settings,
+      loaded: S.loaded && !S.settings,
+      settingsOpen: S.settings,
+      openSettings: ()=>this.setState({settings:true, savedMsg:""}),
+      closeSettings: ()=>this.setState({settings:false}),
+      wclId: S.wclId, wclSecret: S.wclSecret, webhook: S.webhook, savedMsg: S.savedMsg,
+      onWclId: (e)=>this.setState({wclId:e.target.value}),
+      onWclSecret: (e)=>this.setState({wclSecret:e.target.value}),
+      onWebhook: (e)=>this.setState({webhook:e.target.value}),
+      saveCreds: ()=>this.setState({savedMsg:"creds"}),
+      saveWebhook: ()=>this.setState({savedMsg:"webhook"}),
+      credsSaved: S.savedMsg==="creds",
+      webhookSaved: S.savedMsg==="webhook",
+      reportUrl: S.reportUrl,
+      reportCode: S.reportUrl ? (S.reportUrl.split("/").filter(Boolean).pop() || S.reportUrl) : "Mcva2nh39kHzfjqC",
+      onUrlInput: (e)=>this.setState({reportUrl:e.target.value}),
+      onUrlKey: (e)=>{ if(e.key==="Enter") this.setState({loaded:true}); },
+      analyze: ()=>this.setState({loaded:true}),
+      loadSample: ()=>this.setState({loaded:true, reportUrl:"Mcva2nh39kHzfjqC"}),
+      goHome: ()=>this.setState({loaded:false}),
+      lensFight, lensPlayer,
+      pickFight:()=>this.setState({lens:"fight"}),
+      pickPlayer:()=>this.setState({lens:"player"}),
+      fightTabBg:fightTab.bg, fightTabBd:fightTab.bd, fightTabFg,
+      playerTabBg:playerTab.bg, playerTabBd:playerTab.bd, playerTabFg,
+      lensHint:lensFight?"Reviewing one boss pull — everyone who was there.":"Reviewing one raider — everything they did, all night.",
+      query:S.query, onSearch:(e)=>this.setState({query:e.target.value}),
+      fightChips, playerChips,
+
+      fightTitle:fight.name,
+      fightBadge:fight.kill?"Kill":"Wipe",
+      fightBadgeBg:fight.kill?"rgba(91,191,134,.16)":"rgba(214,90,90,.16)",
+      fightBadgeFg:fight.kill?"#7fd6a0":"#f0908f",
+      fightStats,
+
+      categories:[
+        {key:"summary",label:"Summary"},
+        {key:"performance",label:"Performance"},
+        {key:"gear",label:"Gear"},
+        {key:"consumables",label:"Consumables"},
+        {key:"drums",label:"Drums"},
+      ].map((c)=>{
+        const sel=S.cat===c.key;
+        return {label:c.label, onClick:()=>this.setState({cat:c.key}),
+          bd:sel?accent:"transparent", fg:sel?"#fff":"#8b909d"};
+      }),
+      catSummary:S.cat==="summary",
+      catPerformance:S.cat==="performance",
+      catGear:S.cat==="gear",
+      catConsumables:S.cat==="consumables",
+      catDrums:S.cat==="drums",
+
+      rankingsGroups,
+      roleSections,
+      gearCols:this.SLOTS, gearRows,
+      consPlayers, consRows,
+      drumRows,
+      profile,
+    };
+  }
+}
+</script>
+</body>
+</html>

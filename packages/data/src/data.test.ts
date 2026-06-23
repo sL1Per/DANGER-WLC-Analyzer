@@ -3,7 +3,6 @@ import { roleSignals, hasteBuffs, engineeringDamageIds } from "./rpb";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
 import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
-import { validateRules, zoneCodeByName } from "./index";
 import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
 import { classAbilities } from "./classAbilities";
 
@@ -82,39 +81,6 @@ describe("consumable reference data", () => {
     expect(weaponEnhancementEnchantIds).toContain(2955); // Adamantite Weightstone
     expect(weaponEnhancementEnchantIds).not.toContain(2636); // Windfury (shaman imbue)
     expect(weaponEnhancementEnchantIds).not.toContain(2639); // Windfury Totem (ally buff)
-  });
-});
-
-describe("speedrun validation rules", () => {
-  it("covers the curated speedrun zones", () => {
-    const zones = new Set(validateRules.map((r) => r.zone));
-    expect(zones).toEqual(new Set(["SW", "MH", "BT", "ZA"]));
-  });
-  it("keeps the xlsx-verified SW rules intact", () => {
-    const sw = validateRules.find((r) => r.zone === "SW")!;
-    expect(sw.verified).toBe(true);
-    const protector = sw.trash.find((t) => t.npcIds.includes(25507))!;
-    expect(protector.minKills).toBe(5);
-    const archmage = sw.trash.find((t) => t.npcIds.includes(25363))!;
-    expect(archmage.minKills).toBe(65);
-    expect(sw.boss).toEqual({ kind: "single", count: 6 });
-  });
-  it("uses the split boss rule where two zones are combined", () => {
-    const splits = validateRules.filter((r) => r.boss.kind === "split");
-    expect(splits.length).toBe(1); // exactly the MH+BT combined run
-  });
-  it("flags every non-SW zone as unverified until a human checks it", () => {
-    for (const r of validateRules) {
-      if (r.zone !== "SW") expect(r.verified).toBe(false);
-      expect(r.startingPointNpcIds.length).toBeGreaterThan(0);
-      for (const t of r.trash) { expect(t.npcIds.length).toBeGreaterThan(0); expect(t.minKills).toBeGreaterThan(0); }
-    }
-  });
-  it("maps full WCL zone names to short codes", () => {
-    expect(zoneCodeByName["Sunwell Plateau"]).toBe("SW");
-    expect(zoneCodeByName["Black Temple"]).toBe("BT");
-    expect(zoneCodeByName["Mount Hyjal"]).toBe("MH");
-    expect(zoneCodeByName["Zul'Aman"]).toBe("ZA");
   });
 });
 

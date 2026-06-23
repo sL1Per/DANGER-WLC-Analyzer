@@ -13,6 +13,8 @@ import {
   saveRpbViewMode,
   loadRpbTab,
   saveRpbTab,
+  loadRecentReports,
+  addRecentReport,
 } from "./storage";
 
 beforeEach(() => localStorage.clear());
@@ -100,5 +102,37 @@ describe("rpb tab storage", () => {
   it("falls back to general for a junk stored value", () => {
     localStorage.setItem("wcl.rpbTab", "consumables");
     expect(loadRpbTab()).toBe("general");
+  });
+});
+
+describe("recent reports storage", () => {
+  const mk = (id: string, title = id) => ({ id, title, zoneName: "Gruul", players: 21, startTime: 1 });
+
+  it("returns an empty list when nothing stored", () => {
+    expect(loadRecentReports()).toEqual([]);
+  });
+  it("prepends most-recent and stamps viewedAt", () => {
+    addRecentReport(mk("a"));
+    addRecentReport(mk("b"));
+    const list = loadRecentReports();
+    expect(list.map((r) => r.id)).toEqual(["b", "a"]);
+    expect(list[0].viewedAt).toBeGreaterThan(0);
+  });
+  it("dedupes by id, moving an existing report to the front", () => {
+    addRecentReport(mk("a"));
+    addRecentReport(mk("b"));
+    addRecentReport(mk("a", "a-again"));
+    const list = loadRecentReports();
+    expect(list.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(list[0].title).toBe("a-again");
+  });
+  it("caps the list at 12 entries", () => {
+    for (let i = 0; i < 15; i++) addRecentReport(mk(`r${i}`));
+    expect(loadRecentReports()).toHaveLength(12);
+  });
+  it("recovers from a corrupt stored value", () => {
+    localStorage.setItem("wcl.recentReports", "{bad json");
+    expect(loadRecentReports()).toEqual([]);
+    expect(localStorage.getItem("wcl.recentReports")).toBeNull();
   });
 });

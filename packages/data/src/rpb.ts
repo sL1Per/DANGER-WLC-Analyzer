@@ -12,6 +12,16 @@ export interface RoleSignal { spellId: number; role: Role; name: string; }
  *  (elemental); Priest to caster (shadow); Paladin/Warrior/Rogue/Hunter physical. */
 export const casterClasses = ["Mage", "Warlock", "Priest", "Shaman"];
 
+/** WCL spec names that are physical DPS even though their class defaults to
+ *  caster — resolved from rankings spec by detectRole. Enhancement shaman is the
+ *  classic case (dual-wield melee on the otherwise spell-based Shaman class). */
+export const physicalSpecs = ["Enhancement"];
+
+/** WCL spec names that are caster DPS even though their class defaults to
+ *  physical — resolved from rankings spec by detectRole. Balance (boomkin) druid
+ *  is the classic case (spell DPS on the otherwise feral-default Druid class). */
+export const casterSpecs = ["Balance"];
+
 /** Auras/casts that disambiguate specs sharing a class (e.g. feral tank vs cat). */
 export const roleSignals: RoleSignal[] = [
   { spellId: 71, role: "tank", name: "Defensive Stance" },

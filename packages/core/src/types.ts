@@ -14,10 +14,6 @@ export interface ReportData {
   buffs?: BuffInterval[];
   drumCasts?: DrumCast[];
   drumApplications?: DrumApplication[];
-  /** enemy gameId → total kills across the report (M4+); undefined = report cached before M4 */
-  npcKills?: Record<string, number>;
-  /** enemy gameIds that died in the chronologically first fight (for the valid-start check) */
-  firstPullNpcIds?: number[];
   /** RPB (M5a+) — all optional; undefined = report cached before M5a (refresh notice). */
   playerTotals?: PlayerTotals[];
   playerDeaths?: PlayerDeath[];

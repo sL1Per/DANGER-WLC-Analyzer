@@ -22,7 +22,6 @@ export const badEnchants: BadEnchant[] = badEnchantsJson as BadEnchant[];
 export const excludedItems: ExcludedItem[] = excludedItemsJson;
 
 export * from "./consumables";
-export * from "./validateRules";
 export * from "./shadowResistance";
 export * from "./rpb";
 export * from "./classAbilities";

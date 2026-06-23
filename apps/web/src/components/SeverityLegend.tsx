@@ -2,9 +2,9 @@
 export function SeverityLegend() {
   return (
     <p className="sev-legend">
-      <span className="chip sev-major">red = big issue</span>
-      <span className="chip sev-moderate">yellow = intermediate</span>
-      <span className="chip sev-minor">green = small thing</span>
+      <span className="sev-legend__item sev-major"><span className="sev-legend__dot" aria-hidden />problem</span>
+      <span className="sev-legend__item sev-moderate"><span className="sev-legend__dot" aria-hidden />watch</span>
+      <span className="sev-legend__item sev-minor"><span className="sev-legend__dot" aria-hidden />fine</span>
     </p>
   );
 }

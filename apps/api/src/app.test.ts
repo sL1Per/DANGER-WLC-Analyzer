@@ -254,43 +254,6 @@ describe("GET /api/report/:id — buff intervals and drum events", () => {
   });
 });
 
-describe("GET /api/report/:id — npc kills", () => {
-  const rawWithNpcs: RawReport = {
-    ...raw,
-    fights: [
-      { id: 1, name: "Trash Pack", encounterID: 0, kill: null, startTime: 0, endTime: 100, friendlyPlayers: [10] },
-    ],
-    masterData: {
-      actors: [{ id: 10, name: "Tank", subType: "Warrior" }],
-      npcs: [{ id: 50, gameID: 25507 }],
-    },
-  };
-
-  it("populates npcKills from fetchDeaths events", async () => {
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithNpcs),
-      fetchDeaths: vi.fn().mockResolvedValue([
-        { timestamp: 40, type: "death", targetID: 50, fight: 1 },
-      ]),
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.npcKills).toEqual({ "25507": 1 });
-  });
-
-  it("serves the report with undefined npcKills when fetchDeaths fails (best-effort)", async () => {
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithNpcs),
-      fetchDeaths: vi.fn().mockRejectedValue(new WclError(502, "boom")),
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.npcKills).toBeUndefined();
-  });
-});
-
 describe("GET /api/report/:id — enemy debuffs + absorbs (M5b)", () => {
   it("includes enemyDebuffs and absorbs in the normalized report", async () => {
     const app = createApp(testDeps);

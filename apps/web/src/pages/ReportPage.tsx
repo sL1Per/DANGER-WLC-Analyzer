@@ -5,15 +5,16 @@ import { LensBar, bossFights, type Lens } from "../components/LensBar";
 import { SummaryRankings } from "../components/report/SummaryRankings";
 import { PerformanceView } from "../components/report/PerformanceView";
 import { GearMatrix } from "../components/report/GearMatrix";
+import { FightHeader } from "../components/report/FightHeader";
 import { ConsumablesCategory } from "../components/report/ConsumablesCategory";
 import { DrumsCategory } from "../components/report/DrumsCategory";
 import { PlayerProfile } from "../components/report/PlayerProfile";
-import { ValidateView } from "../components/ValidateView";
 import { ShadowResView } from "../components/ShadowResView";
+import { LoadingNugget } from "../components/LoadingNugget";
 
 const CATEGORIES = [
   ["summary", "Summary"], ["performance", "Performance"], ["gear", "Gear"],
-  ["consumables", "Consumables"], ["drums", "Drums"], ["validate", "Validate"], ["shadowresi", "Shadow Resi"],
+  ["consumables", "Consumables"], ["drums", "Drums"], ["shadowresi", "Shadow Resi"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
@@ -22,7 +23,7 @@ export function ReportPage() {
   const { result, error, loading, reload } = useReport(reportId);
   const [params, setParams] = useSearchParams();
 
-  if (loading) return <p>Loading report…</p>;
+  if (loading) return <LoadingNugget />;
   if (error) {
     return (
       <div role="alert">
@@ -64,6 +65,7 @@ export function ReportPage() {
 
       {lens === "fight" ? (
         <div className="report-body">
+          <FightHeader report={report} fightId={fightId} />
           <nav className="cat-subnav">
             {CATEGORIES.map(([key, label]) => (
               <button key={key} className={cat === key ? "active" : ""} onClick={() => patch({ cat: key })}>{label}</button>
@@ -75,7 +77,6 @@ export function ReportPage() {
             {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} />}
             {cat === "drums" && <DrumsCategory report={report} fightId={fightId} />}
-            {cat === "validate" && <ValidateView report={report} />}
             {cat === "shadowresi" && <ShadowResView report={report} />}
           </div>
         </div>

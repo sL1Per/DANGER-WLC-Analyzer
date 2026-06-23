@@ -241,37 +241,6 @@ describe("normalizeReport — gear auras (shadow resi)", () => {
   });
 });
 
-describe("normalizeReport — npc kills (validate)", () => {
-  const raw = {
-    title: "SW run", startTime: 0, endTime: 1000, zone: { name: "Sunwell Plateau" },
-    fights: [
-      { id: 1, name: "Sunblade Protector", encounterID: 0, kill: null, startTime: 0, endTime: 100, friendlyPlayers: [10] },
-      { id: 2, name: "Kalecgos", encounterID: 724, kill: true, startTime: 200, endTime: 300, friendlyPlayers: [10] },
-    ],
-    masterData: {
-      actors: [{ id: 10, name: "Tank", subType: "Warrior" }],
-      npcs: [{ id: 50, gameID: 25507 }, { id: 51, gameID: 25363 }],
-    },
-  };
-  it("counts deaths per gameId and records the first pull's npcs", () => {
-    const data = normalizeReport("c", raw as never, [], {}, {
-      deaths: [
-        { timestamp: 40, type: "death", targetID: 50, fight: 1 },
-        { timestamp: 60, type: "death", targetID: 50, fight: 1 },
-        { timestamp: 80, type: "death", targetID: 51, fight: 1 },
-        { timestamp: 250, type: "death", targetID: 10, fight: 2 }, // a player death — ignored
-      ],
-    });
-    expect(data.npcKills).toEqual({ "25507": 2, "25363": 1 });
-    expect(data.firstPullNpcIds).toEqual(expect.arrayContaining([25507, 25363]));
-  });
-  it("leaves npc fields undefined when no death data is supplied", () => {
-    const data = normalizeReport("c", raw as never, [], {}, {});
-    expect(data.npcKills).toBeUndefined();
-    expect(data.firstPullNpcIds).toBeUndefined();
-  });
-});
-
 describe("normalizeReport — RPB events", () => {
   // Boss fight id 2 (Hydross the Unstable, encounterID 623), players 1 and 2.
   // friendlyPlayers is set so filterToParticipants picks up only ids 1 and 2.

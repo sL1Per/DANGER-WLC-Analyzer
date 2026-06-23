@@ -29,8 +29,8 @@ export function SettingsPage() {
     <div className="settings">
       <header className="report-header">
         <Link to="/" className="report-header__brand">
-          <span className="report-header__mark" aria-hidden>W</span>
-          <span className="report-header__title">Raid Analyzer</span>
+          <span className="report-header__mark" aria-hidden>D</span>
+          <span className="report-header__title">DANGER Raid Analyzer</span>
         </Link>
         <div className="report-header__actions"><button className="btn-outline" onClick={() => navigate(-1)}>Done</button></div>
       </header>

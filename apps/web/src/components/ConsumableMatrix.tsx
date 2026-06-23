@@ -30,14 +30,14 @@ export function ConsumableMatrix({
   );
 
   return (
-    <div className="scroll-x">
+    <div className="consumable-card scroll-x">
       <table className="consumable-matrix">
         <thead>
           <tr>
-            <th />
+            <th className="consumable-corner" scope="col">Consumable</th>
             {players.map((p) => (
-              <th key={p.playerId} className="player-col" style={classColorVar(p.className)}>
-                <span className="class-dot" /> {p.playerName}
+              <th key={p.playerId} className="player-col" style={classColorVar(p.className)} scope="col">
+                <span className="player-col__name">{p.playerName}</span>
               </th>
             ))}
           </tr>
