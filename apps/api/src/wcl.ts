@@ -34,6 +34,7 @@ query Report($code: String!) {
       masterData {
         actors(type: "Player") { id name subType }
         npcs: actors(type: "NPC") { id gameID }
+        abilities { gameID name }
       }
     }
   }
@@ -50,6 +51,8 @@ export interface RawReport {
     actors: { id: number; name: string; subType: string }[];
     /** optional: absent on reports with no NPC actors / older fixtures (normalize falls back to []) */
     npcs?: { id: number; gameID: number }[];
+    /** ability id → name, for damage-taken/death labels */
+    abilities?: { gameID: number; name: string }[];
   } | null;
 }
 
@@ -167,7 +170,11 @@ export async function fetchCastEvents(
     new Set(["cast"])) as unknown as RawCastEvent[];
 }
 
-export interface RawDeathEvent { timestamp: number; type: string; targetID: number; fight: number; }
+export interface RawDeathEvent {
+  timestamp: number; type: string; targetID: number; fight: number;
+  /** the killing-blow ability (present on most WCL death events) */
+  killingAbilityGameID?: number;
+}
 
 /** All enemy/player death events (whole report). targetID maps to a masterData actor. */
 export async function fetchDeaths(code: string, accessToken: string): Promise<RawDeathEvent[]> {
@@ -212,6 +219,12 @@ export async function fetchDamageTaken(code: string, accessToken: string, fightI
 /** Damage-done events by players (DamageDone dataType). */
 export async function fetchDamageDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
   return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
+}
+
+/** Effective healing-done events by players (HealingDone dataType). Reuses the
+ *  RawDamageEvent shape (sourceID/amount/fight); only the `heal` type is kept. */
+export async function fetchHealingDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
+  return await fetchAllEvents(code, accessToken, "HealingDone", new Set(["heal"]), fightIds) as unknown as RawDamageEvent[];
 }
 
 export interface RawDebuffEvent {

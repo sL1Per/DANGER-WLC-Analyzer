@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs } from "./wcl";
+import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -211,6 +211,28 @@ describe("fetchAllCasts — fightIds scoping", () => {
     await fetchAllCasts("RPT", "tok", [11, 22]);
     expect(calls[0].variables.fightIds).toEqual([11, 22]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("fetchHealingDone", () => {
+  const page = (events: unknown[], next: number | null) =>
+    new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
+
+  it("requests HealingDone events and returns heal entries", async () => {
+    const heal = { type: "heal", sourceID: 2, targetID: 5, abilityGameID: 25314, amount: 5000, fight: 3 };
+    const mock = vi.fn().mockResolvedValue(page([heal], null));
+    vi.stubGlobal("fetch", mock);
+    const out = await fetchHealingDone("rep", "tok", [3]);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.amount).toBe(5000);
+    expect(out[0]!.sourceID).toBe(2);
+    const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    if (/dataType:\s*\$dataType/.test(body.query)) {
+      expect(body.variables.dataType).toBe("HealingDone");
+    } else {
+      expect(body.query).toContain("dataType: HealingDone");
+    }
+    expect(body.variables.fightIds).toEqual([3]);
   });
 });
 
