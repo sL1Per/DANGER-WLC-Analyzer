@@ -386,6 +386,46 @@ describe("normalizeReport — enemy debuffs + absorbs (M5b)", () => {
   });
 });
 
+describe("normalizeReport — healing events, enriched deaths, and abilityMeta", () => {
+  // Reuse rawRpb: boss fight id 2 (Hydross), players 1 and 2 with friendlyPlayers set.
+  // allCasts: [] keeps activeIds empty so all participants survive the roster filter.
+  const rawRpb: RawReport = {
+    title: "SSC run",
+    startTime: 1_700_000_000_000,
+    endTime: 1_700_000_400_000,
+    zone: { name: "Serpentshrine Cavern" },
+    fights: [
+      { id: 1, name: "Underbog Colossus", encounterID: 0, kill: null,
+        startTime: 0, endTime: 60_000, friendlyPlayers: [1, 2] },
+      { id: 2, name: "Hydross the Unstable", encounterID: 623, kill: true,
+        startTime: 70_000, endTime: 130_000, friendlyPlayers: [1, 2] },
+    ],
+    masterData: {
+      actors: [
+        { id: 1, name: "Playertank", subType: "Warrior" },
+        { id: 2, name: "Playermage", subType: "Mage" },
+      ],
+      abilities: [{ gameID: 25314, name: "Renew" }],
+    },
+  };
+
+  it("emits healingEvents, enriched deaths, and abilityMeta", () => {
+    const data = normalizeReport("rep", rawRpb, [], {}, {
+      allCasts: [],
+      healingDone: [
+        { timestamp: 1, type: "heal", sourceID: 1, targetID: 1, abilityGameID: 25314, amount: 5000, fight: 2 },
+      ] as any,
+      deaths: [
+        { timestamp: 200, type: "death", targetID: 1, fight: 2, killingAbilityGameID: 25314 } as any,
+      ],
+      abilityMeta: { "25314": { name: "Renew" } },
+    });
+    expect(data.healingEvents).toEqual([{ fightId: 2, sourceId: 1, amount: 5000 }]);
+    expect(data.playerDeaths![0]).toMatchObject({ killingAbilityId: 25314, timestamp: 200 });
+    expect(data.abilityMeta).toEqual({ "25314": { name: "Renew" } });
+  });
+});
+
 describe("normalizeReport — rankings", () => {
   const rankRaw = {
     title: "T5", startTime: 0, endTime: 1000, zone: { name: "Serpentshrine Cavern" },

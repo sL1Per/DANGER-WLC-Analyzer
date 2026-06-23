@@ -14,6 +14,7 @@ import {
   type AbsorbEvent,
   type ReportRanking,
   type RankingCharacter,
+  type HealingEvent,
 } from "@wcl/core";
 import {
   WclError,
@@ -54,6 +55,10 @@ export interface NormalizeEventInputs {
   absorbEvents?: RawDamageEvent[];
   /** raw WCL rankings entries (per boss, grouped by role); undefined = not fetched */
   rankings?: RawRankingEntry[];
+  /** effective healing-done events by players (performance breakdown) */
+  healingDone?: RawDamageEvent[];
+  /** abilityGameID → name, from masterData (performance breakdown) */
+  abilityMeta?: Record<string, { name: string }>;
 }
 
 function buildRpb(
@@ -61,7 +66,7 @@ function buildRpb(
   playerIds: Set<number>,
   fights: Fight[],
 ): Partial<Pick<ReportData,
-  "playerTotals" | "playerDeaths" | "interrupts" | "damageTakenEvents" | "playerCasts" | "playerDamage" | "enemyDebuffs" | "absorbs">> {
+  "playerTotals" | "playerDeaths" | "interrupts" | "damageTakenEvents" | "playerCasts" | "playerDamage" | "enemyDebuffs" | "absorbs" | "healingEvents">> {
   if (events.allCasts === undefined && events.damageDoneTable === undefined) return {};
   const fightIds = new Set(fights.map((f) => f.id));
   const names = events.actorNames ?? {};
@@ -83,7 +88,10 @@ function buildRpb(
 
   const playerDeaths: PlayerDeath[] = (events.deaths ?? [])
     .filter((d) => playerIds.has(d.targetID) && fightIds.has(d.fight))
-    .map((d) => ({ playerId: d.targetID, fightId: d.fight }));
+    .map((d) => ({
+      playerId: d.targetID, fightId: d.fight,
+      killingAbilityId: d.killingAbilityGameID, timestamp: d.timestamp,
+    }));
 
   // WCL interrupt events: source = the interrupter (player), target = the enemy
   // whose cast was stopped, extraAbilityGameID = the interrupted spell.
@@ -115,6 +123,10 @@ function buildRpb(
       selfInflicted: d.targetID === d.sourceID,
     }));
 
+  const healingEvents: HealingEvent[] = (events.healingDone ?? [])
+    .filter((d) => playerIds.has(d.sourceID) && fightIds.has(d.fight))
+    .map((d) => ({ fightId: d.fight, sourceId: d.sourceID, amount: d.amount }));
+
   // enemy debuffs sourced by a player → merged intervals (one open per fight:target:spell)
   const enemyDebuffs: EnemyDebuffInterval[] = [];
   {
@@ -144,7 +156,7 @@ function buildRpb(
   return {
     playerTotals: [...totalsById.values()],
     playerDeaths, interrupts, damageTakenEvents, playerCasts, playerDamage,
-    enemyDebuffs, absorbs,
+    enemyDebuffs, absorbs, healingEvents,
   };
 }
 
@@ -242,6 +254,7 @@ export function normalizeReport(
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
     rankings: events.rankings ? buildRankings(events.rankings) : undefined,
     itemMeta,
+    abilityMeta: events.abilityMeta ?? {},
   };
 }
 

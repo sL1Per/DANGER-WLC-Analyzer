@@ -17,6 +17,7 @@ import {
   fetchInterrupts as realFetchInterrupts,
   fetchDamageTaken as realFetchDamageTaken,
   fetchDamageDone as realFetchDamageDone,
+  fetchHealingDone as realFetchHealingDone,
   fetchAllCasts as realFetchAllCasts,
   fetchTable as realFetchTable,
   fetchEnemyDebuffs as realFetchEnemyDebuffs,
@@ -57,6 +58,7 @@ export interface AppDeps {
   fetchInterrupts: typeof realFetchInterrupts;
   fetchDamageTaken: typeof realFetchDamageTaken;
   fetchDamageDone: typeof realFetchDamageDone;
+  fetchHealingDone: typeof realFetchHealingDone;
   fetchAllCasts: typeof realFetchAllCasts;
   fetchTable: typeof realFetchTable;
   fetchEnemyDebuffs: typeof realFetchEnemyDebuffs;
@@ -76,6 +78,7 @@ export function createApp(deps: AppDeps = {
   fetchInterrupts: realFetchInterrupts,
   fetchDamageTaken: realFetchDamageTaken,
   fetchDamageDone: realFetchDamageDone,
+  fetchHealingDone: realFetchHealingDone,
   fetchAllCasts: realFetchAllCasts,
   fetchTable: realFetchTable,
   fetchEnemyDebuffs: realFetchEnemyDebuffs,
@@ -150,6 +153,7 @@ export function createApp(deps: AppDeps = {
       let interrupts: RawInterruptEvent[] = [];
       let damageTaken: RawDamageEvent[] = [];
       let damageDone: RawDamageEvent[] = [];
+      let healingDone: RawDamageEvent[] = [];
       let allCasts: RawCastEvent[] = [];
       let damageDoneTable: RawTableEntry[] = [];
       let healingTable: RawTableEntry[] = [];
@@ -161,18 +165,27 @@ export function createApp(deps: AppDeps = {
       // `undefined` is reserved for pre-feature caches (the field is absent in
       // their cached JSON) → the UI's "refresh to load rankings" notice.
       let rankings: RawRankingEntry[] = [];
-      if (bossFightIds.length > 0) {
-        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR] = await Promise.allSettled([
-          deps.fetchInterrupts(id, token, bossFightIds),
-          deps.fetchDamageTaken(id, token, bossFightIds),
-          deps.fetchDamageDone(id, token, bossFightIds),
-          deps.fetchAllCasts(id, token, bossFightIds),
-          deps.fetchTable(id, token, "DamageDone", bossFightIds),
-          deps.fetchTable(id, token, "Healing", bossFightIds),
-          deps.fetchTable(id, token, "DamageTaken", bossFightIds),
-          deps.fetchEnemyDebuffs(id, token, bossFightIds),
-          deps.fetchAbsorbs(id, token, bossFightIds),
-          deps.fetchRankings(id, token),
+      // Event-based queries cover trash fights too, so the TRASH card has data
+      // (consumable casts, damage, interrupts, absorbs, deaths, activity). Summary
+      // tables and parse rankings stay boss-only — combatantInfo/parse data only
+      // exists for encounters. Trash events cost extra WCL points; acceptable for
+      // the trash breakdown. A trash-only report still fetches its events.
+      const allFightIds = rawReport.fights.map((f) => f.id);
+      const hasBoss = bossFightIds.length > 0;
+      if (allFightIds.length > 0) {
+        const none = Promise.resolve([]);
+        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR] = await Promise.allSettled([
+          deps.fetchInterrupts(id, token, allFightIds),
+          deps.fetchDamageTaken(id, token, allFightIds),
+          deps.fetchDamageDone(id, token, allFightIds),
+          deps.fetchAllCasts(id, token, allFightIds),
+          hasBoss ? deps.fetchTable(id, token, "DamageDone", bossFightIds) : none,
+          hasBoss ? deps.fetchTable(id, token, "Healing", bossFightIds) : none,
+          hasBoss ? deps.fetchTable(id, token, "DamageTaken", bossFightIds) : none,
+          deps.fetchEnemyDebuffs(id, token, allFightIds),
+          deps.fetchAbsorbs(id, token, allFightIds),
+          hasBoss ? deps.fetchRankings(id, token) : none,
+          deps.fetchHealingDone(id, token, allFightIds),
         ]);
         if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
         if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
@@ -184,16 +197,19 @@ export function createApp(deps: AppDeps = {
         if (edR.status === "fulfilled") enemyDebuffs = edR.value as RawDebuffEvent[];
         if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
         if (rankR.status === "fulfilled") rankings = rankR.value as RawRankingEntry[];
+        if (hdR.status === "fulfilled") healingDone = hdR.value as RawDamageEvent[];
       }
       const actorNames: Record<number, string> = {};
       for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
       for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? `NPC ${n.gameID}`;
+      const abilityMeta: Record<string, { name: string }> = {};
+      for (const a of rawReport.masterData?.abilities ?? []) abilityMeta[String(a.gameID)] = { name: a.name };
       const data = normalizeReport(id, rawReport, combatants, itemMeta, {
         buffEvents, castEvents, deaths,
         trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
         interrupts, damageTaken, damageDone, allCasts,
         damageDoneTable, healingTable, damageTakenTable, actorNames,
-        enemyDebuffs, absorbEvents, rankings,
+        enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta,
       });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
