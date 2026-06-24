@@ -25,6 +25,7 @@ export * from "./consumables";
 export * from "./shadowResistance";
 export * from "./rpb";
 export * from "./classAbilities";
+export * from "./classAbilityCatalog";
 export * from "./avoidableAbilities";
 export * from "./rpbConsumables";
 export * from "./trinketRacials";
