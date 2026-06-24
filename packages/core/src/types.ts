@@ -27,6 +27,12 @@ export interface ReportData {
   /** WCL parse-percentile rankings per ranked boss, grouped by WCL role
    *  (rankings feature); undefined = report cached before this feature. */
   rankings?: ReportRanking[];
+  /** per-player hit-type breakdown (RPB role sheets, boss fights);
+   *  undefined = report cached before this feature. */
+  hitStats?: PlayerHitStats[];
+  /** curated on-use trinket/racial counts (RPB role sheets);
+   *  undefined = report cached before this feature. */
+  trinketUses?: TrinketUse[];
   /** per-fight effective healing by source (performance breakdown);
    *  undefined = report cached before this feature (drives refresh notice). */
   healingEvents?: HealingEvent[];
@@ -205,3 +211,21 @@ export interface ReportRanking {
   healers: RankingCharacter[];
   dps: RankingCharacter[];
 }
+
+/** One hit-type tally: raw count + share of the relevant population. */
+export interface HitStat { count: number; pct: number; }
+
+/** Per-player hit-type breakdown from the WCL damage/healing tables (boss fights). */
+export interface PlayerHitStats {
+  playerId: number;
+  outgoing: { crit: HitStat; dodge: HitStat; miss: HitStat; parry: HitStat; resist: HitStat };
+  incomingMelee: { crit: HitStat; crushing: HitStat; blocked: HitStat; dodge: HitStat; immune: HitStat; miss: HitStat; parry: HitStat };
+  critHeals: HitStat;
+  /** count of extra Windfury attacks granted (0 when not applicable) */
+  extraWindfury: number;
+  /** count of Battle Squawk buffs received on bosses */
+  battleSquawk: number;
+}
+
+/** A use of a curated on-use trinket or racial (count of casts/applications). */
+export interface TrinketUse { playerId: number; name: string; count: number; }
