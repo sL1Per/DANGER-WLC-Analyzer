@@ -42,3 +42,12 @@ export const avoidableAbilities: AvoidableAbility[] = [
 ];
 
 export const avoidableAbilityIds: Set<number> = new Set(avoidableAbilities.map((a) => a.abilityId));
+
+/** Avoidable enemy debuffs whose APPLICATION COUNT the RPB role sheet reports
+ *  (distinct from avoidable-damage ids above). Unverified until wago-checked. */
+export const avoidableDebuffIds: { spellId: number; name: string; verified?: boolean }[] = [
+  // Tempest Keep — Kael'thas: Nether Vapor (debuff applied by add, must be avoided). TODO verify
+  { spellId: 35013, name: "Nether Vapor", verified: false },
+  // Tempest Keep — Thaladred the Darkener (Kael add): Silence (look-away mechanic). TODO verify
+  { spellId: 29914, name: "Silence (Thaladred the Darkener)", verified: false },
+];
