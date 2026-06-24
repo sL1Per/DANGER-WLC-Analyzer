@@ -10,6 +10,10 @@ const fmt = (count: number, pct: number) =>
 
 const fmtNum = (n: number) => (n === 0 ? "—" : n.toLocaleString());
 
+/** Render a HitStat cell — "—" when the whole hitStats object is absent OR count is 0. */
+const fmtHit = (stat: { count: number; pct: number } | undefined) =>
+  stat ? fmt(stat.count, stat.pct) : "—";
+
 export function RoleSheetTable({
   report,
   fightId,
@@ -57,7 +61,7 @@ export function RoleSheetTable({
             <th rowSpan={2}>Player</th>
 
             {/* Section band headers */}
-            <th colSpan={7} className="band-header">
+            <th colSpan={15} className="band-header">
               Stats &amp; Misc
             </th>
             <th colSpan={1} className="band-header">
@@ -71,7 +75,7 @@ export function RoleSheetTable({
             </th>
           </tr>
           <tr>
-            {/* Stats & Misc sub-headers */}
+            {/* Stats & Misc sub-headers — 5 outgoing + 7 incoming + 3 misc = 15 */}
             <th>Out: Crit</th>
             <th>Out: Dodge</th>
             <th>Out: Miss</th>
@@ -79,8 +83,14 @@ export function RoleSheetTable({
             <th>Out: Resist</th>
             <th>In: Crit</th>
             <th>In: Crushing</th>
-            {/* (remaining incoming columns) */}
-            {/* We'll merge the rest of incoming into the band — but keep it one row */}
+            <th>In: Blocked</th>
+            <th>In: Dodge</th>
+            <th>In: Immune</th>
+            <th>In: Miss</th>
+            <th>In: Parry</th>
+            <th>Crit Heals</th>
+            <th># of extra Windfury Attacks</th>
+            <th># of Battle Squawk buffs on bosses</th>
             {/* Trinkets */}
             <th>Trinkets / Racials</th>
             {/* Avoidable */}
@@ -147,12 +157,23 @@ export function RoleSheetTable({
                 <td className="mono">
                   {out ? fmt(out.resist.count, out.resist.pct) : "—"}
                 </td>
-                {/* incoming */}
+                {/* incoming melee — 7 columns */}
+                <td className="mono">{fmtHit(inc?.crit)}</td>
+                <td className="mono">{fmtHit(inc?.crushing)}</td>
+                <td className="mono">{fmtHit(inc?.blocked)}</td>
+                <td className="mono">{fmtHit(inc?.dodge)}</td>
+                <td className="mono">{fmtHit(inc?.immune)}</td>
+                <td className="mono">{fmtHit(inc?.miss)}</td>
+                <td className="mono">{fmtHit(inc?.parry)}</td>
+                {/* critHeals */}
+                <td className="mono">{fmtHit(hs?.critHeals)}</td>
+                {/* extraWindfury — show 0 when hitStats exists */}
                 <td className="mono">
-                  {inc ? fmt(inc.crit.count, inc.crit.pct) : "—"}
+                  {hs ? hs.extraWindfury : "—"}
                 </td>
+                {/* battleSquawk — show 0 when hitStats exists */}
                 <td className="mono">
-                  {inc ? fmt(inc.crushing.count, inc.crushing.pct) : "—"}
+                  {hs ? hs.battleSquawk : "—"}
                 </td>
 
                 {/* Trinkets */}
