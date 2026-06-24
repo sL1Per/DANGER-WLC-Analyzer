@@ -81,7 +81,7 @@ export function ReportHeader({ report, onRefresh }: { report: ReportData; onRefr
       <Link to="/" className="report-header__brand">
         <span className="report-header__mark" aria-hidden>D</span>
         <span>
-          <span className="report-header__title">DANGER Raid Analyzer</span>
+          <span className="report-header__title">DANGER Raid Analyzer <span className="brand-tag">For TBC Anniversary</span></span>
           <span className="report-header__subtitle">Combat Log Analytics &amp; Role Performance Breakdown</span>
         </span>
       </Link>

@@ -738,6 +738,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   color: var(--on-accent, #fff); font-family: var(--font-display); font-size: 20px;
 }
 .report-header__title { display: block; font-family: var(--font-display); font-size: 19px; }
+.brand-tag { font-family: var(--font-sans); font-size: .58em; font-weight: 400; letter-spacing: .04em; color: var(--text-subtle); white-space: nowrap; }
 .report-header__subtitle { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); }
 .report-header__identity { display: flex; flex-direction: column; gap: 2px; padding-left: 18px; border-left: 1px solid var(--border); }
 .report-header__actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }

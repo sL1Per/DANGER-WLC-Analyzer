@@ -30,7 +30,7 @@ export function SettingsPage() {
       <header className="report-header">
         <Link to="/" className="report-header__brand">
           <span className="report-header__mark" aria-hidden>D</span>
-          <span className="report-header__title">DANGER Raid Analyzer</span>
+          <span className="report-header__title">DANGER Raid Analyzer <span className="brand-tag">For TBC Anniversary</span></span>
         </Link>
         <div className="report-header__actions"><button className="btn-outline" onClick={() => navigate(-1)}>Done</button></div>
       </header>

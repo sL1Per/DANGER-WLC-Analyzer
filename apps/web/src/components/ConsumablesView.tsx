@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { consumables, uptimeSeverity, type ReportData } from "@wcl/core";
 import { consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "@wcl/data";
 import { classColorVar } from "../lib/classColors";
-import { SeverityLegend } from "./SeverityLegend";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -33,7 +32,6 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
   return (
     <div>
       <p><small>Only boss fights evaluated. Some T6 fights miss the combatantInfo with consumables info — loggers should stand close to the boss at the pull.</small></p>
-      <SeverityLegend />
       <div className="scroll-x">
         <table className="buff-consumables">
           <thead>
