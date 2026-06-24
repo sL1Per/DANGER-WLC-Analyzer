@@ -806,7 +806,9 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .player-link { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
 .player-link:hover { text-decoration: underline; background: none; color: inherit; }
 .rank-table th:first-child, .rank-table td:first-child { position: sticky; left: 0; background: var(--surface); }
-.rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); }
+.rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); white-space: normal; overflow-wrap: anywhere; vertical-align: bottom; }
+/* Boss columns (3rd onward): cap width so long names wrap instead of forcing horizontal scroll. */
+.rank-table thead th:nth-child(n+3) { width: 88px; max-width: 88px; }
 
 /* ── fight header (per-pull overview above the category tabs) ── */
 .fight-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
