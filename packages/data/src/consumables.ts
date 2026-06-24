@@ -124,9 +124,15 @@ export const drumSpells: DrumSpell[] = [
 export const tinnitusSpellIds: number[] = [51120, 369770];
 
 /**
- * TBC JC on-use absorb pendants: equipped neck item id -> on-use buff id.
- * The use spell applies the school-absorb aura directly (e.g. 30997
- * "Fire Absorption"), so the buff id equals the item's use spell id.
+ * The three JC-only ("jewelcrafter") necks with a 30-minute, party-wide on-use
+ * buff: `itemId` = the equipped neck, `buffId` = the aura the on-use applies.
+ *
+ * The optimal play is to trigger the on-use BEFORE the pull, then swap to a
+ * better main neck while keeping the 30-min buff — so detection keys on the
+ * buff being present in the combatantInfo pull auras, NOT on the neck still
+ * being equipped. A player who is *still wearing* the JC neck at the pull never
+ * swapped to their main neck → that fight is counted as "inactive" (a wasted,
+ * weaker neck) rather than a clean use.
  */
 export interface JcNeck {
   itemId: number;
@@ -134,11 +140,9 @@ export interface JcNeck {
   name: string;
 }
 export const jcNecks: JcNeck[] = [
-  { itemId: 24092, buffId: 30997, name: "Pendant of Frozen Flame" }, // fire absorb
-  { itemId: 24093, buffId: 30994, name: "Pendant of Thawing" }, // frost absorb
-  { itemId: 24095, buffId: 30999, name: "Pendant of Withering" }, // nature absorb
-  { itemId: 24097, buffId: 31000, name: "Pendant of Shadow's End" }, // shadow absorb
-  { itemId: 24098, buffId: 31002, name: "Pendant of the Null Rune" }, // arcane absorb
+  { itemId: 24114, buffId: 31025, name: "Braided Eternium Chain" },   // +28 crit rating, 30 min
+  { itemId: 24116, buffId: 31033, name: "Eye of the Night" },          // +34 spell damage, 30 min
+  { itemId: 24121, buffId: 31035, name: "Chain of the Twilight Owl" }, // +2% spell crit, 30 min
 ];
 
 /**
@@ -146,18 +150,41 @@ export const jcNecks: JcNeck[] = [
  * tempEnchant ids are weapon temp-enchant ids (WCL combatantInfo
  * `temporaryEnchant`), not spell ids.
  */
+export type SuboptimalStat = "strength" | "agility" | "spellDamage" | "spellHealing";
 export interface SuboptimalConsumable {
   kind: "buff" | "tempEnchant";
   id: number;
   name: string;
+  /**
+   * Primary stat this consumable provides. It is flagged only for a player whose
+   * spec does NOT want that stat (Str/Agi handled per class, spellDamage→casters,
+   * spellHealing→healers). Omit `stat` for consumables that are suboptimal for
+   * everyone — outdated or strictly worse than the current best (e.g. Elixir of
+   * the Mongoose, a generic Well Fed). buff ids are pull-aura spell ids;
+   * tempEnchant ids are WCL combatantInfo `temporaryEnchant` ids.
+   */
+  stat?: SuboptimalStat;
 }
 export const suboptimalConsumables: SuboptimalConsumable[] = [
-  { kind: "buff", id: 28519, name: "Flask of Mighty Restoration" },
-  { kind: "buff", id: 35272, name: "Well Fed (generic, +20 Sta/Spi)" },
+  // --- always suboptimal: outdated or strictly worse than the current best ---
+  { kind: "buff", id: 17538, name: "Elixir of the Mongoose" }, // vanilla elixir, beaten by Elixir of Major Agility
+  { kind: "buff", id: 28519, name: "Flask of Mighty Restoration" }, // weak mp5 flask
+  { kind: "buff", id: 35272, name: "Well Fed (generic, +20 Sta/Spi)" }, // a stat food beats it for every role
   { kind: "buff", id: 3166, name: "Elixir of Wisdom" }, // UNVERIFIED: original flags "Increased Intellect"; exact buff id it meant is unclear
-  { kind: "buff", id: 11396, name: "Elixir of Greater Intellect" },
-  { kind: "tempEnchant", id: 2678, name: "Superior Wizard Oil" },
-  { kind: "tempEnchant", id: 2677, name: "Superior Mana Oil" },
+  { kind: "buff", id: 11396, name: "Elixir of Greater Intellect" }, // low-level int elixir
+  // --- physical-stat elixirs (flagged for specs that don't want that stat) ---
+  { kind: "buff", id: 28490, name: "Elixir of Major Strength", stat: "strength" },
+  { kind: "buff", id: 38954, name: "Fel Strength Elixir", stat: "strength" },
+  { kind: "buff", id: 28497, name: "Elixir of Major Agility", stat: "agility" },
+  // --- spell-damage elixirs (wasted on melee/tanks AND healers) ---
+  { kind: "buff", id: 28501, name: "Elixir of Major Firepower", stat: "spellDamage" },
+  { kind: "buff", id: 28493, name: "Elixir of Major Frost Power", stat: "spellDamage" },
+  { kind: "buff", id: 28503, name: "Elixir of Major Shadow Power", stat: "spellDamage" },
+  { kind: "buff", id: 17539, name: "Greater Arcane Elixir", stat: "spellDamage" },
+  { kind: "buff", id: 28491, name: "Elixir of Healing Power", stat: "spellHealing" },
+  // --- weapon oils: Wizard Oil = spell damage (casters), Mana Oil = healing/mp5 (healers) ---
+  { kind: "tempEnchant", id: 2678, name: "Superior Wizard Oil", stat: "spellDamage" },
+  { kind: "tempEnchant", id: 2677, name: "Superior Mana Oil", stat: "spellHealing" },
 ];
 
 /**

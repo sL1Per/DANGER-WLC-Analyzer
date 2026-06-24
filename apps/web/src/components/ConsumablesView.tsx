@@ -1,32 +1,36 @@
 import { useMemo } from "react";
 import { consumables, uptimeSeverity, type ReportData } from "@wcl/core";
-import { consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "@wcl/data";
-import { classColorVar } from "../lib/classColors";
+import { CLASS_ORDER, classColorVar } from "../lib/classColors";
+import { consumablesConfig } from "../lib/analysisConfig";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+const classRank = (c: string): number => {
+  const i = (CLASS_ORDER as readonly string[]).indexOf(c);
+  return i === -1 ? CLASS_ORDER.length : i;
+};
 
 function UptimeCell({ value }: { value: number }) {
   return <td className={`sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
 }
 
 export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPlayer?: (name: string) => void }) {
-  const result = useMemo(
-    () => consumables(report, {
-      buffs: consumableBuffs,
-      jcNecks,
-      suboptimal: suboptimalConsumables,
-      weaponEnhancements: weaponEnhancementEnchantIds,
-    }),
-    [report],
-  );
+  const result = useMemo(() => consumables(report, consumablesConfig), [report]);
   const classOf = useMemo(() => new Map(report.players.map((p) => [p.id, p.class])), [report.players]);
+  const rows = useMemo(() => {
+    if (result === null) return [];
+    return [...result.rows].sort((a, b) => {
+      const d = classRank(classOf.get(a.playerId) ?? "") - classRank(classOf.get(b.playerId) ?? "");
+      return d !== 0 ? d : a.playerName.localeCompare(b.playerName);
+    });
+  }, [result, classOf]);
 
   if (result === null) {
     return <p>This report was cached before consumable support — refresh it from WCL (requires credentials).</p>;
   }
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return <p>No boss fights in this report.</p>;
   }
   return (
@@ -50,7 +54,7 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
             </tr>
           </thead>
           <tbody>
-            {result.rows.map((r) => (
+            {rows.map((r) => (
               <tr key={r.playerId}>
                 <td className="player-cell" style={classColorVar(classOf.get(r.playerId) ?? "")}>
                   {onPlayer

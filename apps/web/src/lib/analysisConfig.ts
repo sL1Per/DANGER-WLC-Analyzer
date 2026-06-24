@@ -24,6 +24,7 @@ export const consumablesConfig: ConsumableConfig = {
   buffs: consumableBuffs,
   jcNecks,
   suboptimal: suboptimalConsumables,
+  roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },
   weaponEnhancements: weaponEnhancementEnchantIds,
 };
 

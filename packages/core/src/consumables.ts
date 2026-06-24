@@ -1,5 +1,24 @@
-import type { BuffInterval, Fight, GearSnapshot, ReportData } from "./types";
+import type { Fight, GearSnapshot, ReportData, Role } from "./types";
+import { detectRole, type RoleConfig } from "./roles";
 import type { IssueSeverity } from "./gearIssues";
+
+/** Primary stat a consumable provides, for spec-aware suboptimal detection. */
+export type SuboptimalStat = "strength" | "agility" | "spellDamage" | "spellHealing";
+
+/** Classes whose physical/tank specs scale with Agility (not Strength). */
+const AGILITY_CLASSES = new Set(["Rogue", "Hunter", "Shaman", "Druid"]);
+
+/**
+ * Stats a player's spec actually wants, so a consumable providing any *other*
+ * stat is flagged as suboptimal. Caster→spellDamage, healer→spellHealing, and a
+ * melee/tank wants Strength or Agility depending on class (a Warrior/Paladin
+ * scales with Str; a Rogue/Hunter/Enhance shaman/Feral druid with Agi).
+ */
+function wantedStats(role: Role, cls: string): Set<SuboptimalStat> {
+  if (role === "caster") return new Set(["spellDamage"]);
+  if (role === "healer") return new Set(["spellHealing"]);
+  return new Set([AGILITY_CLASSES.has(cls) ? "agility" : "strength"]);
+}
 
 export interface ConsumableConfig {
   // reference data, injected so core stays dependency-free (@wcl/data wires these)
@@ -12,8 +31,17 @@ export interface ConsumableConfig {
   }[];
   /** JC necks with on-use absorbs: itemId equipped → buffId proves a use */
   jcNecks: { itemId: number; buffId: number; name: string }[];
-  /** consumables/temp enchants that work but are the wrong choice */
-  suboptimal: { kind: "buff" | "tempEnchant"; id: number; name: string }[];
+  /**
+   * Consumables/temp enchants that are the wrong choice, matching the original's
+   * class-aware detection. A `stat` entry is flagged only when the player's spec
+   * does not want that stat (e.g. a Strength elixir on an agility melee, a
+   * spell-damage oil on a healer); an entry with no `stat` is "always" suboptimal
+   * — strictly worse/outdated for everyone (e.g. Elixir of the Mongoose, a
+   * generic Well Fed). See `wantedStats` for the per-spec stat mapping.
+   */
+  suboptimal: { kind: "buff" | "tempEnchant"; id: number; name: string; stat?: SuboptimalStat }[];
+  /** role auto-detection config (shared with RPB), used to derive each player's wanted stats */
+  roles: RoleConfig;
   /**
    * Enchant ids (combatantInfo `temporaryEnchant`) that count as a consumable
    * weapon enhancement. Whitelist — excludes shaman imbues, Windfury Totem and
@@ -84,8 +112,6 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
     const snapshots = report.gear.filter((s) => s.playerId === player.id && bossFights.has(s.fightId));
     // pull-aura snapshots drive elixir/flask/food/scroll presence
     const auraSnapshots = snapshots.filter((s) => s.auras !== undefined);
-    // buff intervals on boss fights are still needed for JC neck on-use procs
-    const buffs = report.buffs.filter((b) => b.targetId === player.id && bossFights.has(b.fightId));
     const presence = (ids: Set<number>) => auraPresenceFraction(auraSnapshots, ids);
 
     const battleElixir = presence(battleIds);
@@ -110,8 +136,8 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
       scrolls: formatScrolls(auraSnapshots, cfg, scrollUptime),
       scrollUptime,
       weaponEnhancement,
-      jcNeck: jcNeckUsage(snapshots, buffs, cfg, bossFights),
-      suboptimal: suboptimalNames(auraSnapshots, snapshots, cfg),
+      jcNeck: jcNeckUsage(snapshots, cfg, bossFights),
+      suboptimal: suboptimalNames(auraSnapshots, snapshots, cfg, wantedStats(detectRole(player.id, report, cfg.roles), player.class)),
       totalAverage: totalAverage(elixirOrFlask, food, weaponEnhancement),
     });
   }
@@ -183,31 +209,36 @@ function formatScrolls(auraSnapshots: GearSnapshot[], cfg: ConsumableConfig, scr
 /** Per boss-fight snapshot: equipped JC neck used (its buff appeared) vs. inactive. */
 function jcNeckUsage(
   snapshots: GearSnapshot[],
-  buffs: BuffInterval[],
   cfg: ConsumableConfig,
   bossFights: Map<number, Fight>,
 ): { usedOnFights: number; inactiveOnFights: number; equipped: boolean } {
-  const neckByItemId = new Map(cfg.jcNecks.map((n) => [n.itemId, n]));
+  const jcItemIds = new Set(cfg.jcNecks.map((n) => n.itemId));
+  const jcBuffIds = new Set(cfg.jcNecks.map((n) => n.buffId));
+  // The on-use buff lasts 30 min, so players trigger it pre-pull and swap to a
+  // main neck — the buff is in the combatantInfo pull auras even though the JC
+  // neck is no longer equipped. "used" = fights the buff is up; "inactive" =
+  // fights the player never swapped (still wearing the JC neck → wasted stats).
+  // The two are independent counts: wearing the neck means the buff is up too.
   let usedOnFights = 0;
   let inactiveOnFights = 0;
-  let equipped = false;
   for (const snap of snapshots) {
+    if ((snap.auras ?? []).some((a) => jcBuffIds.has(a))) usedOnFights += 1;
     const neckItem = snap.items.find((i) => i.slot === NECK_SLOT);
-    const neck = neckItem && neckByItemId.get(neckItem.itemId);
-    if (!neck) continue;
-    equipped = true;
-    const used = buffs.some((b) => b.fightId === snap.fightId && b.spellId === neck.buffId);
-    if (used) {
-      usedOnFights += 1;
-    } else if (!bossFights.get(snap.fightId)!.name.startsWith(JC_NECK_EXEMPT_PREFIX)) {
+    if (neckItem && jcItemIds.has(neckItem.itemId)
+      && !bossFights.get(snap.fightId)!.name.startsWith(JC_NECK_EXEMPT_PREFIX)) {
       inactiveOnFights += 1;
     }
   }
-  return { usedOnFights, inactiveOnFights, equipped };
+  return { usedOnFights, inactiveOnFights, equipped: usedOnFights > 0 || inactiveOnFights > 0 };
 }
 
-/** Distinct suboptimal names: matching pull-aura buffs, or temp weapon enchants equipped. */
-function suboptimalNames(auraSnapshots: GearSnapshot[], snapshots: GearSnapshot[], cfg: ConsumableConfig): string[] {
+/**
+ * Distinct suboptimal names: matching pull-aura buffs, or temp weapon enchants
+ * equipped. Spec-aware — a `stat` entry is flagged only when the player's spec
+ * does not want that stat (`wanted`); an entry without a `stat` is always
+ * suboptimal (strictly worse / outdated for everyone).
+ */
+function suboptimalNames(auraSnapshots: GearSnapshot[], snapshots: GearSnapshot[], cfg: ConsumableConfig, wanted: Set<SuboptimalStat>): string[] {
   const usedBuffIds = new Set(auraSnapshots.flatMap((s) => s.auras!));
   const tempEnchantIds = new Set(
     snapshots
@@ -216,6 +247,7 @@ function suboptimalNames(auraSnapshots: GearSnapshot[], snapshots: GearSnapshot[
   );
   const names: string[] = [];
   for (const entry of cfg.suboptimal) {
+    if (entry.stat && wanted.has(entry.stat)) continue; // the player's spec wants this stat — fine
     const hit = entry.kind === "buff" ? usedBuffIds.has(entry.id) : tempEnchantIds.has(entry.id);
     if (hit && !names.includes(entry.name)) names.push(entry.name);
   }

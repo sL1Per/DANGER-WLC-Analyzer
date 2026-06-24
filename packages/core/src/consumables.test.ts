@@ -12,8 +12,12 @@ const cfg: ConsumableConfig = {
     { spellId: 33077, name: "Scroll of Agility V", category: "scroll", scroll: { type: "Agi", level: 5 } },
     { spellId: 12174, name: "Scroll of Agility IV", category: "scroll", scroll: { type: "Agi", level: 4 } },
   ],
-  jcNecks: [{ itemId: 24097, buffId: 31000, name: "Pendant of Shadow's End" }],
-  suboptimal: [{ kind: "buff", id: 28519, name: "Flask of Mighty Restoration" }],
+  jcNecks: [{ itemId: 24116, buffId: 31033, name: "Eye of the Night" }],
+  suboptimal: [
+    { kind: "buff", id: 28519, name: "Flask of Mighty Restoration" },
+    { kind: "buff", id: 28490, name: "Elixir of Major Strength", stat: "strength" },
+  ],
+  roles: { signals: [], casterClasses: ["Mage"], physicalSpecs: [], casterSpecs: [] },
   weaponEnhancements: [2678, 2955], // Superior Wizard Oil, Adamantite Weightstone (consumables)
 };
 
@@ -176,22 +180,36 @@ describe("consumables — suboptimal & JC necks", () => {
     report.gear[0]!.auras!.push(28519); // Flask of Mighty Restoration in Playerone's pull auras
     expect(rowFor(report, "Playerone").suboptimal).toEqual(["Flask of Mighty Restoration"]);
   });
-  it("counts an equipped-but-unused JC neck as inactive", () => {
+  it("flags a role-mismatched consumable (Strength elixir on a caster)", () => {
     const report = baseReport();
-    report.gear[0]!.items.push({ slot: 1, itemId: 24097, gemIds: [] });
-    expect(rowFor(report, "Playerone").jcNeck).toEqual({ usedOnFights: 0, inactiveOnFights: 1, equipped: true });
+    report.gear[0]!.auras!.push(28490); // Elixir of Major Strength on Playerone (Mage → caster)
+    expect(rowFor(report, "Playerone").suboptimal).toEqual(["Elixir of Major Strength"]);
   });
-  it("counts the neck as used when its on-use buff appears in the fight", () => {
+  it("does NOT flag the same consumable for a role that benefits (Strength on a melee)", () => {
     const report = baseReport();
-    report.gear[0]!.items.push({ slot: 1, itemId: 24097, gemIds: [] });
-    report.buffs!.push({ fightId: 3, targetId: 1, spellId: 31000, startTime: 160_000, endTime: 175_000 });
+    // give Playertwo (Warrior → physical/tank) the same Strength elixir at pull
+    const p2 = report.gear.find((g) => g.playerId === 2 && g.fightId === 3)!;
+    p2.auras!.push(28490);
+    expect(rowFor(report, "Playertwo").suboptimal).toEqual([]);
+  });
+  it("counts a still-equipped JC neck (never swapped) as inactive", () => {
+    const report = baseReport();
+    report.gear[0]!.items.push({ slot: 1, itemId: 24116, gemIds: [] }); // wearing the JC neck at pull
+    // wearing it means the buff is up too → used 1 AND inactive 1 (independent counts)
+    report.gear[0]!.auras!.push(31033);
+    expect(rowFor(report, "Playerone").jcNeck).toEqual({ usedOnFights: 1, inactiveOnFights: 1, equipped: true });
+  });
+  it("counts the neck as used (not inactive) when the buff is up but a main neck is equipped", () => {
+    const report = baseReport();
+    report.gear[0]!.items.push({ slot: 1, itemId: 30015, gemIds: [] }); // main neck, swapped to
+    report.gear[0]!.auras!.push(31033); // but the 30-min on-use buff is still up
     expect(rowFor(report, "Playerone").jcNeck).toEqual({ usedOnFights: 1, inactiveOnFights: 0, equipped: true });
   });
   it("never counts a neck inactive on Kael'thas", () => {
     const report = baseReport();
-    report.gear[0]!.items.push({ slot: 1, itemId: 24097, gemIds: [] });
+    report.gear[0]!.items.push({ slot: 1, itemId: 24116, gemIds: [] });
     report.fights.find((f) => f.id === 3)!.name = "Kael'thas Sunstrider";
-    expect(rowFor(report, "Playerone").jcNeck).toEqual({ usedOnFights: 0, inactiveOnFights: 0, equipped: true });
+    expect(rowFor(report, "Playerone").jcNeck).toEqual({ usedOnFights: 0, inactiveOnFights: 0, equipped: false });
   });
 });
 
