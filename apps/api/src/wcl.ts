@@ -303,6 +303,71 @@ export async function fetchTable(
   return data.reportData.report.table?.data?.entries ?? [];
 }
 
+export interface RawHitTableEntry {
+  id: number; total: number;
+  hitCount?: number; critHitCount?: number; missCount?: number;
+  dodgeCount?: number; parryCount?: number; resistCount?: number;
+  blockCount?: number; crushingCount?: number; immuneCount?: number;
+}
+
+/** Per-actor hit-type breakdown from a Damage or Healing table (boss fights). */
+export async function fetchHitTable(
+  code: string, accessToken: string,
+  dataType: "DamageDone" | "DamageTaken" | "Healing",
+  fightIds: number[],
+): Promise<RawHitTableEntry[]> {
+  const query = `
+  query HitTable($code: String!, $dataType: TableDataType!, $fightIds: [Int]) {
+    reportData { report(code: $code) {
+      table(dataType: $dataType, fightIDs: $fightIds, hostilityType: Friendlies)
+    } }
+  }`;
+  const data = await gql<{ reportData: { report: { table: { data?: { entries?: RawHitTableEntry[] } } } } }>(
+    query, { code, dataType, fightIds }, accessToken);
+  return data.reportData.report.table?.data?.entries ?? [];
+}
+
+export interface RawCastTableEntry { id: number; guid: number; name: string; total: number; }
+
+type CastsAbilityRow = { guid: number; name: string; total: number };
+type CastsActorEntry = {
+  id: number;
+  /** flat shape: ability fields are on the actor entry itself */
+  guid?: number; name?: string; total?: number;
+  /** nested shapes: abilities under sub-array */
+  abilities?: CastsAbilityRow[];
+  entries?: CastsAbilityRow[];
+};
+
+/** Per-actor, per-ability cast counts from the Casts table (boss fights).
+ *  `guid` is the ability gameID; used to match trinket/racial on-use ids.
+ *  Handles both the flat shape (guid/name/total on the actor entry) and
+ *  the nested shape (abilities[] or entries[] sub-array per actor). */
+export async function fetchCastsTable(
+  code: string, accessToken: string, fightIds: number[],
+): Promise<RawCastTableEntry[]> {
+  const query = `
+  query CastsTable($code: String!, $fightIds: [Int]) {
+    reportData { report(code: $code) {
+      table(dataType: Casts, fightIDs: $fightIds, hostilityType: Friendlies)
+    } }
+  }`;
+  const data = await gql<{ reportData: { report: { table: { data?: { entries?: CastsActorEntry[] } } } } }>(
+    query, { code, fightIds }, accessToken);
+  const out: RawCastTableEntry[] = [];
+  for (const e of data.reportData.report.table?.data?.entries ?? []) {
+    const sub = e.abilities ?? e.entries;
+    if (sub) {
+      // Nested shape: flatten per-ability rows, carrying actor id.
+      for (const a of sub) out.push({ id: e.id, guid: a.guid, name: a.name, total: a.total });
+    } else if (e.guid != null && e.name != null && e.total != null) {
+      // Flat shape: entry already has ability fields.
+      out.push({ id: e.id, guid: e.guid, name: e.name, total: e.total });
+    }
+  }
+  return out;
+}
+
 const RANKINGS_QUERY = `
 query Rankings($code: String!) {
   reportData {

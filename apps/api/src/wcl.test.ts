@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone } from "./wcl";
+import { fetchToken, fetchRawReport, WclError, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone, fetchHitTable, fetchCastsTable } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -259,6 +259,74 @@ describe("fetchEnemyDebuffs", () => {
     // defaults to Friendlies and returns debuffs ON players → enemy-debuff uptime ~0.
     expect(calls[0].variables.hostilityType).toBe("Enemies");
     vi.unstubAllGlobals();
+  });
+});
+
+describe("fetchHitTable", () => {
+  function mockFetchOnce(body: unknown) {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(body), { status: 200 }),
+    );
+  }
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("maps per-actor hit-type counts", async () => {
+    mockFetchOnce({ data: { reportData: { report: { table: { data: { entries: [
+      { id: 7, total: 1000, hitCount: 100, critHitCount: 35, dodgeCount: 4, parryCount: 6, missCount: 2, resistCount: 0 },
+    ] } } } } } });
+    const rows = await fetchHitTable("abc", "tok", "DamageDone", [1, 2]);
+    expect(rows[0]).toMatchObject({ id: 7, critHitCount: 35, dodgeCount: 4 });
+  });
+
+  it("accepts Healing as dataType", async () => {
+    mockFetchOnce({ data: { reportData: { report: { table: { data: { entries: [
+      { id: 3, total: 500, hitCount: 80, critHitCount: 20 },
+    ] } } } } } });
+    const rows = await fetchHitTable("abc", "tok", "Healing", [5]);
+    expect(rows[0]).toMatchObject({ id: 3, total: 500, critHitCount: 20 });
+  });
+});
+
+describe("fetchCastsTable", () => {
+  function mockFetchOnce(body: unknown) {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(body), { status: 200 }),
+    );
+  }
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("flat shape: emits entries that already have guid/name/total directly", async () => {
+    mockFetchOnce({ data: { reportData: { report: { table: { data: { entries: [
+      { id: 7, guid: 48825, name: "Holy Shield", total: 64 },
+    ] } } } } } });
+    const rows = await fetchCastsTable("abc", "tok", [1]);
+    expect(rows[0]).toMatchObject({ id: 7, guid: 48825, name: "Holy Shield", total: 64 });
+  });
+
+  it("nested abilities[] shape: flattens per-actor abilities carrying actor id", async () => {
+    mockFetchOnce({ data: { reportData: { report: { table: { data: { entries: [
+      { id: 7, abilities: [
+        { guid: 48825, name: "Holy Shield", total: 64 },
+        { guid: 20925, name: "Holy Light", total: 12 },
+      ]},
+    ] } } } } } });
+    const rows = await fetchCastsTable("abc", "tok", [1]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ id: 7, guid: 48825, name: "Holy Shield", total: 64 });
+    expect(rows[1]).toMatchObject({ id: 7, guid: 20925, name: "Holy Light", total: 12 });
+  });
+
+  it("nested entries[] shape: flattens sub-entries carrying actor id", async () => {
+    mockFetchOnce({ data: { reportData: { report: { table: { data: { entries: [
+      { id: 5, entries: [
+        { guid: 11366, name: "Fireball", total: 40 },
+      ]},
+    ] } } } } } });
+    const rows = await fetchCastsTable("abc", "tok", [2]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 5, guid: 11366, name: "Fireball", total: 40 });
   });
 });
 
