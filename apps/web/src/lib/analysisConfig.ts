@@ -1,4 +1,4 @@
-import type { RpbConfig, ConsumableConfig, DrumConfig, GearIssueConfig } from "@wcl/core";
+import type { RpbConfig, ConsumableConfig, DrumConfig, GearIssueConfig, RoleSheetConfig, RoleCastsConfig } from "@wcl/core";
 import {
   spellCastTimes, roleSignals, casterClasses, physicalSpecs, casterSpecs, hasteBuffs,
   engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
@@ -7,6 +7,7 @@ import {
   consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds,
   drumSpells,
   badEnchants, excludedItems, gemQuality, itemShadowRes, itemSockets,
+  classAbilityCatalog, avoidableDebuffIds,
 } from "@wcl/data";
 
 /** RPB config — identical to the object RpbView built inline; centralised so the
@@ -31,6 +32,21 @@ export const consumablesConfig: ConsumableConfig = {
 export const drumConfig: DrumConfig = { drums: drumSpells };
 
 export const rpbConsumableSpecs = rpbConsumableSpecsData;
+
+export function roleCastsConfig(): RoleCastsConfig {
+  const base = buildRpbConfig();
+  return {
+    catalog: classAbilityCatalog,
+    activity: base.activity,
+    roles: base.roles,
+    cooldownKeys: classAbilityCatalog.filter((a) => a.category === "cooldown").map((a) => a.key),
+  };
+}
+
+export function roleSheetConfig(): RoleSheetConfig {
+  const base = buildRpbConfig();
+  return { roles: base.roles, rpb: base, avoidableDebuffIds };
+}
 
 /** Default gear-issue config, matching GearIssuesView's inline settings. */
 export const gearIssueConfig: GearIssueConfig = {
