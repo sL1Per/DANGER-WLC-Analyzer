@@ -62,10 +62,12 @@ export function performanceSummary(report: ReportData): PerformanceSummary | nul
       .sort((a, b) => b.amount - a.amount);
   };
 
-  // 1. Damage done by source (player) — exclude self/reflected damage.
+  // 1. Damage done by source (player) — exclude self/reflected and PvP damage,
+  //    matching WCL's "Damage Done" source view and how RPB treats both elsewhere
+  //    (targetHostilePlayer is counted as self-damage, not outgoing damage done).
   const dmgBySrc = new Map<number, number>();
   for (const d of report.playerDamage ?? []) {
-    if (!fightIds.has(d.fightId) || d.selfInflicted) continue;
+    if (!fightIds.has(d.fightId) || d.selfInflicted || d.targetHostilePlayer) continue;
     dmgBySrc.set(d.sourceId, (dmgBySrc.get(d.sourceId) ?? 0) + d.amount);
   }
 

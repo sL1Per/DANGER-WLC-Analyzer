@@ -55,4 +55,30 @@ describe("performanceSummary", () => {
     const s = performanceSummary(scoped)!;
     expect(s.damageTakenByAbility[0].name).toBe("Ability #13022");
   });
+
+  it("excludes self-inflicted and PvP damage from the source panel", () => {
+    const base = onlyFights(reportFixture, [3]);
+    const report: ReportData = {
+      ...base,
+      playerDamage: [
+        { fightId: 3, sourceId: 1, abilityId: 1, targetId: 900, amount: 1000, timestamp: 151_000, targetHostilePlayer: false, selfInflicted: false },
+        { fightId: 3, sourceId: 1, abilityId: 1, targetId: 1, amount: 500, timestamp: 151_500, targetHostilePlayer: false, selfInflicted: true },   // reflected → excluded
+        { fightId: 3, sourceId: 1, abilityId: 1, targetId: 2, amount: 700, timestamp: 152_000, targetHostilePlayer: true, selfInflicted: false },   // PvP → excluded
+      ],
+    };
+    const s = performanceSummary(report)!;
+    expect(s.damageBySource).toHaveLength(1);
+    expect(s.damageBySource[0]).toMatchObject({ name: "Playerone", amount: 1000 });
+  });
+
+  it("yields zero per-second rates for a zero-duration fight (no divide-by-zero)", () => {
+    const base = reportFixture;
+    const zeroFight = { ...base.fights.find((f) => f.id === 3)!, startTime: 200_000, endTime: 200_000 };
+    const report: ReportData = { ...base, fights: [zeroFight] };
+    const s = performanceSummary(report)!;
+    expect(s.durationMs).toBe(0);
+    for (const r of s.damageBySource) expect(r.perSecond).toBe(0);
+    for (const r of s.healingBySource) expect(r.perSecond).toBe(0);
+    for (const r of s.damageTakenByAbility) expect(r.perSecond).toBe(0);
+  });
 });
