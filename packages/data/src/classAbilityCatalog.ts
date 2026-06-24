@@ -115,7 +115,7 @@ export const classAbilityCatalog: CatalogAbility[] = [
   { className: "Warrior", key: "spell-reflection", name: "Spell Reflection", category: "single",
     spellIds: [23920], verified: false }, // TODO verify
   { className: "Warrior", key: "sunder-armor-sub5", name: "Sunder Armor% on targets < 5 stacks", category: "single",
-    spellIds: [7386, 7405, 8380, 11596, 11597, 25225], verified: true }, // same ids as sunder-armor
+    spellIds: [7386, 7405, 8380, 11596, 11597, 25225], verified: false }, // TODO verify
   { className: "Warrior", key: "sweeping-strikes", name: "Sweeping Strikes", category: "single",
     spellIds: [12328], verified: false }, // TODO verify
   { className: "Warrior", key: "taunt", name: "Taunt", category: "single",
