@@ -85,7 +85,7 @@ function indexBy(entries?: RawHitTableEntry[]): Map<number, RawHitTableEntry> {
 }
 
 function buildHitStats(
-  events: NormalizeEventInputs, playerIds: Set<number>,
+  events: NormalizeEventInputs, playerIds: Set<number>, bossFightIds: Set<number>,
 ): { hitStats?: PlayerHitStats[]; trinketUses?: TrinketUse[] } {
   if (events.damageDoneHitTable === undefined && events.castsTable === undefined) return {};
   const byOut = indexBy(events.damageDoneHitTable);
@@ -103,11 +103,11 @@ function buildHitStats(
   const sqId = events.battleSquawkBuffId;
   const wfBy = new Map<number, number>();
   if (wfId !== undefined) for (const d of events.damageDone ?? []) {
-    if (d.abilityGameID === wfId && playerIds.has(d.sourceID)) wfBy.set(d.sourceID, (wfBy.get(d.sourceID) ?? 0) + 1);
+    if (d.abilityGameID === wfId && playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) wfBy.set(d.sourceID, (wfBy.get(d.sourceID) ?? 0) + 1);
   }
   const sqBy = new Map<number, number>();
   if (sqId !== undefined) for (const e of events.buffEvents ?? []) {
-    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff") && playerIds.has(e.targetID))
+    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff") && playerIds.has(e.targetID) && bossFightIds.has(e.fight))
       sqBy.set(e.targetID, (sqBy.get(e.targetID) ?? 0) + 1);
   }
 
@@ -341,7 +341,7 @@ export function normalizeReport(
         spellId: e.abilityGameID, timestamp: e.timestamp,
       })),
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
-    ...buildHitStats(events, new Set(players.map((p) => p.id))),
+    ...buildHitStats(events, new Set(players.map((p) => p.id)), new Set(fights.filter((f) => f.isBoss).map((f) => f.id))),
     rankings: events.rankings ? buildRankings(events.rankings) : undefined,
     itemMeta,
     abilityMeta: events.abilityMeta ?? {},

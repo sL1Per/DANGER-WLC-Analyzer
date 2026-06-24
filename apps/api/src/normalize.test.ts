@@ -554,4 +554,33 @@ describe("normalize hitStats/trinketUses", () => {
     expect(hs.extraWindfury).toBe(2);
     expect(hs.battleSquawk).toBe(1);
   });
+
+  it("does not count Windfury/Squawk events from trash fights", () => {
+    // makeRaw() has only 1 boss fight (id=1, encounterID=1). Inject a second
+    // trash fight (id=2, encounterID=0) with Windfury/Squawk events on it —
+    // those must be excluded from the hitStats counts.
+    const raw = makeRaw();
+    raw.fights.push({ id: 2, name: "Trash", encounterID: 0, kill: null, startTime: 1001, endTime: 2000, friendlyPlayers: [7] });
+    const data = normalizeReport("rep", raw, [], {}, {
+      damageDoneHitTable: [{ id: 7, total: 0 }],
+      castsTable: [],
+      extraWindfurySpellId: 33010,
+      battleSquawkBuffId: 23060,
+      damageDone: [
+        // boss hit (fight 1) — counted
+        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 50, fight: 1 },
+        // trash hit (fight 2) — must NOT be counted
+        { timestamp: 1002, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 60, fight: 2 },
+      ] as any,
+      buffEvents: [
+        // boss squawk (fight 1) — counted
+        { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
+        // trash squawk (fight 2) — must NOT be counted
+        { timestamp: 1002, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 2 },
+      ] as any,
+    });
+    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
+    expect(hs.extraWindfury).toBe(1); // only the boss-fight event
+    expect(hs.battleSquawk).toBe(1);  // only the boss-fight event
+  });
 });
