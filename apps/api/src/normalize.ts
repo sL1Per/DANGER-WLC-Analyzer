@@ -59,6 +59,8 @@ export interface NormalizeEventInputs {
   healingDone?: RawDamageEvent[];
   /** abilityGameID → name, from masterData (performance breakdown) */
   abilityMeta?: Record<string, { name: string }>;
+  /** pet actor id → owner player id; pet damage/healing is credited to the owner */
+  petOwners?: Record<number, number>;
 }
 
 function buildRpb(
@@ -70,6 +72,10 @@ function buildRpb(
   if (events.allCasts === undefined && events.damageDoneTable === undefined) return {};
   const fightIds = new Set(fights.map((f) => f.id));
   const names = events.actorNames ?? {};
+  // Resolve a pet actor to its owner so pet damage/healing is credited to the
+  // owner player (WCL merges pets into the owner's row); non-pets pass through.
+  const petOwners = events.petOwners ?? {};
+  const ownerOf = (id: number) => petOwners[id] ?? id;
 
   // per-player totals from summary tables
   const totalsById = new Map<number, PlayerTotals>();
@@ -115,17 +121,19 @@ function buildRpb(
     .map((c) => ({ fightId: c.fight, playerId: c.sourceID, spellId: c.abilityGameID, timestamp: c.timestamp }));
 
   const playerDamage: PlayerDamageEvent[] = (events.damageDone ?? [])
-    .filter((d) => playerIds.has(d.sourceID) && fightIds.has(d.fight))
-    .map((d) => ({
-      fightId: d.fight, sourceId: d.sourceID, abilityId: d.abilityGameID,
+    .map((d) => ({ d, src: ownerOf(d.sourceID) }))
+    .filter(({ d, src }) => playerIds.has(src) && fightIds.has(d.fight))
+    .map(({ d, src }) => ({
+      fightId: d.fight, sourceId: src, abilityId: d.abilityGameID,
       targetId: d.targetID, amount: d.amount, timestamp: d.timestamp,
-      targetHostilePlayer: playerIds.has(d.targetID) && d.targetID !== d.sourceID,
-      selfInflicted: d.targetID === d.sourceID,
+      targetHostilePlayer: playerIds.has(d.targetID) && d.targetID !== src,
+      selfInflicted: d.targetID === src,
     }));
 
   const healingEvents: HealingEvent[] = (events.healingDone ?? [])
-    .filter((d) => playerIds.has(d.sourceID) && fightIds.has(d.fight))
-    .map((d) => ({ fightId: d.fight, sourceId: d.sourceID, amount: d.amount }));
+    .map((d) => ({ d, src: ownerOf(d.sourceID) }))
+    .filter(({ d, src }) => playerIds.has(src) && fightIds.has(d.fight))
+    .map(({ d, src }) => ({ fightId: d.fight, sourceId: src, amount: d.amount }));
 
   // enemy debuffs sourced by a player → merged intervals (one open per fight:target:spell)
   const enemyDebuffs: EnemyDebuffInterval[] = [];

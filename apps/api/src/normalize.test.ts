@@ -314,6 +314,28 @@ describe("normalizeReport — RPB events", () => {
     expect(data.playerDamage?.[0]).toMatchObject({ sourceId: 1, amount: 50, selfInflicted: false, targetHostilePlayer: false });
   });
 
+  it("attributes pet damage and healing to the owner player (matches WCL)", () => {
+    const data = normalizeReport("abc", rawRpb, [], {}, {
+      allCasts: [], // presence flag so buildRpb does not early-return
+      petOwners: { 50: 2 }, // pet actor 50 belongs to player 2 (built from masterData in app.ts)
+      damageDone: [
+        { timestamp: 120, type: "damage", sourceID: 2, targetID: 900, abilityGameID: 1, amount: 100, fight: 2 },  // owner's own hit
+        { timestamp: 121, type: "damage", sourceID: 50, targetID: 900, abilityGameID: 2, amount: 40, fight: 2 },  // pet → owner 2
+        { timestamp: 122, type: "damage", sourceID: 999, targetID: 900, abilityGameID: 3, amount: 7, fight: 2 },  // stray non-player/non-pet → dropped
+      ],
+      healingDone: [
+        { timestamp: 123, type: "absorbed", sourceID: 50, targetID: 1, abilityGameID: 4, amount: 30, fight: 2 }, // pet shield → owner 2
+      ],
+    });
+    // both the owner's own hit and the pet's hit are credited to player 2
+    expect((data.playerDamage ?? []).filter((d) => d.sourceId === 2).map((d) => d.amount).sort((a, b) => a - b))
+      .toEqual([40, 100]);
+    // the raw pet/stray actor ids never appear as a source
+    expect((data.playerDamage ?? []).some((d) => d.sourceId === 50 || d.sourceId === 999)).toBe(false);
+    // pet healing/absorb is likewise credited to the owner
+    expect(data.healingEvents).toEqual([{ fightId: 2, sourceId: 2, amount: 30 }]);
+  });
+
   it("returns no RPB fields when neither allCasts nor damageDoneTable is provided", () => {
     const data = normalizeReport("abc", rawRpb, [], {}, {
       damageTaken: [

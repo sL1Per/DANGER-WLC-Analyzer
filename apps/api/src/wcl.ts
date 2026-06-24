@@ -34,6 +34,7 @@ query Report($code: String!) {
       masterData {
         actors(type: "Player") { id name subType }
         npcs: actors(type: "NPC") { id gameID }
+        pets: actors(type: "Pet") { id petOwner }
         abilities { gameID name }
       }
     }
@@ -51,6 +52,8 @@ export interface RawReport {
     actors: { id: number; name: string; subType: string }[];
     /** optional: absent on reports with no NPC actors / older fixtures (normalize falls back to []) */
     npcs?: { id: number; gameID: number }[];
+    /** pet actor id → owner player id, to attribute pet damage/healing to the owner */
+    pets?: { id: number; petOwner: number }[];
     /** ability id → name, for damage-taken/death labels */
     abilities?: { gameID: number; name: string }[];
   } | null;
@@ -223,9 +226,11 @@ export async function fetchDamageDone(code: string, accessToken: string, fightId
 
 /** Effective healing events by players. The WCL EventDataType enum has no
  *  "HealingDone" (unlike DamageDone) — the healing event type is just "Healing".
- *  Reuses the RawDamageEvent shape (sourceID/amount/fight); only `heal` kept. */
+ *  Keeps `heal` (direct/HoT healing) and `absorbed` (shield absorbs, which WCL
+ *  counts as healing, credited to the shield's caster via sourceID). Reuses the
+ *  RawDamageEvent shape (sourceID/amount/fight). */
 export async function fetchHealingDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
-  return await fetchAllEvents(code, accessToken, "Healing", new Set(["heal"]), fightIds) as unknown as RawDamageEvent[];
+  return await fetchAllEvents(code, accessToken, "Healing", new Set(["heal", "absorbed"]), fightIds) as unknown as RawDamageEvent[];
 }
 
 export interface RawDebuffEvent {

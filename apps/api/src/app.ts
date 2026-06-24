@@ -204,12 +204,16 @@ export function createApp(deps: AppDeps = {
       for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? `NPC ${n.gameID}`;
       const abilityMeta: Record<string, { name: string }> = {};
       for (const a of rawReport.masterData?.abilities ?? []) abilityMeta[String(a.gameID)] = { name: a.name };
+      // pet actor id → owner player id, so pet damage/healing is credited to the owner
+      // (matching WCL's "Damage Done By Source", which merges pets into their owner).
+      const petOwners: Record<number, number> = {};
+      for (const p of rawReport.masterData?.pets ?? []) petOwners[p.id] = p.petOwner;
       const data = normalizeReport(id, rawReport, combatants, itemMeta, {
         buffEvents, castEvents, deaths,
         trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
         interrupts, damageTaken, damageDone, allCasts,
         damageDoneTable, healingTable, damageTakenTable, actorNames,
-        enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta,
+        enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta, petOwners,
       });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });

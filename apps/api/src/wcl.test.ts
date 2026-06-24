@@ -218,14 +218,17 @@ describe("fetchHealingDone", () => {
   const page = (events: unknown[], next: number | null) =>
     new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
 
-  it("requests Healing events (the valid EventDataType) and returns heal entries", async () => {
+  it("requests Healing events (valid EventDataType) and keeps both heal and absorb entries", async () => {
     const heal = { type: "heal", sourceID: 2, targetID: 5, abilityGameID: 25314, amount: 5000, fight: 3 };
-    const mock = vi.fn().mockResolvedValue(page([heal], null));
+    const shield = { type: "absorbed", sourceID: 4, targetID: 5, abilityGameID: 25218, amount: 1200, fight: 3 };
+    const ignored = { type: "applybuff", sourceID: 4, targetID: 5, abilityGameID: 25218, fight: 3 };
+    const mock = vi.fn().mockResolvedValue(page([heal, shield, ignored], null));
     vi.stubGlobal("fetch", mock);
     const out = await fetchHealingDone("rep", "tok", [3]);
-    expect(out).toHaveLength(1);
-    expect(out[0]!.amount).toBe(5000);
-    expect(out[0]!.sourceID).toBe(2);
+    // heal + absorbed kept (WCL counts shield absorbs as healing), applybuff dropped
+    expect(out).toHaveLength(2);
+    expect(out.map((e) => e.amount)).toEqual([5000, 1200]);
+    expect(out[1]!.sourceID).toBe(4); // absorb credited to the shield's caster
     const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
     // must be "Healing", not "HealingDone" — WCL's EventDataType enum has no HealingDone
     if (/dataType:\s*\$dataType/.test(body.query)) {
