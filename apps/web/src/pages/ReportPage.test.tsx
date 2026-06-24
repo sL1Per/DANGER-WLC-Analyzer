@@ -41,6 +41,8 @@ describe("ReportPage", () => {
     expect(screen.queryByRole("button", { name: /^Shadow Resi$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Consumables$/i })).toBeInTheDocument();
+    // the event-sourced Performance tab has trash data, so it stays visible here
+    expect(screen.getByRole("button", { name: /^Performance$/i })).toBeInTheDocument();
   });
   it("honors ?lens=player by showing the profile", () => {
     const report = reportFixture;

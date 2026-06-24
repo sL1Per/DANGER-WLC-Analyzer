@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { reportFixture } from "@wcl/core";
 import { PerformanceView } from "./PerformanceView";
 
@@ -18,8 +18,11 @@ describe("PerformanceView (summary panels)", () => {
   it("shows a damage-done row with a DPS value and a death killing blow", () => {
     render(<PerformanceView report={report} fightId={fightId} onPlayer={() => {}} />);
     expect(screen.getAllByText("Playerone").length).toBeGreaterThan(0);
-    // killing blow ability name appears in the Deaths panel (also appears in damage-taken, so use getAllByText)
-    expect(screen.getAllByText("Frostbolt").length).toBeGreaterThan(0);
+    // The killing-blow ability name must appear in the Deaths panel's "Killing Blow"
+    // column specifically (it also appears in the Damage Taken panel), so scope the
+    // assertion to the Deaths table rather than matching anywhere on the page.
+    const deathsTable = screen.getByRole("columnheader", { name: "Killing Blow" }).closest("table");
+    expect(within(deathsTable!).getByText("Frostbolt")).toBeInTheDocument();
   });
 
   it("navigates on source player click", () => {
