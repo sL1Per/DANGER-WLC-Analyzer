@@ -527,4 +527,31 @@ describe("normalize hitStats/trinketUses", () => {
     expect(hs.critHeals.count).toBe(20);
     expect(data.trinketUses!).toContainEqual({ playerId: 7, name: "Bloodlust Brooch", count: 2 });
   });
+
+  it("omits hitStats/trinketUses when no tables provided", () => {
+    const raw = makeRaw();
+    const data = normalizeReport("rep", raw, [], {}, {});
+    expect(data.hitStats).toBeUndefined();
+    expect(data.trinketUses).toBeUndefined();
+  });
+
+  it("counts extra Windfury attacks and Battle Squawk buffs", () => {
+    const raw = makeRaw(); // player 7, boss fight 1
+    const data = normalizeReport("rep", raw, [], {}, {
+      damageDoneHitTable: [{ id: 7, total: 0 }],
+      castsTable: [],
+      extraWindfurySpellId: 33010,
+      battleSquawkBuffId: 23060,
+      damageDone: [
+        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 50, fight: 1 },
+        { timestamp: 2, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 60, fight: 1 },
+      ] as any,
+      buffEvents: [
+        { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
+      ] as any,
+    });
+    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
+    expect(hs.extraWindfury).toBe(2);
+    expect(hs.battleSquawk).toBe(1);
+  });
 });

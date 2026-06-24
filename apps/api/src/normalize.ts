@@ -72,6 +72,10 @@ export interface NormalizeEventInputs {
   castsTable?: RawCastTableEntry[];
   /** curated on-use trinket/racial ids → display name (from @wcl/data, injected) */
   trinketRacials?: { spellId: number; name: string }[];
+  /** Windfury extra-attack proc ability id (verified: false — confirm via wago.tools) */
+  extraWindfurySpellId?: number;
+  /** Battle Squawk buff id from Cenarion Dart trinket (verified: false — confirm via wago.tools) */
+  battleSquawkBuffId?: number;
 }
 
 function indexBy(entries?: RawHitTableEntry[]): Map<number, RawHitTableEntry> {
@@ -95,6 +99,18 @@ function buildHitStats(
     (e?.hitCount ?? 0) + (e?.critHitCount ?? 0) + (e?.crushingCount ?? 0) + (e?.blockCount ?? 0) + (e?.dodgeCount ?? 0) + (e?.immuneCount ?? 0) + (e?.missCount ?? 0) + (e?.parryCount ?? 0);
   const healDenom = (e?: RawHitTableEntry) => (e?.hitCount ?? 0) + (e?.critHitCount ?? 0);
 
+  const wfId = events.extraWindfurySpellId;
+  const sqId = events.battleSquawkBuffId;
+  const wfBy = new Map<number, number>();
+  if (wfId !== undefined) for (const d of events.damageDone ?? []) {
+    if (d.abilityGameID === wfId && playerIds.has(d.sourceID)) wfBy.set(d.sourceID, (wfBy.get(d.sourceID) ?? 0) + 1);
+  }
+  const sqBy = new Map<number, number>();
+  if (sqId !== undefined) for (const e of events.buffEvents ?? []) {
+    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff") && playerIds.has(e.targetID))
+      sqBy.set(e.targetID, (sqBy.get(e.targetID) ?? 0) + 1);
+  }
+
   const hitStats: PlayerHitStats[] = [...playerIds].map((playerId) => {
     const o = byOut.get(playerId); const od = outDenom(o);
     const t = byTaken.get(playerId); const td = takenDenom(t);
@@ -113,8 +129,8 @@ function buildHitStats(
         parry: share(t?.parryCount ?? 0, td),
       },
       critHeals: share(h?.critHitCount ?? 0, hd),
-      extraWindfury: 0, // Task 5
-      battleSquawk: 0,  // Task 5
+      extraWindfury: wfBy.get(playerId) ?? 0,
+      battleSquawk: sqBy.get(playerId) ?? 0,
     };
   });
 
