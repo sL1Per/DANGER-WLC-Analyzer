@@ -15,6 +15,9 @@ import {
   type ReportRanking,
   type RankingCharacter,
   type HealingEvent,
+  type PlayerHitStats,
+  type HitStat,
+  type TrinketUse,
 } from "@wcl/core";
 import {
   WclError,
@@ -29,6 +32,8 @@ import {
   type RawDebuffEvent,
   type RawRankingEntry,
   type RawRankingCharacter,
+  type RawHitTableEntry,
+  type RawCastTableEntry,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -61,6 +66,66 @@ export interface NormalizeEventInputs {
   abilityMeta?: Record<string, { name: string }>;
   /** pet actor id → owner player id; pet damage/healing is credited to the owner */
   petOwners?: Record<number, number>;
+  damageDoneHitTable?: RawHitTableEntry[];
+  damageTakenHitTable?: RawHitTableEntry[];
+  healingHitTable?: RawHitTableEntry[];
+  castsTable?: RawCastTableEntry[];
+  /** curated on-use trinket/racial ids → display name (from @wcl/data, injected) */
+  trinketRacials?: { spellId: number; name: string }[];
+}
+
+function indexBy(entries?: RawHitTableEntry[]): Map<number, RawHitTableEntry> {
+  const m = new Map<number, RawHitTableEntry>();
+  for (const e of entries ?? []) m.set(e.id, e);
+  return m;
+}
+
+function buildHitStats(
+  events: NormalizeEventInputs, playerIds: Set<number>,
+): { hitStats?: PlayerHitStats[]; trinketUses?: TrinketUse[] } {
+  if (events.damageDoneHitTable === undefined && events.castsTable === undefined) return {};
+  const byOut = indexBy(events.damageDoneHitTable);
+  const byTaken = indexBy(events.damageTakenHitTable);
+  const byHeal = indexBy(events.healingHitTable);
+
+  const share = (count: number, denom: number): HitStat => ({ count, pct: denom > 0 ? count / denom : 0 });
+  const outDenom = (e?: RawHitTableEntry) =>
+    (e?.hitCount ?? 0) + (e?.critHitCount ?? 0) + (e?.dodgeCount ?? 0) + (e?.parryCount ?? 0) + (e?.missCount ?? 0) + (e?.resistCount ?? 0);
+  const takenDenom = (e?: RawHitTableEntry) =>
+    (e?.hitCount ?? 0) + (e?.critHitCount ?? 0) + (e?.crushingCount ?? 0) + (e?.blockCount ?? 0) + (e?.dodgeCount ?? 0) + (e?.immuneCount ?? 0) + (e?.missCount ?? 0) + (e?.parryCount ?? 0);
+  const healDenom = (e?: RawHitTableEntry) => (e?.hitCount ?? 0) + (e?.critHitCount ?? 0);
+
+  const hitStats: PlayerHitStats[] = [...playerIds].map((playerId) => {
+    const o = byOut.get(playerId); const od = outDenom(o);
+    const t = byTaken.get(playerId); const td = takenDenom(t);
+    const h = byHeal.get(playerId); const hd = healDenom(h);
+    return {
+      playerId,
+      outgoing: {
+        crit: share(o?.critHitCount ?? 0, od), dodge: share(o?.dodgeCount ?? 0, od),
+        miss: share(o?.missCount ?? 0, od), parry: share(o?.parryCount ?? 0, od),
+        resist: share(o?.resistCount ?? 0, od),
+      },
+      incomingMelee: {
+        crit: share(t?.critHitCount ?? 0, td), crushing: share(t?.crushingCount ?? 0, td),
+        blocked: share(t?.blockCount ?? 0, td), dodge: share(t?.dodgeCount ?? 0, td),
+        immune: share(t?.immuneCount ?? 0, td), miss: share(t?.missCount ?? 0, td),
+        parry: share(t?.parryCount ?? 0, td),
+      },
+      critHeals: share(h?.critHitCount ?? 0, hd),
+      extraWindfury: 0, // Task 5
+      battleSquawk: 0,  // Task 5
+    };
+  });
+
+  const trinketSet = new Map((events.trinketRacials ?? []).map((t) => [t.spellId, t.name]));
+  const trinketUses: TrinketUse[] = [];
+  for (const c of events.castsTable ?? []) {
+    if (!playerIds.has(c.id)) continue;
+    const name = trinketSet.get(c.guid);
+    if (name) trinketUses.push({ playerId: c.id, name, count: c.total });
+  }
+  return { hitStats, trinketUses };
 }
 
 function buildRpb(
@@ -260,6 +325,7 @@ export function normalizeReport(
         spellId: e.abilityGameID, timestamp: e.timestamp,
       })),
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
+    ...buildHitStats(events, new Set(players.map((p) => p.id))),
     rankings: events.rankings ? buildRankings(events.rankings) : undefined,
     itemMeta,
     abilityMeta: events.abilityMeta ?? {},

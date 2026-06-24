@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { normalizeReport } from "./normalize";
 import type { RawBuffEvent, RawCastEvent, RawReport, RawCombatantInfo } from "./wcl";
 
+/** Minimal 1-boss-fight, 1-Paladin (id 7) raw report used by hitStats tests. */
+function makeRaw(): RawReport {
+  return {
+    title: "SSC test",
+    startTime: 0,
+    endTime: 1000,
+    zone: { name: "Serpentshrine Cavern" },
+    fights: [{ id: 1, name: "Hydross the Unstable", encounterID: 623, kill: true, startTime: 0, endTime: 1000, friendlyPlayers: [7] }],
+    masterData: { actors: [{ id: 7, name: "Xws", subType: "Paladin" }] },
+  };
+}
+
 const raw: RawReport = {
   title: "T5 fun",
   startTime: 1_700_000_000_000,
@@ -494,5 +506,25 @@ describe("normalizeReport — rankings", () => {
     });
     expect(data.rankings).toHaveLength(1);
     expect(data.rankings![0]!.fightID).toBe(3);
+  });
+});
+
+describe("normalize hitStats/trinketUses", () => {
+  it("builds outgoing hit shares and trinket counts", () => {
+    const raw = makeRaw(); // 1 player id=7 (Paladin), 1 boss fight id=1
+    const data = normalizeReport("rep", raw, [], {}, {
+      damageDoneHitTable: [{ id: 7, total: 1000, hitCount: 100, critHitCount: 35, dodgeCount: 4, parryCount: 6, missCount: 2, resistCount: 3 }],
+      damageTakenHitTable: [{ id: 7, total: 500, hitCount: 50, critHitCount: 1, blockCount: 10, dodgeCount: 5, missCount: 2, parryCount: 0, crushingCount: 3, immuneCount: 0 }],
+      healingHitTable: [{ id: 7, total: 0, hitCount: 80, critHitCount: 20 }],
+      castsTable: [{ id: 7, guid: 28714, name: "Bloodlust Brooch", total: 2 }],
+      trinketRacials: [{ spellId: 28714, name: "Bloodlust Brooch" }],
+    });
+    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
+    expect(hs.outgoing.crit.count).toBe(35);
+    // share = 35 / (100+35+4+6+2+3) = 35/150
+    expect(hs.outgoing.crit.pct).toBeCloseTo(35 / 150, 5);
+    expect(hs.incomingMelee.crushing.count).toBe(3);
+    expect(hs.critHeals.count).toBe(20);
+    expect(data.trinketUses!).toContainEqual({ playerId: 7, name: "Bloodlust Brooch", count: 2 });
   });
 });
