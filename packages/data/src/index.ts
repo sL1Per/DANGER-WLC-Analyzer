@@ -27,3 +27,4 @@ export * from "./rpb";
 export * from "./classAbilities";
 export * from "./avoidableAbilities";
 export * from "./rpbConsumables";
+export * from "./trinketRacials";
