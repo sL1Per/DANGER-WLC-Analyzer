@@ -218,7 +218,7 @@ describe("fetchHealingDone", () => {
   const page = (events: unknown[], next: number | null) =>
     new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
 
-  it("requests HealingDone events and returns heal entries", async () => {
+  it("requests Healing events (the valid EventDataType) and returns heal entries", async () => {
     const heal = { type: "heal", sourceID: 2, targetID: 5, abilityGameID: 25314, amount: 5000, fight: 3 };
     const mock = vi.fn().mockResolvedValue(page([heal], null));
     vi.stubGlobal("fetch", mock);
@@ -227,10 +227,11 @@ describe("fetchHealingDone", () => {
     expect(out[0]!.amount).toBe(5000);
     expect(out[0]!.sourceID).toBe(2);
     const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    // must be "Healing", not "HealingDone" — WCL's EventDataType enum has no HealingDone
     if (/dataType:\s*\$dataType/.test(body.query)) {
-      expect(body.variables.dataType).toBe("HealingDone");
+      expect(body.variables.dataType).toBe("Healing");
     } else {
-      expect(body.query).toContain("dataType: HealingDone");
+      expect(body.query).toContain("dataType: Healing");
     }
     expect(body.variables.fightIds).toEqual([3]);
   });

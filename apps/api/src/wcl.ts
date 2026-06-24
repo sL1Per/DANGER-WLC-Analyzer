@@ -221,10 +221,11 @@ export async function fetchDamageDone(code: string, accessToken: string, fightId
   return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
 }
 
-/** Effective healing-done events by players (HealingDone dataType). Reuses the
- *  RawDamageEvent shape (sourceID/amount/fight); only the `heal` type is kept. */
+/** Effective healing events by players. The WCL EventDataType enum has no
+ *  "HealingDone" (unlike DamageDone) — the healing event type is just "Healing".
+ *  Reuses the RawDamageEvent shape (sourceID/amount/fight); only `heal` kept. */
 export async function fetchHealingDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
-  return await fetchAllEvents(code, accessToken, "HealingDone", new Set(["heal"]), fightIds) as unknown as RawDamageEvent[];
+  return await fetchAllEvents(code, accessToken, "Healing", new Set(["heal"]), fightIds) as unknown as RawDamageEvent[];
 }
 
 export interface RawDebuffEvent {
