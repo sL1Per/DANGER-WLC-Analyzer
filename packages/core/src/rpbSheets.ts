@@ -1,6 +1,7 @@
-import type { ReportData, Role } from "./types";
+import type { ReportData, Role, PlayerHitStats, TrinketUse } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
+import { rpb, type RpbConfig } from "./rpb";
 
 /** Structural copy of @wcl/data's CatalogAbility (core stays pure — catalog injected). */
 export type CastCategory = "single" | "aoe" | "cooldown" | "heal";
@@ -105,4 +106,115 @@ export function roleCasts(
   }
 
   return blocks;
+}
+
+// ---------------------------------------------------------------------------
+// roleSheet — per-role stat sheet (hit stats, trinkets, avoidable damage/debuffs)
+// ---------------------------------------------------------------------------
+
+export interface RoleSheetConfig {
+  roles: RoleConfig;
+  rpb: RpbConfig;
+  /** debuff spell ids whose application count we want to surface per player */
+  avoidableDebuffIds: { spellId: number; name: string }[];
+}
+
+export interface RoleSheetRow {
+  playerId: number;
+  playerName: string;
+  className: string;
+  /** undefined when report.hitStats is absent (pre-feature cache) */
+  hitStats?: PlayerHitStats;
+  trinketUses: TrinketUse[];
+  /** per-ability breakdown of avoidable damage taken (from rpb avoidableAbilityIds) */
+  avoidableByAbility: { name: string; amount: number }[];
+  /** application counts of each tracked avoidable debuff sourced by this player */
+  debuffsApplied: { name: string; count: number }[];
+  deaths: number;
+  friendlyFire: number;
+  damageReflected: number;
+  damageToHostilePlayers: number;
+  totalAvoidableDamageTaken: number;
+}
+
+/**
+ * Build per-player role sheet rows for a given role.
+ * Returns null when report.playerTotals is undefined (pre-M5a cache) or when
+ * rpb() itself returns null (stale cache).
+ */
+export function roleSheet(
+  report: ReportData,
+  role: Role,
+  cfg: RoleSheetConfig,
+): RoleSheetRow[] | null {
+  if (report.playerTotals === undefined) return null;
+
+  const result = rpb(report, cfg.rpb);
+  if (!result) return null;
+
+  // Exclude Kalecgos (portal mechanic breaks all numbers)
+  const fightIds = new Set(
+    report.fights.filter((f) => !isKalecgos(f.name)).map((f) => f.id),
+  );
+
+  // Index hitStats and trinketUses by playerId for O(1) lookup
+  const hitById = new Map(
+    (report.hitStats ?? []).map((h) => [h.playerId, h]),
+  );
+  const trinketsById = new Map<number, TrinketUse[]>();
+  for (const t of report.trinketUses ?? []) {
+    const arr = trinketsById.get(t.playerId) ?? [];
+    arr.push(t);
+    trinketsById.set(t.playerId, arr);
+  }
+
+  const meta = report.abilityMeta ?? {};
+  const debuffSpec = new Map(
+    cfg.avoidableDebuffIds.map((d) => [d.spellId, d.name]),
+  );
+
+  return result.rows
+    .filter((r) => r.role === role)
+    .map((r) => {
+      // Avoidable damage broken out by ability (names via abilityMeta)
+      const dmgByAbility = new Map<number, number>();
+      for (const d of report.damageTakenEvents ?? []) {
+        if (d.targetPlayerId !== r.playerId || !fightIds.has(d.fightId)) continue;
+        if (!cfg.rpb.avoidableAbilityIds.has(d.abilityId)) continue;
+        dmgByAbility.set(d.abilityId, (dmgByAbility.get(d.abilityId) ?? 0) + d.amount);
+      }
+
+      // Tracked avoidable debuff APPLICATIONS this player sourced.
+      // enemyDebuffs are stored as merged intervals (one per application window),
+      // so counting intervals = counting applications — matches the sheet's count.
+      const debuffCounts = new Map<number, number>();
+      for (const e of report.enemyDebuffs ?? []) {
+        if (e.sourceId !== r.playerId || !fightIds.has(e.fightId)) continue;
+        if (!debuffSpec.has(e.spellId)) continue;
+        debuffCounts.set(e.spellId, (debuffCounts.get(e.spellId) ?? 0) + 1);
+      }
+
+      return {
+        playerId: r.playerId,
+        playerName: r.playerName,
+        className: r.className,
+        hitStats: hitById.get(r.playerId),
+        trinketUses: trinketsById.get(r.playerId) ?? [],
+        avoidableByAbility: [...dmgByAbility]
+          .map(([id, amount]) => ({
+            name: meta[String(id)]?.name ?? `#${id}`,
+            amount,
+          }))
+          .sort((a, b) => b.amount - a.amount),
+        debuffsApplied: [...debuffCounts].map(([id, count]) => ({
+          name: debuffSpec.get(id)!,
+          count,
+        })),
+        deaths: r.deaths,
+        friendlyFire: r.friendlyFire,
+        damageReflected: r.damageReflected,
+        damageToHostilePlayers: r.damageToHostilePlayers,
+        totalAvoidableDamageTaken: r.totalAvoidableDamageTaken,
+      };
+    });
 }

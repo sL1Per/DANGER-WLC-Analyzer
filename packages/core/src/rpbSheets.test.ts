@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { roleCasts } from "./rpbSheets";
+import { roleCasts, roleSheet } from "./rpbSheets";
 import type { ReportData } from "./types";
 import type { ActivityConfig } from "./activity";
 import type { RoleConfig } from "./roles";
+import type { RpbConfig } from "./rpb";
 
 /** Minimal but real ReportData for a single tank Paladin in one boss fight. */
 function makeReport(): ReportData {
@@ -175,5 +176,128 @@ describe("roleCasts", () => {
     const pala = blocks.find((b) => b.className === "Paladin")!;
     // Only the 1 cast on fight 1 should be counted (Kalecgos fight excluded)
     expect(pala.counts.get("7:holy-shield")!.castCount).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// roleSheet tests
+// ---------------------------------------------------------------------------
+
+/** RpbConfig used by roleSheet tests — mirrors rpb.test.ts's cfg. */
+const defaultRpbConfig = (): RpbConfig => ({
+  roles: roleCfg,
+  activity: activityCfg,
+  engineeringDamageIds: [],
+  oilOfImmolationSpellId: 11350,
+  battleShoutBuffIds: [],
+  absorbExcludedSpellIds: [],
+  classAbilities: [],
+  avoidableAbilityIds: new Set(),
+});
+
+/**
+ * Minimal ReportData for roleSheet tests: one tank Paladin (id 7) with
+ * hitStats, a trinketUse entry, and two EnemyDebuffInterval records for
+ * Nether Vapor (spellId 35013) sourced by player 7.
+ */
+function makeReportWithHitStats(): ReportData {
+  return {
+    reportId: "test002",
+    title: "Role Sheet Test",
+    zoneName: "Black Temple",
+    startTime: 0,
+    endTime: 2000,
+    fights: [
+      {
+        id: 1,
+        name: "Supremus",
+        encounterId: 601,
+        isBoss: true,
+        kill: true,
+        startTime: 0,
+        endTime: 1000,
+      },
+    ],
+    players: [{ id: 7, name: "TankPala", class: "Paladin" }],
+    gear: [
+      {
+        fightId: 1,
+        playerId: 7,
+        // Righteous Fury aura → tank signal
+        auras: [25780],
+        items: [],
+      },
+    ],
+    playerTotals: [
+      {
+        playerId: 7,
+        healingDone: 0,
+        damageDone: 100_000,
+        damageTaken: 200_000,
+        magicDamageDone: 0,
+      },
+    ],
+    playerCasts: [],
+    hitStats: [
+      {
+        playerId: 7,
+        outgoing: {
+          crit: { count: 42, pct: 0.25 },
+          dodge: { count: 0, pct: 0 },
+          miss: { count: 2, pct: 0.01 },
+          parry: { count: 0, pct: 0 },
+          resist: { count: 0, pct: 0 },
+        },
+        incomingMelee: {
+          crit: { count: 1, pct: 0.005 },
+          crushing: { count: 0, pct: 0 },
+          blocked: { count: 5, pct: 0.03 },
+          dodge: { count: 10, pct: 0.06 },
+          immune: { count: 0, pct: 0 },
+          miss: { count: 3, pct: 0.015 },
+          parry: { count: 8, pct: 0.05 },
+        },
+        critHeals: { count: 0, pct: 0 },
+        extraWindfury: 0,
+        battleSquawk: 0,
+      },
+    ],
+    trinketUses: [
+      { playerId: 7, name: "Figurine - Felsteel Boar", count: 3 },
+    ],
+    enemyDebuffs: [
+      // Two applications of Nether Vapor (35013) by player 7 on fight 1
+      { fightId: 1, sourceId: 7, targetEnemyId: 901, spellId: 35013, startTime: 100, endTime: 200 },
+      { fightId: 1, sourceId: 7, targetEnemyId: 902, spellId: 35013, startTime: 300, endTime: 400 },
+    ],
+    itemMeta: {},
+  };
+}
+
+describe("roleSheet", () => {
+  it("surfaces hit stats, trinkets and avoidable debuff counts per player", () => {
+    const report = makeReportWithHitStats();
+    const rows = roleSheet(report, "tank", {
+      roles: roleCfg,
+      rpb: defaultRpbConfig(),
+      avoidableDebuffIds: [{ spellId: 35013, name: "Nether Vapor" }],
+    })!;
+    expect(rows).not.toBeNull();
+    const r = rows.find((x) => x.playerId === 7)!;
+    expect(r).toBeDefined();
+    expect(r.hitStats?.outgoing.crit.count).toBeGreaterThanOrEqual(0);
+    expect(r.trinketUses.length).toBeGreaterThan(0);
+    expect(r.debuffsApplied.find((d) => d.name === "Nether Vapor")?.count).toBe(2);
+  });
+
+  it("returns null on a stale cache (no playerTotals)", () => {
+    const report = { ...makeReportWithHitStats(), playerTotals: undefined } as ReportData;
+    expect(
+      roleSheet(report, "tank", {
+        roles: roleCfg,
+        rpb: defaultRpbConfig(),
+        avoidableDebuffIds: [],
+      }),
+    ).toBeNull();
   });
 });
