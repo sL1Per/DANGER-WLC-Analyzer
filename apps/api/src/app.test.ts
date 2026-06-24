@@ -167,6 +167,22 @@ describe("GET /api/report/:id — gear", () => {
     // item ids AND gem ids requested:
     expect(fetchItemMeta.mock.calls[0]![0]).toEqual(expect.arrayContaining([24266, 31867]));
   });
+  it("fetches event data for all fights (trash included) but tables only for bosses", async () => {
+    const fetchAllCasts = vi.fn().mockResolvedValue([]);
+    const fetchDamageTaken = vi.fn().mockResolvedValue([]);
+    const fetchTable = vi.fn().mockResolvedValue([]);
+    const app = makeApp({
+      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
+      fetchAllCasts, fetchDamageTaken, fetchTable,
+    });
+    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
+    expect(res.status).toBe(200);
+    // event queries cover trash (1) + boss (2) so the TRASH card has data
+    expect(fetchAllCasts).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [1, 2]);
+    expect(fetchDamageTaken).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [1, 2]);
+    // summary tables stay boss-only (no parse/combatantInfo data on trash)
+    expect(fetchTable).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", "DamageDone", [2]);
+  });
   it("serves the report even when combatant info fails", async () => {
     const app = makeApp({
       fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),

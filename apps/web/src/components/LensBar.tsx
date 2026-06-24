@@ -1,11 +1,15 @@
 import type { Fight, ReportData } from "@wcl/core";
 import { CLASS_ORDER, classColorVar, classSlug } from "../lib/classColors";
-import { ALL_FIGHTS } from "../lib/scopeReport";
+import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 
 export type Lens = "fight" | "player";
 
 export function bossFights(report: ReportData): Fight[] {
   return report.fights.filter((f) => f.isBoss);
+}
+
+export function trashFights(report: ReportData): Fight[] {
+  return report.fights.filter((f) => !f.isBoss);
 }
 
 const secs = (f: Fight) => `${Math.round((f.endTime - f.startTime) / 1000)}s`;
@@ -57,8 +61,26 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
                 className={`fight-chip fight-chip--all${fightId === ALL_FIGHTS ? " selected" : ""}`}
                 onClick={() => onFight(ALL_FIGHTS)}
               >
-                <span className="fight-chip__name">ALL</span>
+                <span className="fight-chip__name">BOSSES</span>
                 <span className="pill pill--all">{kills}/{bosses.length} kills</span>
+                <span className="mono fight-chip__meta">{totalSecs}s · {report.players.length} players</span>
+              </button>
+            );
+          })()}
+          {(() => {
+            const trash = trashFights(report);
+            if (trash.length === 0) return null;
+            const totalSecs = Math.round(
+              trash.reduce((s, f) => s + (f.endTime - f.startTime), 0) / 1000,
+            );
+            return (
+              <button
+                key="trash"
+                className={`fight-chip fight-chip--all${fightId === ALL_TRASH ? " selected" : ""}`}
+                onClick={() => onFight(ALL_TRASH)}
+              >
+                <span className="fight-chip__name">TRASH</span>
+                <span className="pill pill--all">{trash.length} pulls</span>
                 <span className="mono fight-chip__meta">{totalSecs}s · {report.players.length} players</span>
               </button>
             );

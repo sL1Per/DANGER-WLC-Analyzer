@@ -24,17 +24,21 @@ const baseReport = (): ReportData => ({
 
 const hastePotion: RpbConsumableSpec = { key: "haste-potion", name: "Haste Potion", spellIds: [28507] };
 const manaGems: RpbConsumableSpec = { key: "mana-gems", name: "Mana Gems", spellIds: [27103, 10058] };
+const giftOfArthas: RpbConsumableSpec = { key: "gift-of-arthas", name: "Gift of Arthas", spellIds: [11371], buffUptime: true };
 
 describe("rpbConsumables", () => {
-  it("counts only casts within boss fights (trash excluded)", () => {
+  it("counts casts on the fights present in report.fights (scoping decides boss vs trash)", () => {
     const r = baseReport();
     r.playerCasts = [
-      { fightId: 1, playerId: 1, spellId: 28507, timestamp: 100 }, // trash — excluded
-      { fightId: 2, playerId: 1, spellId: 28507, timestamp: 1100 }, // boss — counted
+      { fightId: 1, playerId: 1, spellId: 28507, timestamp: 100 }, // trash
+      { fightId: 2, playerId: 1, spellId: 28507, timestamp: 1100 }, // boss
     ];
-    const res = rpbConsumables(r, [hastePotion])!;
-    const locky = res.rows.find((x) => x.playerId === 1)!;
-    expect(locky.counts["haste-potion"]).toBe(1);
+    // scoped to boss fights (the ALL-bosses card): only the boss cast counts
+    const boss = { ...r, fights: r.fights.filter((f) => f.isBoss) };
+    expect(rpbConsumables(boss, [hastePotion])!.rows.find((x) => x.playerId === 1)!.counts["haste-potion"]).toBe(1);
+    // scoped to trash fights (the ALL-trash card): only the trash cast counts
+    const trash = { ...r, fights: r.fights.filter((f) => !f.isBoss) };
+    expect(rpbConsumables(trash, [hastePotion])!.rows.find((x) => x.playerId === 1)!.counts["haste-potion"]).toBe(1);
   });
 
   it("excludes Kalecgos casts", () => {
@@ -74,6 +78,26 @@ describe("rpbConsumables", () => {
     const res = rpbConsumables(r, [hastePotion])!;
     expect(res.rows.map((x) => x.playerName)).toEqual(["Locky", "Magey"]);
     expect(res.rows[1].className).toBe("Mage");
+  });
+
+  it("reports buff-uptime rows as an application count + uptime fraction over scoped fights", () => {
+    const r = baseReport();
+    // Void Reaver is fight 2, window 1000–5000 (4000ms). Buff up for half of it.
+    r.buffs = [
+      { fightId: 2, targetId: 1, spellId: 11371, startTime: 1000, endTime: 3000 },
+    ];
+    const boss = { ...r, fights: r.fights.filter((f) => f.isBoss && !f.name.includes("Kalecgos")) };
+    const row = rpbConsumables(boss, [giftOfArthas])!.rows.find((x) => x.playerId === 1)!;
+    expect(row.counts["gift-of-arthas"]).toBe(1);
+    expect(row.uptimes["gift-of-arthas"]).toBeCloseTo(2000 / 4000); // 0.5
+  });
+
+  it("buff-uptime rows are zero when report.buffs is absent", () => {
+    const r = baseReport();
+    delete r.buffs;
+    const row = rpbConsumables(r, [giftOfArthas])!.rows.find((x) => x.playerId === 1)!;
+    expect(row.counts["gift-of-arthas"]).toBe(0);
+    expect(row.uptimes["gift-of-arthas"]).toBe(0);
   });
 
   it("returns null when playerCasts is absent", () => {

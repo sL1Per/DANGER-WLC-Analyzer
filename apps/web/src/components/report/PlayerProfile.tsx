@@ -3,7 +3,7 @@ import {
   rpb, consumables, gearListing, gearIssues, listGearFights, SLOT_NAMES,
   type ReportData,
 } from "@wcl/core";
-import { scopeReportToFight } from "../../lib/scopeReport";
+import { scopeReportToFight, ALL_FIGHTS } from "../../lib/scopeReport";
 import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
 import { consumablesStatus, statusHeat, verdict } from "../../lib/playerRollups";
 import { heatClass, deathsHeat, uptimeHeat, type Heat } from "../../lib/heatmap";
@@ -18,7 +18,10 @@ const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.
 export function PlayerProfile({ report, playerId }: { report: ReportData; playerId: number }) {
   const player = report.players.find((p) => p.id === playerId);
   const cfg = useMemo(() => buildRpbConfig(), []);
-  const result = useMemo(() => rpb(report, cfg), [report, cfg]);
+  // all-night profile numbers are boss-only by spec; rpb now honors report.fights
+  // (it no longer self-filters to bosses), so scope to the boss set explicitly.
+  const bossScoped = useMemo(() => scopeReportToFight(report, ALL_FIGHTS), [report]);
+  const result = useMemo(() => rpb(bossScoped, cfg), [bossScoped, cfg]);
   const consRow = useMemo(
     () => consumables(report, consumablesConfig)?.rows.find((c) => c.playerId === playerId),
     [report, playerId],

@@ -91,6 +91,20 @@ describe("drums — greater vs lesser", () => {
   });
 });
 
+describe("drums — fight scoping", () => {
+  it("counts only casts on fights present in report.fights", () => {
+    const report = structuredClone(reportFixture);
+    // a drum cast on the trash fight (id 1) — must NOT count once the report is
+    // scoped to boss fights (this is what the ALL-bosses card does)
+    report.drumCasts!.push({ fightId: 1, sourceId: 1, spellId: 35476, timestamp: 10_000 });
+    const scoped: ReportData = { ...report, fights: report.fights.filter((f) => f.isBoss) };
+    const p1 = rowFor(scoped, "Playerone");
+    expect(p1.battle.casts).toBe(2); // still just the two fight-3 (boss) casts
+    expect(p1.total).toBe(2);
+    expect(p1.lesserCasts).toBe(2);
+  });
+});
+
 describe("drums — input handling", () => {
   it("ignores casts whose spellId is not a configured drum", () => {
     const report = structuredClone(reportFixture);

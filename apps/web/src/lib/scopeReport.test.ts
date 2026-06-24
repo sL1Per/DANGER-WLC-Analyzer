@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reportFixture } from "@wcl/core";
-import { scopeReportToFight, ALL_FIGHTS } from "./scopeReport";
+import { scopeReportToFight, ALL_FIGHTS, ALL_TRASH } from "./scopeReport";
 
 describe("scopeReportToFight", () => {
   it("keeps only the chosen fight but preserves every other field by reference", () => {
@@ -23,6 +23,13 @@ describe("scopeReportToFight", () => {
     const scoped = scopeReportToFight(reportFixture, ALL_FIGHTS);
     expect(scoped.fights).toEqual(reportFixture.fights.filter((f) => f.isBoss));
     expect(scoped.fights.every((f) => f.isBoss)).toBe(true);
+    expect(scoped.players).toBe(reportFixture.players);
+  });
+
+  it("scopes to every trash fight for ALL_TRASH", () => {
+    const scoped = scopeReportToFight(reportFixture, ALL_TRASH);
+    expect(scoped.fights).toEqual(reportFixture.fights.filter((f) => !f.isBoss));
+    expect(scoped.fights.every((f) => !f.isBoss)).toBe(true);
     expect(scoped.players).toBe(reportFixture.players);
   });
 });

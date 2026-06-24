@@ -28,13 +28,14 @@ export function activity(
   playerId: number,
   report: ReportData,
   cfg: ActivityConfig,
-  /** boss-fight ids to include; defaults to all boss fights. rpb() passes a
-   *  Kalecgos-excluded set so activity matches the rest of the breakdown. */
-  bossFightIds?: Set<number>,
+  /** fight ids to include; defaults to every fight in report.fights. rpb()
+   *  passes a Kalecgos-excluded, scope-aware set so activity matches the rest
+   *  of the breakdown. */
+  scopedFightIds?: Set<number>,
 ): ActivityResult | null {
   if (report.playerCasts === undefined) return null;
 
-  const fightIds = bossFightIds ?? new Set(report.fights.filter((f) => f.isBoss).map((f) => f.id));
+  const fightIds = scopedFightIds ?? new Set(report.fights.map((f) => f.id));
   const bossDurationSec = report.fights
     .filter((f) => fightIds.has(f.id))
     .reduce((sum, f) => sum + (f.endTime - f.startTime) / 1000, 0);

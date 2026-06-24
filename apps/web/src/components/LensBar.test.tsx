@@ -21,11 +21,11 @@ describe("LensBar", () => {
     fireEvent.click(screen.getByRole("button", { name: /by player/i }));
     expect(p.onLens).toHaveBeenCalledWith("player");
   });
-  it("shows an ALL chip first that selects all bosses combined", () => {
+  it("shows a BOSSES chip first that selects all bosses combined", () => {
     const p = setup();
-    const names = screen.getAllByText(/^ALL$|.+/).filter((n) => n.className === "fight-chip__name");
-    expect(names[0]).toHaveTextContent("ALL");
-    fireEvent.click(screen.getByText("ALL"));
+    const names = screen.getAllByText(/.+/).filter((n) => n.className === "fight-chip__name");
+    expect(names[0]).toHaveTextContent("BOSSES");
+    fireEvent.click(screen.getByText("BOSSES"));
     expect(p.onFight).toHaveBeenCalledWith(-1);
   });
   it("selects a fight chip", () => {
@@ -33,6 +33,16 @@ describe("LensBar", () => {
     const boss = p.report.fights.find((f) => f.isBoss)!;
     fireEvent.click(screen.getAllByText(boss.name)[0]);
     expect(p.onFight).toHaveBeenCalledWith(boss.id);
+  });
+  it("shows a TRASH chip that selects all trash combined", () => {
+    const p = setup();
+    fireEvent.click(screen.getByText("TRASH"));
+    expect(p.onFight).toHaveBeenCalledWith(-2);
+  });
+  it("omits the TRASH chip when the report has no trash fights", () => {
+    const bossOnly = { ...reportFixture, fights: reportFixture.fights.filter((f) => f.isBoss) };
+    setup({ report: bossOnly });
+    expect(screen.queryByText("TRASH")).not.toBeInTheDocument();
   });
   it("renders the roster search in the player lens", () => {
     setup({ lens: "player" });

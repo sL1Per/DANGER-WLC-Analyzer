@@ -1,5 +1,5 @@
-import { describe, expect, it, afterEach } from "vitest";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { describe, expect, it, afterEach, vi } from "vitest";
+import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";
 import type { RpbConsumableRow } from "@wcl/core";
 import { ConsumableMatrix } from "./ConsumableMatrix";
 
@@ -9,9 +9,9 @@ const catalog = [
 ];
 
 const rows: RpbConsumableRow[] = [
-  { playerId: 1, playerName: "Magey", className: "Mage", counts: { "haste-potion": 4, "flame-cap": 0 } },
-  { playerId: 2, playerName: "Locky", className: "Warlock", counts: { "haste-potion": 0, "flame-cap": 0 } },
-  { playerId: 3, playerName: "Warry", className: "Warrior", counts: { "haste-potion": 2, "flame-cap": 0 } },
+  { playerId: 1, playerName: "Magey", className: "Mage", counts: { "haste-potion": 4, "flame-cap": 0 }, uptimes: {} },
+  { playerId: 2, playerName: "Locky", className: "Warlock", counts: { "haste-potion": 0, "flame-cap": 0 }, uptimes: {} },
+  { playerId: 3, playerName: "Warry", className: "Warrior", counts: { "haste-potion": 2, "flame-cap": 0 }, uptimes: {} },
 ];
 
 describe("ConsumableMatrix", () => {
@@ -41,15 +41,15 @@ describe("ConsumableMatrix", () => {
     expect(headers).toEqual(["Warry", "Magey", "Locky"]);
   });
 
-  it("applies a relative heatmap per row: row max → good, min → bad", () => {
+  it("applies a relative heatmap per row, leaving empty cells neutral", () => {
     render(<ConsumableMatrix rows={rows} catalog={catalog} />);
     const hasteRow = screen.getByText("Haste Potion").closest("tr")!;
     const cells = within(hasteRow).getAllByRole("cell");
     // cells are ordered Warry(2), Magey(4), Locky(0) after the label cell
     const [warry, magey, locky] = cells;
-    expect(magey.className).toContain("sev-minor");   // max → good
-    expect(locky.className).toContain("sev-major");   // min → bad
+    expect(magey.className).toContain("sev-minor");    // max → good
     expect(warry.className).toContain("sev-moderate"); // middle → watch
+    expect(locky.className).toContain("sev-neutral");  // empty → no background
   });
 
   it("keeps an all-zero row neutral", () => {
@@ -58,6 +58,32 @@ describe("ConsumableMatrix", () => {
     within(flameRow).getAllByRole("cell").forEach((c) =>
       expect(c.className).toContain("sev-neutral"),
     );
+  });
+
+  it("renders player names as plain text when no onPlayer handler is given", () => {
+    render(<ConsumableMatrix rows={rows} catalog={catalog} />);
+    expect(screen.queryByRole("button", { name: "Magey" })).not.toBeInTheDocument();
+  });
+
+  it("renders clickable player links and fires onPlayer when given a handler", () => {
+    const onPlayer = vi.fn();
+    render(<ConsumableMatrix rows={rows} catalog={catalog} onPlayer={onPlayer} />);
+    const link = screen.getByRole("button", { name: "Magey" });
+    fireEvent.click(link);
+    expect(onPlayer).toHaveBeenCalledWith("Magey");
+  });
+
+  it("renders buff-uptime rows as 'count (uptime%)'", () => {
+    const upCatalog = [{ key: "gift-of-arthas", name: "Gift of Arthas", uptime: true }];
+    const upRows: RpbConsumableRow[] = [
+      { playerId: 1, playerName: "Tanky", className: "Warrior", counts: { "gift-of-arthas": 3 }, uptimes: { "gift-of-arthas": 0.46 } },
+      { playerId: 2, playerName: "Locky", className: "Warlock", counts: { "gift-of-arthas": 0 }, uptimes: { "gift-of-arthas": 0 } },
+    ];
+    render(<ConsumableMatrix rows={upRows} catalog={upCatalog} />);
+    const row = screen.getByText("Gift of Arthas").closest("tr")!;
+    const cells = within(row).getAllByRole("cell");
+    expect(cells[0].textContent).toBe("3 (46%)"); // Tanky (warrior sorts first)
+    expect(cells[1].textContent).toBe("");        // non-user stays blank
   });
 
   it("shows a no-data note for an empty roster", () => {

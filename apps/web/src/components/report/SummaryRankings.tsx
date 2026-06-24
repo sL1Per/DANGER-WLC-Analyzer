@@ -32,7 +32,6 @@ export function SummaryRankings({ report, onPlayer }: { report: ReportData; onPl
                 {section.players.map((p) => (
                   <tr key={p.name}>
                     <td className="player-cell" style={classColorVar(p.class)}>
-                      <span className="class-dot" aria-hidden />
                       <button className="player-link" onClick={() => onPlayer(p.name)}>{p.name}</button>
                     </td>
                     <td className={`mono ${parseClass(p.overall)}`}><strong>{Math.round(p.overall)}</strong></td>

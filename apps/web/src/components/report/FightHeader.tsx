@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { rpb, consumables, gearIssues, type ReportData } from "@wcl/core";
-import { scopeReportToFight, ALL_FIGHTS } from "../../lib/scopeReport";
+import { scopeReportToFight, ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
 import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
 import { consumablesStatus } from "../../lib/playerRollups";
 import { heatClass, deathsHeat, type Heat } from "../../lib/heatmap";
@@ -15,14 +15,19 @@ function fmtDuration(ms: number): string {
  *  pull went at a glance (duration, deaths, under-consumed, gear flags). */
 export function FightHeader({ report, fightId }: { report: ReportData; fightId: number }) {
   const isAll = fightId === ALL_FIGHTS;
+  const isTrash = fightId === ALL_TRASH;
   const fight = report.fights.find((f) => f.id === fightId);
   const bosses = report.fights.filter((f) => f.isBoss);
+  const trash = report.fights.filter((f) => !f.isBoss);
   const kills = bosses.filter((f) => f.kill).length;
+  const sumMs = (fs: typeof bosses) => fs.reduce((s, f) => s + (f.endTime - f.startTime), 0);
   const durationMs = isAll
-    ? bosses.reduce((s, f) => s + (f.endTime - f.startTime), 0)
-    : fight
-      ? fight.endTime - fight.startTime
-      : 0;
+    ? sumMs(bosses)
+    : isTrash
+      ? sumMs(trash)
+      : fight
+        ? fight.endTime - fight.startTime
+        : 0;
   const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
 
   const stats = useMemo(() => {
@@ -48,9 +53,11 @@ export function FightHeader({ report, fightId }: { report: ReportData; fightId: 
   return (
     <header className="fight-header">
       <div className="fight-header__title">
-        <h2>{isAll ? "All bosses" : fight?.name ?? "Boss"}</h2>
+        <h2>{isAll ? "All bosses" : isTrash ? "All trash" : fight?.name ?? "Boss"}</h2>
         {isAll ? (
           <span className="pill pill--all">{kills}/{bosses.length} kills</span>
+        ) : isTrash ? (
+          <span className="pill pill--all">{trash.length} pulls</span>
         ) : fight ? (
           <span className={`pill ${fight.kill ? "pill--kill" : "pill--wipe"}`}>
             {fight.kill ? "Kill" : "Wipe"}
@@ -58,17 +65,18 @@ export function FightHeader({ report, fightId }: { report: ReportData; fightId: 
         ) : null}
       </div>
       <dl className="fight-header__stats">
-        <Stat value={isAll || fight ? fmtDuration(durationMs) : "—"} label="Duration" />
+        <Stat value={isAll || isTrash || fight ? fmtDuration(durationMs) : "—"} label="Duration" />
         <Stat value={stats.deaths} label="Deaths" heat={deathsHeat(stats.deaths)} />
+        {/* under-consumed and gear flags come from combatantInfo (boss pull only) */}
         <Stat
-          value={stats.underConsumed}
+          value={isTrash ? "—" : stats.underConsumed}
           label="Under-consumed"
-          heat={stats.underConsumed > 0 ? "watch" : "good"}
+          heat={isTrash ? undefined : stats.underConsumed > 0 ? "watch" : "good"}
         />
         <Stat
-          value={stats.gearFlags}
+          value={isTrash ? "—" : stats.gearFlags}
           label="Gear flags"
-          heat={stats.gearFlags > 0 ? "watch" : "good"}
+          heat={isTrash ? undefined : stats.gearFlags > 0 ? "watch" : "good"}
         />
       </dl>
     </header>

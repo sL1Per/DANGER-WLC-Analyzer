@@ -92,6 +92,19 @@ describe("rpb", () => {
     expect(rowFor("Playertwo").severity).toBe("major");
   });
 
+  it("counts events on the fights present in report.fights (scoping to trash)", () => {
+    const r = structuredClone(reportFixture);
+    // a death on the trash fight (id 1, isBoss:false) — counted only when the
+    // report is scoped to trash (the ALL-trash card)
+    r.playerDeaths!.push({ playerId: 1, fightId: 1 });
+    const trash = { ...r, fights: r.fights.filter((f) => !f.isBoss) };
+    const p1 = rpb(trash, cfg)!.rows.find((x) => x.playerName === "Playerone")!;
+    expect(p1.deaths).toBe(1);
+    // and the boss-scoped view does NOT see the trash death
+    const boss = { ...r, fights: r.fights.filter((f) => f.isBoss) };
+    expect(rpb(boss, cfg)!.rows.find((x) => x.playerName === "Playerone")!.deaths).toBe(0);
+  });
+
   it("excludes Kalecgos fights from all numbers (deaths, damage, activity)", () => {
     const r = structuredClone(reportFixture);
     r.fights.push({ id: 9, name: "Kalecgos", encounterId: 724, isBoss: true, kill: true, startTime: 400_000, endTime: 500_000 });

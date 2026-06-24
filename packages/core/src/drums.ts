@@ -47,20 +47,23 @@ const APPLICATION_WINDOW_MS = 1500;
 
 /**
  * CLA "drums": Drums of Battle/War/Restoration effectiveness per player.
- * All fights count (drums are used on trash too). Returns null when the
- * report predates M3 (no drum data cached) so the UI can show a refresh
- * notice instead of all-zero rows.
+ * Counts casts on the fights present in `report.fights`, so scoping the report
+ * (e.g. the ALL-bosses card filters out trash) re-scopes this analysis the same
+ * way the other report-wide analyses are scoped — an unscoped report still sees
+ * every fight, including trash. Returns null when the report predates M3 (no
+ * drum data cached) so the UI can show a refresh notice instead of all-zero rows.
  */
 export function drums(report: ReportData, cfg: DrumConfig): { rows: DrumRow[] } | null {
   if (report.drumCasts === undefined) return null;
 
   const drumByCastId = new Map(cfg.drums.map((d) => [d.castId, d]));
+  const fightIds = new Set(report.fights.map((f) => f.id));
   const applications = report.drumApplications ?? [];
 
   const rows: DrumRow[] = [];
   for (const player of report.players) {
     const casts = report.drumCasts
-      .filter((c) => c.sourceId === player.id && drumByCastId.has(c.spellId))
+      .filter((c) => c.sourceId === player.id && fightIds.has(c.fightId) && drumByCastId.has(c.spellId))
       .sort((a, b) => a.timestamp - b.timestamp);
     if (casts.length === 0) continue;
 

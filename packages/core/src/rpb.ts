@@ -51,23 +51,26 @@ const isKalecgos = (name: string) => name.toLowerCase().includes("kalecgos");
 export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | null {
   if (report.playerTotals === undefined) return null;
 
-  const bossFights = report.fights.filter((f) => f.isBoss && !isKalecgos(f.name));
-  const bossFightIds = new Set(bossFights.map((f) => f.id));
-  const bossDurationMs = bossFights.reduce((s, f) => s + (f.endTime - f.startTime), 0);
+  // The fight set comes from report.fights (the caller scopes it — boss card,
+  // single boss, or trash card — via scopeReportToFight). Kalecgos is always
+  // dropped because its portal mechanic breaks the numbers.
+  const scopedFights = report.fights.filter((f) => !isKalecgos(f.name));
+  const fightIds = new Set(scopedFights.map((f) => f.id));
+  const durationMs = scopedFights.reduce((s, f) => s + (f.endTime - f.startTime), 0);
 
-  const inBoss = <T extends { fightId: number }>(xs: T[] | undefined) =>
-    (xs ?? []).filter((x) => bossFightIds.has(x.fightId));
+  const inScope = <T extends { fightId: number }>(xs: T[] | undefined) =>
+    (xs ?? []).filter((x) => fightIds.has(x.fightId));
 
-  const deaths = inBoss(report.playerDeaths);
-  const interrupts = inBoss(report.interrupts);
-  const dmgTaken = inBoss(report.damageTakenEvents);
-  const absorbs = inBoss(report.absorbs).filter((a) => !cfg.absorbExcludedSpellIds.includes(a.spellId));
+  const deaths = inScope(report.playerDeaths);
+  const interrupts = inScope(report.interrupts);
+  const dmgTaken = inScope(report.damageTakenEvents);
+  const absorbs = inScope(report.absorbs).filter((a) => !cfg.absorbExcludedSpellIds.includes(a.spellId));
 
   const rows: RpbRow[] = [];
   for (const player of report.players) {
     const id = player.id;
     const myDmgTaken = dmgTaken.filter((d) => d.targetPlayerId === id);
-    const myDamage = (report.playerDamage ?? []).filter((d) => d.sourceId === id && bossFightIds.has(d.fightId));
+    const myDamage = (report.playerDamage ?? []).filter((d) => d.sourceId === id && fightIds.has(d.fightId));
     const myInterrupts = interrupts.filter((i) => i.interrupterPlayerId === id);
 
     const friendlyFire = myDmgTaken.filter((d) => d.fromFriendly).reduce((s, d) => s + d.amount, 0);
@@ -75,7 +78,7 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
     const totalAvoidable = myDmgTaken
       .filter((d) => cfg.avoidableAbilityIds.has(d.abilityId))
       .reduce((s, d) => s + d.amount, 0);
-    const battleShoutMs = uptimeMs(report, id, cfg.battleShoutBuffIds, bossFightIds);
+    const battleShoutMs = uptimeMs(report, id, cfg.battleShoutBuffIds, fightIds);
 
     const row: RpbRow = {
       playerId: id,
@@ -91,15 +94,15 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
       damageToHostilePlayers: myDamage.filter((d) => d.targetHostilePlayer && !d.selfInflicted).reduce((s, d) => s + d.amount, 0),
       totalAvoidableDamageTaken: totalAvoidable,
       totalPartlyAvoidable,
-      classRows: classMetrics(id, player.class, report, cfg.classAbilities, bossFightIds, bossDurationMs),
+      classRows: classMetrics(id, player.class, report, cfg.classAbilities, fightIds, durationMs),
       engineeringDamage: myDamage
         .filter((d) => cfg.engineeringDamageIds.includes(d.abilityId))
         .reduce((s, d) => s + d.amount, 0),
       oilOfImmolationDamage: myDamage
         .filter((d) => d.abilityId === cfg.oilOfImmolationSpellId)
         .reduce((s, d) => s + d.amount, 0),
-      battleShoutUptime: bossDurationMs > 0 ? battleShoutMs / bossDurationMs : 0,
-      activity: activity(id, report, cfg.activity, bossFightIds),
+      battleShoutUptime: durationMs > 0 ? battleShoutMs / durationMs : 0,
+      activity: activity(id, report, cfg.activity, fightIds),
       severity: "ok",
     };
     row.severity = severityFor(row);
@@ -109,11 +112,11 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
   return { rows };
 }
 
-/** total ms (within boss fights) the player had any of the given buffs active */
-function uptimeMs(report: ReportData, playerId: number, buffIds: number[], bossFightIds: Set<number>): number {
+/** total ms (within the scoped fights) the player had any of the given buffs active */
+function uptimeMs(report: ReportData, playerId: number, buffIds: number[], fightIds: Set<number>): number {
   const set = new Set(buffIds);
   return (report.buffs ?? [])
-    .filter((b) => b.targetId === playerId && set.has(b.spellId) && bossFightIds.has(b.fightId))
+    .filter((b) => b.targetId === playerId && set.has(b.spellId) && fightIds.has(b.fightId))
     .reduce((s, b) => s + (b.endTime - b.startTime), 0);
 }
 

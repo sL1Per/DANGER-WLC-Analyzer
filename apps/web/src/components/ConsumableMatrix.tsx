@@ -10,16 +10,19 @@ const classRank = (c: string): number => {
 /**
  * Per-player consumable use counts on boss fights. Rows = consumables (catalog
  * order); columns = players grouped and colored by class (canonical WoW order).
- * Each row is a relative heatmap: min-max scaled across the raid, so non-users
- * sit at the red end and the heaviest user at the green end. An all-zero row
- * (nobody used it) stays neutral rather than painting everyone red.
+ * Each row is a relative heatmap: min-max scaled across the raid, so the
+ * lightest user sits at the red end and the heaviest at the green end. Empty
+ * (zero) cells stay neutral rather than painting non-users red, and an all-zero
+ * row (nobody used it) is neutral throughout.
  */
 export function ConsumableMatrix({
   rows,
   catalog,
+  onPlayer,
 }: {
   rows: RpbConsumableRow[];
-  catalog: { key: string; name: string }[];
+  catalog: { key: string; name: string; uptime?: boolean }[];
+  onPlayer?: (name: string) => void;
 }) {
   if (rows.length === 0) {
     return <p className="muted">No boss-fight data for consumables.</p>;
@@ -37,22 +40,36 @@ export function ConsumableMatrix({
             <th className="consumable-corner" scope="col">Consumable</th>
             {players.map((p) => (
               <th key={p.playerId} className="player-col" style={classColorVar(p.className)} scope="col">
-                <span className="player-col__name">{p.playerName}</span>
+                {onPlayer ? (
+                  <button className="player-col__name player-link" onClick={() => onPlayer(p.playerName)}>{p.playerName}</button>
+                ) : (
+                  <span className="player-col__name">{p.playerName}</span>
+                )}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {catalog.map((c) => {
-            const vals = players.map((p) => p.counts[c.key] ?? 0);
+            const counts = players.map((p) => p.counts[c.key] ?? 0);
+            // Uptime rows heat-scale on the uptime fraction (the meaningful signal),
+            // count rows on the cast count. Display differs too: "N (P%)" vs "N".
+            const vals = c.uptime ? players.map((p) => p.uptimes?.[c.key] ?? 0) : counts;
             const min = Math.min(...vals);
             const max = Math.max(...vals);
             return (
               <tr key={c.key}>
                 <th scope="row" className="consumable-label">{c.name}</th>
                 {players.map((p, i) => (
-                  <td key={p.playerId} className={heatClass(relativeHeat(vals[i], min, max))}>
-                    {vals[i] || ""}
+                  <td
+                    key={p.playerId}
+                    className={heatClass(counts[i] > 0 ? relativeHeat(vals[i], min, max) : "neutral")}
+                  >
+                    {counts[i] > 0
+                      ? c.uptime
+                        ? `${counts[i]} (${Math.round((p.uptimes?.[c.key] ?? 0) * 100)}%)`
+                        : counts[i]
+                      : ""}
                   </td>
                 ))}
               </tr>
