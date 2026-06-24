@@ -13,6 +13,7 @@ export * from "./roles";
 export * from "./activity";
 export * from "./classMetrics";
 export * from "./rpb";
+export * from "./rpbSheets";
 export * from "./rpbConsumables";
 export * from "./performance";
 export * from "./rankings";
