@@ -9,20 +9,26 @@ import { PerformanceView } from "../components/report/PerformanceView";
 import { GearMatrix } from "../components/report/GearMatrix";
 import { FightHeader } from "../components/report/FightHeader";
 import { ConsumablesCategory } from "../components/report/ConsumablesCategory";
+import { ConsumablesView } from "../components/ConsumablesView";
 import { PlayerProfile } from "../components/report/PlayerProfile";
 import { ShadowResView } from "../components/ShadowResView";
 import { LoadingNugget } from "../components/LoadingNugget";
 
 const CATEGORIES = [
   ["summary", "Rankings"], ["roles", "Summary"], ["performance", "Performance"], ["gear", "Gear"],
-  ["consumables", "Consumables"], ["shadowresi", "Shadow Resi"],
+  ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Shadow Resi"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
-// Tabs sourced from combatantInfo / boss rankings have no data on trash fights
-// (WCL only records combatantInfo at boss pull, and ranks boss encounters only),
-// so the TRASH card hides them rather than showing empty tables.
-const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["summary", "gear", "shadowresi"]);
+// Tabs sourced from combatantInfo have no data on trash fights (WCL only records
+// combatantInfo at boss pull), so the TRASH card hides them rather than showing
+// empty tables. Rankings are handled separately — they only show on the combined
+// BOSSES card (see below).
+const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["gear", "shadowresi"]);
+
+// Tabs that aggregate across all boss pulls (CLA report-wide audits): they only
+// make sense on the combined BOSSES card, not on a single pull or the TRASH card.
+const BOSSES_ONLY_CATS: ReadonlySet<Cat> = new Set(["summary", "buffconsumables"]);
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
@@ -47,7 +53,11 @@ export function ReportPage() {
   const playerId = Number(params.get("player")) || report.players[0]?.id || 0;
 
   const isTrash = fightId === ALL_TRASH;
-  const categories = CATEGORIES.filter(([key]) => !(isTrash && TRASH_HIDDEN_CATS.has(key)));
+  // Rankings (WCL boss-encounter percentiles) only make sense for the combined
+  // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
+  const categories = CATEGORIES.filter(([key]) =>
+    BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key)),
+  );
   const requestedCat = (params.get("cat") as Cat) ?? "summary";
   // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
   // fall back to the first visible tab so the body is never blank.
@@ -90,6 +100,7 @@ export function ReportPage() {
             {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} onPlayer={goPlayer} />}
+            {cat === "buffconsumables" && <ConsumablesView report={report} onPlayer={goPlayer} />}
             {cat === "shadowresi" && <ShadowResView report={report} />}
           </div>
         </div>

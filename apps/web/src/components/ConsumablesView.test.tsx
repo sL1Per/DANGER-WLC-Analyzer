@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { reportFixture, type ReportData } from "@wcl/core";
 import { ConsumablesView } from "./ConsumablesView";
 
@@ -44,5 +44,17 @@ describe("ConsumablesView", () => {
     const cells = [...row.querySelectorAll("td")];
     expect(cells[6]!.textContent).toBe("0%"); // Food Buff
     expect(cells[6]!.className).toBe("sev-major");
+  });
+  it("renders the player name as a link that navigates to that player", () => {
+    const onPlayer = vi.fn();
+    render(<ConsumablesView report={baseReport()} onPlayer={onPlayer} />);
+    fireEvent.click(screen.getByRole("button", { name: "Playerone" }));
+    expect(onPlayer).toHaveBeenCalledWith("Playerone");
+  });
+  it("colors each player name cell by class", () => {
+    render(<ConsumablesView report={baseReport()} onPlayer={vi.fn()} />);
+    const nameCell = screen.getByText("Playerone").closest("td")!;
+    expect(nameCell.className).toContain("player-cell");
+    expect(nameCell.style.getPropertyValue("--class-color")).toBe("var(--cc-mage)");
   });
 });

@@ -44,6 +44,28 @@ describe("ReportPage", () => {
     // the event-sourced Performance tab has trash data, so it stays visible here
     expect(screen.getByRole("button", { name: /^Performance$/i })).toBeInTheDocument();
   });
+  it("shows Rankings only on the BOSSES card, not on an individual boss fight", () => {
+    // fight=3 is an individual boss pull; Rankings (boss-encounter percentiles)
+    // only belong on the combined BOSSES card, so the tab must be hidden here.
+    renderAt("/report/abc?fight=3");
+    expect(screen.queryByRole("button", { name: /^Rankings$/i })).not.toBeInTheDocument();
+    // Other combatantInfo tabs still show on a boss pull.
+    expect(screen.getByRole("button", { name: /^Gear$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
+  });
+  it("shows Buff consumables only on the BOSSES card and renders the table", async () => {
+    renderAt("/report/abc");
+    const tab = screen.getByRole("button", { name: /^Buff consumables$/i });
+    expect(tab).toBeInTheDocument();
+    fireEvent.click(tab);
+    await waitFor(() => expect(screen.getByText(/Only boss fights evaluated/i)).toBeInTheDocument());
+  });
+  it("hides Buff consumables on an individual boss pull and on the TRASH card", () => {
+    renderAt("/report/abc?fight=3");
+    expect(screen.queryByRole("button", { name: /^Buff consumables$/i })).not.toBeInTheDocument();
+    renderAt("/report/abc?fight=-2");
+    expect(screen.queryByRole("button", { name: /^Buff consumables$/i })).not.toBeInTheDocument();
+  });
   it("honors ?lens=player by showing the profile", () => {
     const report = reportFixture;
     renderAt(`/report/abc?lens=player&player=${report.players[0].id}`);

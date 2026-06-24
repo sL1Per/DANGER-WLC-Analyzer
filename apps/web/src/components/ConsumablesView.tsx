@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { consumables, uptimeSeverity, type ReportData } from "@wcl/core";
 import { consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "@wcl/data";
+import { classColorVar } from "../lib/classColors";
 import { SeverityLegend } from "./SeverityLegend";
 
 function pct(value: number): string {
@@ -11,7 +12,7 @@ function UptimeCell({ value }: { value: number }) {
   return <td className={`sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
 }
 
-export function ConsumablesView({ report }: { report: ReportData }) {
+export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPlayer?: (name: string) => void }) {
   const result = useMemo(
     () => consumables(report, {
       buffs: consumableBuffs,
@@ -21,6 +22,7 @@ export function ConsumablesView({ report }: { report: ReportData }) {
     }),
     [report],
   );
+  const classOf = useMemo(() => new Map(report.players.map((p) => [p.id, p.class])), [report.players]);
 
   if (result === null) {
     return <p>This report was cached before consumable support — refresh it from WCL (requires credentials).</p>;
@@ -33,7 +35,7 @@ export function ConsumablesView({ report }: { report: ReportData }) {
       <p><small>Only boss fights evaluated. Some T6 fights miss the combatantInfo with consumables info — loggers should stand close to the boss at the pull.</small></p>
       <SeverityLegend />
       <div className="scroll-x">
-        <table>
+        <table className="buff-consumables">
           <thead>
             <tr>
               <th>player</th>
@@ -52,7 +54,11 @@ export function ConsumablesView({ report }: { report: ReportData }) {
           <tbody>
             {result.rows.map((r) => (
               <tr key={r.playerId}>
-                <td>{r.playerName}</td>
+                <td className="player-cell" style={classColorVar(classOf.get(r.playerId) ?? "")}>
+                  {onPlayer
+                    ? <button className="player-link" onClick={() => onPlayer(r.playerName)}>{r.playerName}</button>
+                    : r.playerName}
+                </td>
                 <UptimeCell value={r.totalAverage} />
                 <UptimeCell value={r.elixirOrFlask} />
                 <td>{pct(r.battleElixir)}</td>
