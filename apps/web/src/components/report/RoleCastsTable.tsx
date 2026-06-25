@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import {
   roleCasts,
   type ReportData,
@@ -28,16 +28,14 @@ function fmtSec(n: number): string {
   return n === 0 ? "—" : `${n.toFixed(1)}s`;
 }
 
-function ActivityCell({ act }: { act: ActivityResult | null }) {
-  if (!act) return <td className="mono">—</td>;
-  return (
-    <td className="mono activity-cell">
-      ST: {fmtSec(act.secondsActiveST)} ({fmtPct(act.relativeActiveST)}) /
-      AoE: {fmtSec(act.secondsActiveAoe)} ({fmtPct(act.relativeActiveAoe)}) /
-      Total: {fmtPct(act.relativeActiveTotal)}
-    </td>
-  );
-}
+/** Activity metrics as ROWS (players are columns), mirroring the casts sheet. */
+const ACTIVITY_ROWS: { label: string; fmt: (a: ActivityResult) => string }[] = [
+  { label: "seconds active on single target", fmt: (a) => fmtSec(a.secondsActiveST) },
+  { label: "relative active % on single target", fmt: (a) => fmtPct(a.relativeActiveST) },
+  { label: "relative active % total", fmt: (a) => fmtPct(a.relativeActiveTotal) },
+  { label: "relative active % on aoe", fmt: (a) => fmtPct(a.relativeActiveAoe) },
+  { label: "seconds active on aoe", fmt: (a) => fmtSec(a.secondsActiveAoe) },
+];
 
 export function RoleCastsTable({
   report,
@@ -87,109 +85,106 @@ export function RoleCastsTable({
           const abils = block.abilities.filter((a) => a.category === cat);
           if (abils.length > 0) abilitiesByCategory.set(cat, abils);
         }
-
         const presentCategories = CATEGORY_ORDER.filter((c) =>
           abilitiesByCategory.has(c),
         );
 
-        // Build ordered flat ability list for column indexing
-        const orderedAbilities = presentCategories.flatMap(
-          (c) => abilitiesByCategory.get(c) ?? [],
-        );
-
-        // Relative heat for cast counts: per ability column
+        // Per-ability cast counts across players, for relative heat.
         const countsByAbility = new Map<string, number[]>();
-        for (const ability of orderedAbilities) {
-          const vals = block.players.map(
-            (p) =>
-              block.counts.get(`${p.playerId}:${ability.key}`)?.castCount ?? 0,
-          );
-          countsByAbility.set(ability.key, vals);
+        for (const cat of presentCategories) {
+          for (const ability of abilitiesByCategory.get(cat) ?? []) {
+            countsByAbility.set(
+              ability.key,
+              block.players.map(
+                (p) =>
+                  block.counts.get(`${p.playerId}:${ability.key}`)?.castCount ?? 0,
+              ),
+            );
+          }
         }
 
         // Pluralize class name (simple: append 's')
         const classTitle = `${block.className}s`;
+        const colCount = block.players.length + 1;
 
         return (
           <section key={block.className} className="class-cast-block">
             <h3 className="class-cast-title">{classTitle}</h3>
             <div className="scroll-x">
-              <table className="role-casts-tbl">
+              <table className="role-casts-tbl rb-transposed">
                 <thead>
-                  {/* Band header row: Player + one cell per category */}
+                  {/* Players are the COLUMNS; abilities are the ROWS. */}
                   <tr>
-                    <th rowSpan={2} className="player-col">
-                      Player
-                    </th>
-                    {presentCategories.map((cat) => {
-                      const count = (abilitiesByCategory.get(cat) ?? []).length;
-                      return (
-                        <th
-                          key={cat}
-                          colSpan={count}
-                          className="band-header"
+                    <th className="rb-row-label" />
+                    {block.players.map((player) => (
+                      <th
+                        key={player.playerId}
+                        className="player-cell"
+                        style={classColorVar(block.className)}
+                      >
+                        <button
+                          className="player-link"
+                          onClick={() => onPlayer(player.playerName)}
                         >
-                          {CATEGORY_LABELS[cat]}
-                        </th>
-                      );
-                    })}
-                    <th rowSpan={2} className="band-header activity-col">
-                      Activity
-                    </th>
-                  </tr>
-                  {/* Ability name sub-header row */}
-                  <tr>
-                    {orderedAbilities.map((ability) => (
-                      <th key={ability.key} className="ability-col">
-                        {ability.name}
+                          {player.playerName}
+                        </button>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {block.players.map((player) => {
-                    const act =
-                      block.activity.get(player.playerId) ?? null;
-                    return (
-                      <tr key={player.playerId}>
-                        {/* Player name cell */}
-                        <td
-                          className="player-cell"
-                          style={classColorVar(block.className)}
-                        >
-                          <button
-                            className="player-link"
-                            onClick={() => onPlayer(player.playerName)}
-                          >
-                            {player.playerName}
-                          </button>
-                        </td>
-
-                        {/* Cast count cells — ALL abilities, no truncation */}
-                        {orderedAbilities.map((ability) => {
-                          const cell = block.counts.get(
-                            `${player.playerId}:${ability.key}`,
-                          );
-                          const count = cell?.castCount ?? 0;
-                          const vals = countsByAbility.get(ability.key) ?? [];
-                          const min = Math.min(...vals, 0);
-                          const max = Math.max(...vals, 0);
-                          const heat = relativeHeat(count, min, max);
-                          return (
-                            <td
-                              key={ability.key}
-                              className={`mono ${heatClass(heat)}`}
-                            >
-                              {count === 0 ? "—" : count}
-                            </td>
-                          );
-                        })}
-
-                        {/* Activity cell */}
-                        <ActivityCell act={act} />
+                  {presentCategories.map((cat) => (
+                    <Fragment key={cat}>
+                      <tr className="rb-band">
+                        <th className="band-header" colSpan={colCount}>
+                          {CATEGORY_LABELS[cat]}
+                        </th>
                       </tr>
-                    );
-                  })}
+                      {(abilitiesByCategory.get(cat) ?? []).map((ability) => {
+                        const vals = countsByAbility.get(ability.key) ?? [];
+                        const min = Math.min(...vals, 0);
+                        const max = Math.max(...vals, 0);
+                        return (
+                          <tr key={ability.key}>
+                            <th className="rb-row-label ability-col">{ability.name}</th>
+                            {block.players.map((player) => {
+                              const count =
+                                block.counts.get(`${player.playerId}:${ability.key}`)
+                                  ?.castCount ?? 0;
+                              return (
+                                <td
+                                  key={player.playerId}
+                                  className={`mono ${heatClass(relativeHeat(count, min, max))}`}
+                                >
+                                  {count === 0 ? "—" : count}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+
+                  {/* Activity band */}
+                  <tr className="rb-band">
+                    <th className="band-header" colSpan={colCount}>
+                      Activity
+                    </th>
+                  </tr>
+                  {ACTIVITY_ROWS.map((ar) => (
+                    <tr key={ar.label}>
+                      <th className="rb-row-label">{ar.label}</th>
+                      {block.players.map((player) => {
+                        const act = block.activity.get(player.playerId) ?? null;
+                        return (
+                          <td key={player.playerId} className="mono">
+                            {act ? ar.fmt(act) : "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

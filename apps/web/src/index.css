@@ -516,6 +516,21 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 
 .scroll-x { overflow-x: auto; }
 
+/* RPB Role Breakdown — transposed tables (players = columns, metrics = rows) */
+.rb-transposed .rb-row-label {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  position: sticky;
+  left: 0;
+  background: var(--surface-sunken);
+  z-index: 1;
+}
+.rb-transposed thead .player-cell { text-align: center; border-left: none; border-bottom: 3px solid var(--class-color, transparent); }
+.rb-transposed td { text-align: right; }
+.rb-transposed .rb-band .band-header { background: var(--surface); font-weight: 700; text-align: left; }
+
 /* ---------------------------------------------- RPB redesign (M8) */
 
 /* collapsible role section (native disclosure) */

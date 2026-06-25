@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo, type ReactNode } from "react";
 import { roleSheet, type ReportData, type Role } from "@wcl/core";
 import { scopeReportToFight } from "../../lib/scopeReport";
 import { roleSheetConfig } from "../../lib/analysisConfig";
@@ -47,161 +47,160 @@ export function RoleSheetTable({
     return <p className="notice">No {role} players found in this report.</p>;
   }
 
-  // relative heat scales for avoidable damage (per-role)
+  // Players are the COLUMNS; metrics are the ROWS (matches the source workbook).
+  type Row = (typeof rows)[number];
+  type Cell = { content: ReactNode; className?: string };
+  type MetricRow = { label: string; labelClassName?: string; cell: (r: Row) => Cell };
+  type Section = { band: string; rows: MetricRow[] };
+
+  // relative heat scale for avoidable damage (across this role's players)
   const avoidVals = rows.map((r) => r.totalAvoidableDamageTaken);
   const aMin = Math.min(...avoidVals, 0);
   const aMax = Math.max(...avoidVals, 0);
 
-  return (
-    <div className="scroll-x">
-      <table className="role-sheet-table">
-        <thead>
-          <tr>
-            {/* Player column */}
-            <th rowSpan={2}>Player</th>
+  // A Stats & Misc row backed by a HitStat accessor (renders "—" when no hitStats).
+  const hitRow = (
+    label: string,
+    sel: (hs: NonNullable<Row["hitStats"]>) => { count: number; pct: number },
+  ): MetricRow => ({
+    label,
+    cell: (r) => ({
+      content: r.hitStats ? fmtHit(sel(r.hitStats)) : "—",
+      className: "mono",
+    }),
+  });
 
-            {/* Section band headers */}
-            <th colSpan={15} className="band-header">
-              Stats &amp; Misc
-            </th>
-            <th colSpan={1} className="band-header">
-              Trinkets &amp; Racials
-            </th>
-            <th colSpan={6} className="band-header">
-              Raw avoidable damage taken by tracked abilities
-            </th>
-            <th colSpan={1} className="band-header">
-              Avoidable debuffs applied by tracked abilities
-            </th>
-          </tr>
-          <tr>
-            {/* Stats & Misc sub-headers — 5 outgoing + 7 incoming + 3 misc = 15 */}
-            <th>Out: Crit</th>
-            <th>Out: Dodge</th>
-            <th>Out: Miss</th>
-            <th>Out: Parry</th>
-            <th>Out: Resist</th>
-            <th>In: Crit</th>
-            <th>In: Crushing</th>
-            <th>In: Blocked</th>
-            <th>In: Dodge</th>
-            <th>In: Immune</th>
-            <th>In: Miss</th>
-            <th>In: Parry</th>
-            <th>Crit Heals</th>
-            <th># of extra Windfury Attacks</th>
-            <th># of Battle Squawk buffs on bosses</th>
-            {/* Trinkets */}
-            <th>Trinkets / Racials</th>
-            {/* Avoidable */}
-            <th className="col-deaths"># of deaths in total</th>
-            <th>Total (partly) avoidable damage taken</th>
-            <th>Friendly Fire</th>
-            <th>Damage Reflected</th>
-            <th>Damage to Hostile Players</th>
-            <th>By Ability</th>
-            {/* Debuffs */}
-            <th>Debuffs Applied</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => {
-            const hs = r.hitStats;
-            const out = hs?.outgoing;
-            const inc = hs?.incomingMelee;
-
-            const trinketCell =
+  const sections: Section[] = [
+    {
+      band: "Stats & Misc",
+      rows: [
+        hitRow("Out: Crit", (hs) => hs.outgoing.crit),
+        hitRow("Out: Dodge", (hs) => hs.outgoing.dodge),
+        hitRow("Out: Miss", (hs) => hs.outgoing.miss),
+        hitRow("Out: Parry", (hs) => hs.outgoing.parry),
+        hitRow("Out: Resist", (hs) => hs.outgoing.resist),
+        hitRow("In: Crit", (hs) => hs.incomingMelee.crit),
+        hitRow("In: Crushing", (hs) => hs.incomingMelee.crushing),
+        hitRow("In: Blocked", (hs) => hs.incomingMelee.blocked),
+        hitRow("In: Dodge", (hs) => hs.incomingMelee.dodge),
+        hitRow("In: Immune", (hs) => hs.incomingMelee.immune),
+        hitRow("In: Miss", (hs) => hs.incomingMelee.miss),
+        hitRow("In: Parry", (hs) => hs.incomingMelee.parry),
+        hitRow("Crit Heals", (hs) => hs.critHeals),
+        {
+          label: "# of extra Windfury Attacks",
+          cell: (r) => ({ content: r.hitStats ? r.hitStats.extraWindfury : "—", className: "mono" }),
+        },
+        {
+          label: "# of Battle Squawk buffs on bosses",
+          cell: (r) => ({ content: r.hitStats ? r.hitStats.battleSquawk : "—", className: "mono" }),
+        },
+      ],
+    },
+    {
+      band: "Trinkets & Racials",
+      rows: [
+        {
+          label: "Trinkets / Racials",
+          cell: (r) => ({
+            content:
               r.trinketUses.length === 0
                 ? "—"
-                : r.trinketUses.map((t) => `${t.name} ×${t.count}`).join(", ");
-
-            const avoidAbilityCell =
+                : r.trinketUses.map((t) => `${t.name} ×${t.count}`).join(", "),
+          }),
+        },
+      ],
+    },
+    {
+      band: "Raw avoidable damage taken by tracked abilities",
+      rows: [
+        {
+          label: "# of deaths in total",
+          labelClassName: "col-deaths",
+          cell: (r) => ({ content: r.deaths, className: heatClass(deathsHeat(r.deaths)) }),
+        },
+        {
+          label: "Total (partly) avoidable damage taken",
+          cell: (r) => ({
+            content: r.totalAvoidableDamageTaken.toLocaleString(),
+            className: `mono ${heatClass(
+              relativeHeat(aMax - r.totalAvoidableDamageTaken, 0, aMax - aMin),
+            )}`,
+          }),
+        },
+        { label: "Friendly Fire", cell: (r) => ({ content: fmtNum(r.friendlyFire), className: "mono" }) },
+        { label: "Damage Reflected", cell: (r) => ({ content: fmtNum(r.damageReflected), className: "mono" }) },
+        {
+          label: "Damage to Hostile Players",
+          cell: (r) => ({ content: fmtNum(r.damageToHostilePlayers), className: "mono" }),
+        },
+        {
+          label: "By Ability",
+          cell: (r) => ({
+            content:
               r.avoidableByAbility.length === 0
                 ? "—"
                 : r.avoidableByAbility
                     .map((a) => `${a.name}: ${a.amount.toLocaleString()}`)
-                    .join("; ");
-
-            const debuffCell =
+                    .join("; "),
+          }),
+        },
+      ],
+    },
+    {
+      band: "Avoidable debuffs applied by tracked abilities",
+      rows: [
+        {
+          label: "Debuffs Applied",
+          cell: (r) => ({
+            content:
               r.debuffsApplied.length === 0
                 ? "—"
-                : r.debuffsApplied
-                    .map((d) => `${d.name} ×${d.count}`)
-                    .join(", ");
+                : r.debuffsApplied.map((d) => `${d.name} ×${d.count}`).join(", "),
+          }),
+        },
+      ],
+    },
+  ];
 
-            return (
-              <tr key={r.playerId}>
-                {/* Player */}
-                <td className="player-cell" style={classColorVar(r.className)}>
-                  <button
-                    className="player-link"
-                    onClick={() => onPlayer(r.playerName)}
-                  >
-                    {r.playerName}
-                  </button>
-                </td>
-
-                {/* Stats & Misc — outgoing */}
-                <td className="mono">
-                  {out ? fmt(out.crit.count, out.crit.pct) : "—"}
-                </td>
-                <td className="mono">
-                  {out ? fmt(out.dodge.count, out.dodge.pct) : "—"}
-                </td>
-                <td className="mono">
-                  {out ? fmt(out.miss.count, out.miss.pct) : "—"}
-                </td>
-                <td className="mono">
-                  {out ? fmt(out.parry.count, out.parry.pct) : "—"}
-                </td>
-                <td className="mono">
-                  {out ? fmt(out.resist.count, out.resist.pct) : "—"}
-                </td>
-                {/* incoming melee — 7 columns */}
-                <td className="mono">{fmtHit(inc?.crit)}</td>
-                <td className="mono">{fmtHit(inc?.crushing)}</td>
-                <td className="mono">{fmtHit(inc?.blocked)}</td>
-                <td className="mono">{fmtHit(inc?.dodge)}</td>
-                <td className="mono">{fmtHit(inc?.immune)}</td>
-                <td className="mono">{fmtHit(inc?.miss)}</td>
-                <td className="mono">{fmtHit(inc?.parry)}</td>
-                {/* critHeals */}
-                <td className="mono">{fmtHit(hs?.critHeals)}</td>
-                {/* extraWindfury — show 0 when hitStats exists */}
-                <td className="mono">
-                  {hs ? hs.extraWindfury : "—"}
-                </td>
-                {/* battleSquawk — show 0 when hitStats exists */}
-                <td className="mono">
-                  {hs ? hs.battleSquawk : "—"}
-                </td>
-
-                {/* Trinkets */}
-                <td>{trinketCell}</td>
-
-                {/* Avoidable section */}
-                <td className={heatClass(deathsHeat(r.deaths))}>{r.deaths}</td>
-                <td
-                  className={`mono ${heatClass(
-                    relativeHeat(
-                      aMax - r.totalAvoidableDamageTaken,
-                      0,
-                      aMax - aMin,
-                    ),
-                  )}`}
-                >
-                  {r.totalAvoidableDamageTaken.toLocaleString()}
-                </td>
-                <td className="mono">{fmtNum(r.friendlyFire)}</td>
-                <td className="mono">{fmtNum(r.damageReflected)}</td>
-                <td className="mono">{fmtNum(r.damageToHostilePlayers)}</td>
-                <td>{avoidAbilityCell}</td>
-
-                {/* Debuffs */}
-                <td>{debuffCell}</td>
+  return (
+    <div className="scroll-x">
+      <table className="role-sheet-table rb-transposed">
+        <thead>
+          <tr>
+            <th className="rb-row-label" />
+            {rows.map((r) => (
+              <th key={r.playerId} className="player-cell" style={classColorVar(r.className)}>
+                <button className="player-link" onClick={() => onPlayer(r.playerName)}>
+                  {r.playerName}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sections.map((s) => (
+            <Fragment key={s.band}>
+              <tr className="rb-band">
+                <th className="band-header" colSpan={rows.length + 1}>
+                  {s.band}
+                </th>
               </tr>
-            );
-          })}
+              {s.rows.map((mr) => (
+                <tr key={mr.label}>
+                  <th className={`rb-row-label ${mr.labelClassName ?? ""}`}>{mr.label}</th>
+                  {rows.map((r) => {
+                    const c = mr.cell(r);
+                    return (
+                      <td key={r.playerId} className={c.className}>
+                        {c.content}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </Fragment>
+          ))}
         </tbody>
       </table>
     </div>
