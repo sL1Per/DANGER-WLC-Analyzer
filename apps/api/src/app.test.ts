@@ -23,7 +23,6 @@ const testDeps: Parameters<typeof createApp>[0] = {
   fetchAbsorbs: vi.fn().mockResolvedValue([]),
   fetchRankings: vi.fn().mockResolvedValue([]),
   fetchHitTable: async () => [],
-  fetchCastsTable: async () => [],
   cacheTtlMs: 60_000,
 };
 
@@ -51,7 +50,6 @@ function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
     fetchAbsorbs: vi.fn().mockResolvedValue([]),
     fetchRankings: vi.fn().mockResolvedValue([]),
     fetchHitTable: async () => [],
-    fetchCastsTable: async () => [],
     cacheTtlMs: 60_000,
     ...overrides,
   });

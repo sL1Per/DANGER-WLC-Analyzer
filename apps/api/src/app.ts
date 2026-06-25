@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
 import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
-import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs, battleShoutBuffIds, trinketRacials, extraWindfurySpellId, battleSquawkBuffId } from "@wcl/data";
+import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs, battleShoutBuffIds, extraWindfurySpellId, battleSquawkBuffId } from "@wcl/data";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
 import {
@@ -24,7 +24,6 @@ import {
   fetchAbsorbs as realFetchAbsorbs,
   fetchRankings as realFetchRankings,
   fetchHitTable as realFetchHitTable,
-  fetchCastsTable as realFetchCastsTable,
   type RawBuffEvent,
   type RawCastEvent,
   type RawCombatantInfo,
@@ -35,7 +34,6 @@ import {
   type RawDebuffEvent,
   type RawRankingEntry,
   type RawHitTableEntry,
-  type RawCastTableEntry,
 } from "./wcl";
 
 const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
@@ -69,7 +67,6 @@ export interface AppDeps {
   fetchAbsorbs: typeof realFetchAbsorbs;
   fetchRankings: typeof realFetchRankings;
   fetchHitTable: typeof realFetchHitTable;
-  fetchCastsTable: typeof realFetchCastsTable;
   cacheTtlMs: number;
 }
 
@@ -91,7 +88,6 @@ export function createApp(deps: AppDeps = {
   fetchAbsorbs: realFetchAbsorbs,
   fetchRankings: realFetchRankings,
   fetchHitTable: realFetchHitTable,
-  fetchCastsTable: realFetchCastsTable,
   cacheTtlMs: 24 * 60 * 60 * 1000,
 }) {
   const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
@@ -173,10 +169,9 @@ export function createApp(deps: AppDeps = {
       // `undefined` is reserved for pre-feature caches (the field is absent in
       // their cached JSON) → the UI's "refresh to load rankings" notice.
       let rankings: RawRankingEntry[] = [];
-      let damageDoneHitTable: RawHitTableEntry[] = [];
-      let damageTakenHitTable: RawHitTableEntry[] = [];
-      let healingHitTable: RawHitTableEntry[] = [];
-      let castsTable: RawCastTableEntry[] = [];
+      let damageDoneHitByFight: { fightId: number; entries: RawHitTableEntry[] }[] = [];
+      let damageTakenHitByFight: { fightId: number; entries: RawHitTableEntry[] }[] = [];
+      let healingHitByFight: { fightId: number; entries: RawHitTableEntry[] }[] = [];
       // Event-based queries cover trash fights too, so the TRASH card has data
       // (consumable casts, damage, interrupts, absorbs, deaths, activity). Summary
       // tables and parse rankings stay boss-only — combatantInfo/parse data only
@@ -186,7 +181,7 @@ export function createApp(deps: AppDeps = {
       const hasBoss = bossFightIds.length > 0;
       if (allFightIds.length > 0) {
         const none = Promise.resolve([]);
-        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR, ddHitR, dtHitR, healHitR, castsR] = await Promise.allSettled([
+        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR] = await Promise.allSettled([
           deps.fetchInterrupts(id, token, allFightIds),
           deps.fetchDamageTaken(id, token, allFightIds),
           deps.fetchDamageDone(id, token, allFightIds),
@@ -198,10 +193,6 @@ export function createApp(deps: AppDeps = {
           deps.fetchAbsorbs(id, token, allFightIds),
           hasBoss ? deps.fetchRankings(id, token) : none,
           deps.fetchHealingDone(id, token, allFightIds),
-          hasBoss ? deps.fetchHitTable(id, token, "DamageDone", bossFightIds) : none,
-          hasBoss ? deps.fetchHitTable(id, token, "DamageTaken", bossFightIds) : none,
-          hasBoss ? deps.fetchHitTable(id, token, "Healing", bossFightIds) : none,
-          hasBoss ? deps.fetchCastsTable(id, token, bossFightIds) : none,
         ]);
         if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
         if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
@@ -214,10 +205,32 @@ export function createApp(deps: AppDeps = {
         if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
         if (rankR.status === "fulfilled") rankings = rankR.value as RawRankingEntry[];
         if (hdR.status === "fulfilled") healingDone = hdR.value as RawDamageEvent[];
-        if (ddHitR.status === "fulfilled") damageDoneHitTable = ddHitR.value as RawHitTableEntry[];
-        if (dtHitR.status === "fulfilled") damageTakenHitTable = dtHitR.value as RawHitTableEntry[];
-        if (healHitR.status === "fulfilled") healingHitTable = healHitR.value as RawHitTableEntry[];
-        if (castsR.status === "fulfilled") castsTable = castsR.value as RawCastTableEntry[];
+      }
+
+      // Hit-type tables fetched PER boss fight so the role sheet is exact on a
+      // single boss pull (the combined view sums the per-fight rows). Best-effort.
+      if (hasBoss) {
+        const perFight = await Promise.allSettled(
+          bossFightIds.map(async (fid) => {
+            const [dd, dt, hl] = await Promise.allSettled([
+              deps.fetchHitTable(id, token, "DamageDone", [fid]),
+              deps.fetchHitTable(id, token, "DamageTaken", [fid]),
+              deps.fetchHitTable(id, token, "Healing", [fid]),
+            ]);
+            return {
+              fightId: fid,
+              dd: dd.status === "fulfilled" ? dd.value : [],
+              dt: dt.status === "fulfilled" ? dt.value : [],
+              hl: hl.status === "fulfilled" ? hl.value : [],
+            };
+          }),
+        );
+        for (const r of perFight) {
+          if (r.status !== "fulfilled") continue;
+          damageDoneHitByFight.push({ fightId: r.value.fightId, entries: r.value.dd });
+          damageTakenHitByFight.push({ fightId: r.value.fightId, entries: r.value.dt });
+          healingHitByFight.push({ fightId: r.value.fightId, entries: r.value.hl });
+        }
       }
       const actorNames: Record<number, string> = {};
       for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
@@ -234,8 +247,8 @@ export function createApp(deps: AppDeps = {
         interrupts, damageTaken, damageDone, allCasts,
         damageDoneTable, healingTable, damageTakenTable, actorNames,
         enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta, petOwners,
-        damageDoneHitTable, damageTakenHitTable, healingHitTable, castsTable,
-        trinketRacials, extraWindfurySpellId, battleSquawkBuffId,
+        damageDoneHitByFight, damageTakenHitByFight, healingHitByFight,
+        extraWindfurySpellId, battleSquawkBuffId,
       });
       cache.set(id, data);
       return c.json({ data, cachedAt: cache.get(id)!.cachedAt });

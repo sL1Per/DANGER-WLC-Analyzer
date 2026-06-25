@@ -237,33 +237,22 @@ function makeReportWithHitStats(): ReportData {
         magicDamageDone: 0,
       },
     ],
-    playerCasts: [],
-    hitStats: [
+    playerCasts: [
+      // two on-use Bloodlust Brooch (28714) activations on the boss fight
+      { fightId: 1, playerId: 7, spellId: 28714, timestamp: 100 },
+      { fightId: 1, playerId: 7, spellId: 28714, timestamp: 500 },
+    ],
+    hitStatsByFight: [
       {
         playerId: 7,
-        outgoing: {
-          crit: { count: 42, pct: 0.25 },
-          dodge: { count: 0, pct: 0 },
-          miss: { count: 2, pct: 0.01 },
-          parry: { count: 0, pct: 0 },
-          resist: { count: 0, pct: 0 },
-        },
-        incomingMelee: {
-          crit: { count: 1, pct: 0.005 },
-          crushing: { count: 0, pct: 0 },
-          blocked: { count: 5, pct: 0.03 },
-          dodge: { count: 10, pct: 0.06 },
-          immune: { count: 0, pct: 0 },
-          miss: { count: 3, pct: 0.015 },
-          parry: { count: 8, pct: 0.05 },
-        },
-        critHeals: { count: 0, pct: 0 },
+        fightId: 1,
+        // raw counts; roleSheet sums the scoped fights and derives percentages
+        outgoing: { hit: 126, crit: 42, dodge: 0, miss: 2, parry: 0, resist: 0 },
+        incomingMelee: { hit: 100, crit: 1, crushing: 0, blocked: 5, dodge: 10, immune: 0, miss: 3, parry: 8 },
+        heal: { hit: 0, crit: 0 },
         extraWindfury: 0,
         battleSquawk: 0,
       },
-    ],
-    trinketUses: [
-      { playerId: 7, name: "Figurine - Felsteel Boar", count: 3 },
     ],
     enemyDebuffs: [
       // Two applications of Nether Vapor (35013) by player 7 on fight 1
@@ -281,12 +270,16 @@ describe("roleSheet", () => {
       roles: roleCfg,
       rpb: defaultRpbConfig(),
       avoidableDebuffIds: [{ spellId: 35013, name: "Nether Vapor" }],
+      trinketRacials: [{ spellId: 28714, name: "Bloodlust Brooch" }],
     })!;
     expect(rows).not.toBeNull();
     const r = rows.find((x) => x.playerId === 7)!;
     expect(r).toBeDefined();
-    expect(r.hitStats?.outgoing.crit.count).toBeGreaterThanOrEqual(0);
-    expect(r.trinketUses.length).toBeGreaterThan(0);
+    // hit stats aggregated from the per-fight raw counts (denom = 126+42+2 = 170)
+    expect(r.hitStats?.outgoing.crit.count).toBe(42);
+    expect(r.hitStats?.outgoing.crit.pct).toBeCloseTo(42 / 170, 5);
+    // trinket uses derived from playerCasts (two Bloodlust Brooch casts)
+    expect(r.trinketUses.find((t) => t.name === "Bloodlust Brooch")?.count).toBe(2);
     expect(r.debuffsApplied.find((d) => d.name === "Nether Vapor")?.count).toBe(2);
   });
 
@@ -297,6 +290,7 @@ describe("roleSheet", () => {
         roles: roleCfg,
         rpb: defaultRpbConfig(),
         avoidableDebuffIds: [],
+        trinketRacials: [],
       }),
     ).toBeNull();
   });

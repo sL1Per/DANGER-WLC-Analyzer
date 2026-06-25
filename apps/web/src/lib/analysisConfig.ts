@@ -7,7 +7,7 @@ import {
   consumableBuffs, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds,
   drumSpells,
   badEnchants, excludedItems, gemQuality, itemShadowRes, itemSockets,
-  classAbilityCatalog, avoidableDebuffIds,
+  classAbilityCatalog, avoidableDebuffIds, trinketRacials,
 } from "@wcl/data";
 
 /** RPB config — identical to the object RpbView built inline; centralised so the
@@ -45,7 +45,7 @@ export function roleCastsConfig(): RoleCastsConfig {
 
 export function roleSheetConfig(): RoleSheetConfig {
   const base = buildRpbConfig();
-  return { roles: base.roles, rpb: base, avoidableDebuffIds };
+  return { roles: base.roles, rpb: base, avoidableDebuffIds, trinketRacials };
 }
 
 /** Default gear-issue config, matching GearIssuesView's inline settings. */

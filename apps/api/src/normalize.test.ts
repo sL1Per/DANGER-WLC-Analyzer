@@ -509,37 +509,32 @@ describe("normalizeReport — rankings", () => {
   });
 });
 
-describe("normalize hitStats/trinketUses", () => {
-  it("builds outgoing hit shares and trinket counts", () => {
+describe("normalize hitStatsByFight", () => {
+  it("builds per-fight raw hit counts", () => {
     const raw = makeRaw(); // 1 player id=7 (Paladin), 1 boss fight id=1
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitTable: [{ id: 7, total: 1000, hitCount: 100, critHitCount: 35, dodgeCount: 4, parryCount: 6, missCount: 2, resistCount: 3 }],
-      damageTakenHitTable: [{ id: 7, total: 500, hitCount: 50, critHitCount: 1, blockCount: 10, dodgeCount: 5, missCount: 2, parryCount: 0, crushingCount: 3, immuneCount: 0 }],
-      healingHitTable: [{ id: 7, total: 0, hitCount: 80, critHitCount: 20 }],
-      castsTable: [{ id: 7, guid: 28714, name: "Bloodlust Brooch", total: 2 }],
-      trinketRacials: [{ spellId: 28714, name: "Bloodlust Brooch" }],
+      damageDoneHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 1000, hitCount: 100, critHitCount: 35, dodgeCount: 4, parryCount: 6, missCount: 2, resistCount: 3 }] }],
+      damageTakenHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 500, hitCount: 50, critHitCount: 1, blockCount: 10, dodgeCount: 5, missCount: 2, parryCount: 0, crushingCount: 3, immuneCount: 0 }] }],
+      healingHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 0, hitCount: 80, critHitCount: 20 }] }],
     });
-    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
-    expect(hs.outgoing.crit.count).toBe(35);
-    // share = 35 / (100+35+4+6+2+3) = 35/150
-    expect(hs.outgoing.crit.pct).toBeCloseTo(35 / 150, 5);
-    expect(hs.incomingMelee.crushing.count).toBe(3);
-    expect(hs.critHeals.count).toBe(20);
-    expect(data.trinketUses!).toContainEqual({ playerId: 7, name: "Bloodlust Brooch", count: 2 });
+    const h = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
+    // raw counts are stored un-normalized; roleSheet computes percentages
+    expect(h.outgoing.crit).toBe(35);
+    expect(h.outgoing.hit).toBe(100);
+    expect(h.incomingMelee.crushing).toBe(3);
+    expect(h.heal.crit).toBe(20);
   });
 
-  it("omits hitStats/trinketUses when no tables provided", () => {
+  it("omits hitStatsByFight when no tables provided", () => {
     const raw = makeRaw();
     const data = normalizeReport("rep", raw, [], {}, {});
-    expect(data.hitStats).toBeUndefined();
-    expect(data.trinketUses).toBeUndefined();
+    expect(data.hitStatsByFight).toBeUndefined();
   });
 
-  it("counts extra Windfury attacks and Battle Squawk buffs", () => {
+  it("counts extra Windfury attacks and Battle Squawk buffs per fight", () => {
     const raw = makeRaw(); // player 7, boss fight 1
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitTable: [{ id: 7, total: 0 }],
-      castsTable: [],
+      damageDoneHitByFight: [{ fightId: 1, entries: [] }],
       extraWindfurySpellId: 33010,
       battleSquawkBuffId: 23060,
       damageDone: [
@@ -550,37 +545,34 @@ describe("normalize hitStats/trinketUses", () => {
         { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
       ] as any,
     });
-    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
-    expect(hs.extraWindfury).toBe(2);
-    expect(hs.battleSquawk).toBe(1);
+    const h = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
+    expect(h.extraWindfury).toBe(2);
+    expect(h.battleSquawk).toBe(1);
   });
 
   it("does not count Windfury/Squawk events from trash fights", () => {
     // makeRaw() has only 1 boss fight (id=1, encounterID=1). Inject a second
     // trash fight (id=2, encounterID=0) with Windfury/Squawk events on it —
-    // those must be excluded from the hitStats counts.
+    // those must be excluded (no trash entry, boss entry counts only fight 1).
     const raw = makeRaw();
     raw.fights.push({ id: 2, name: "Trash", encounterID: 0, kill: null, startTime: 1001, endTime: 2000, friendlyPlayers: [7] });
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitTable: [{ id: 7, total: 0 }],
-      castsTable: [],
+      damageDoneHitByFight: [{ fightId: 1, entries: [] }],
       extraWindfurySpellId: 33010,
       battleSquawkBuffId: 23060,
       damageDone: [
-        // boss hit (fight 1) — counted
         { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 50, fight: 1 },
-        // trash hit (fight 2) — must NOT be counted
         { timestamp: 1002, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 60, fight: 2 },
       ] as any,
       buffEvents: [
-        // boss squawk (fight 1) — counted
         { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
-        // trash squawk (fight 2) — must NOT be counted
         { timestamp: 1002, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 2 },
       ] as any,
     });
-    const hs = data.hitStats!.find((h) => h.playerId === 7)!;
-    expect(hs.extraWindfury).toBe(1); // only the boss-fight event
-    expect(hs.battleSquawk).toBe(1);  // only the boss-fight event
+    const boss = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
+    expect(boss.extraWindfury).toBe(1);
+    expect(boss.battleSquawk).toBe(1);
+    // no entry for the trash fight
+    expect(data.hitStatsByFight!.some((x) => x.fightId === 2)).toBe(false);
   });
 });

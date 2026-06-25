@@ -43,9 +43,13 @@ export function RoleBreakdownView({
 }) {
   const [params, setParams] = useSearchParams();
 
-  // Only the combined BOSSES card (ALL_FIGHTS) shows role/casts sub-tabs.
-  const bossesCard = fightId === ALL_FIGHTS;
-  const visibleSubs: readonly SubEntry[] = bossesCard ? SUBS : [SUBS[0]];
+  // Boss contexts — the combined ALL-bosses card and individual boss pulls —
+  // show all role/casts sub-tabs (the data scopes per-fight). The TRASH card and
+  // any non-boss fight have no boss-only hit data, so they show only Overview.
+  const bossContext =
+    fightId === ALL_FIGHTS ||
+    (report.fights.find((f) => f.id === fightId)?.isBoss ?? false);
+  const visibleSubs: readonly SubEntry[] = bossContext ? SUBS : [SUBS[0]];
 
   const requestedSub = (params.get("sub") ?? "overview") as SubKey;
   // If the current sub is not visible (e.g. switching from bosses card to single

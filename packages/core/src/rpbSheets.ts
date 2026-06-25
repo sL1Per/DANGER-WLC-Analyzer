@@ -1,4 +1,4 @@
-import type { ReportData, Role, PlayerHitStats, TrinketUse } from "./types";
+import type { ReportData, Role, PlayerHitStats, TrinketUse, PlayerFightHits } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
 import { rpb, type RpbConfig } from "./rpb";
@@ -117,13 +117,54 @@ export interface RoleSheetConfig {
   rpb: RpbConfig;
   /** debuff spell ids whose application count we want to surface per player */
   avoidableDebuffIds: { spellId: number; name: string }[];
+  /** on-use trinket/racial spell ids → name; counted from playerCasts (per-fight) */
+  trinketRacials: { spellId: number; name: string }[];
+}
+
+/** Sum a player's per-fight raw hit counts into the normalized {count, pct} shape.
+ *  Percentages are recomputed from the summed counts, so any fight subset is exact. */
+function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
+  const o = { hit: 0, crit: 0, dodge: 0, miss: 0, parry: 0, resist: 0 };
+  const t = { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 };
+  const h = { hit: 0, crit: 0 };
+  let extraWindfury = 0;
+  let battleSquawk = 0;
+  for (const f of perFight) {
+    o.hit += f.outgoing.hit; o.crit += f.outgoing.crit; o.dodge += f.outgoing.dodge;
+    o.miss += f.outgoing.miss; o.parry += f.outgoing.parry; o.resist += f.outgoing.resist;
+    t.hit += f.incomingMelee.hit; t.crit += f.incomingMelee.crit; t.crushing += f.incomingMelee.crushing;
+    t.blocked += f.incomingMelee.blocked; t.dodge += f.incomingMelee.dodge; t.immune += f.incomingMelee.immune;
+    t.miss += f.incomingMelee.miss; t.parry += f.incomingMelee.parry;
+    h.hit += f.heal.hit; h.crit += f.heal.crit;
+    extraWindfury += f.extraWindfury;
+    battleSquawk += f.battleSquawk;
+  }
+  const od = o.hit + o.crit + o.dodge + o.miss + o.parry + o.resist;
+  const td = t.hit + t.crit + t.crushing + t.blocked + t.dodge + t.immune + t.miss + t.parry;
+  const hd = h.hit + h.crit;
+  const share = (count: number, denom: number) => ({ count, pct: denom > 0 ? count / denom : 0 });
+  return {
+    playerId: perFight[0]!.playerId,
+    outgoing: {
+      crit: share(o.crit, od), dodge: share(o.dodge, od), miss: share(o.miss, od),
+      parry: share(o.parry, od), resist: share(o.resist, od),
+    },
+    incomingMelee: {
+      crit: share(t.crit, td), crushing: share(t.crushing, td), blocked: share(t.blocked, td),
+      dodge: share(t.dodge, td), immune: share(t.immune, td), miss: share(t.miss, td), parry: share(t.parry, td),
+    },
+    critHeals: share(h.crit, hd),
+    extraWindfury,
+    battleSquawk,
+  };
 }
 
 export interface RoleSheetRow {
   playerId: number;
   playerName: string;
   className: string;
-  /** undefined when report.hitStats is absent (pre-feature cache) */
+  /** aggregated hit-type stats over the scoped fights; undefined when no
+   *  per-fight hit data exists for this player (pre-feature cache) */
   hitStats?: PlayerHitStats;
   trinketUses: TrinketUse[];
   /** per-ability breakdown of avoidable damage taken (from rpb avoidableAbilityIds) */
@@ -157,16 +198,16 @@ export function roleSheet(
     report.fights.filter((f) => !isKalecgos(f.name)).map((f) => f.id),
   );
 
-  // Index hitStats and trinketUses by playerId for O(1) lookup
-  const hitById = new Map(
-    (report.hitStats ?? []).map((h) => [h.playerId, h]),
-  );
-  const trinketsById = new Map<number, TrinketUse[]>();
-  for (const t of report.trinketUses ?? []) {
-    const arr = trinketsById.get(t.playerId) ?? [];
-    arr.push(t);
-    trinketsById.set(t.playerId, arr);
+  // Group per-fight raw hit counts by player, restricted to the scoped fights —
+  // this is what makes the sheet correct on a single boss pull.
+  const hitsByPlayer = new Map<number, PlayerFightHits[]>();
+  for (const h of report.hitStatsByFight ?? []) {
+    if (!fightIds.has(h.fightId)) continue;
+    const arr = hitsByPlayer.get(h.playerId) ?? [];
+    arr.push(h);
+    hitsByPlayer.set(h.playerId, arr);
   }
+  const trinketSpec = new Map(cfg.trinketRacials.map((t) => [t.spellId, t.name]));
 
   const meta = report.abilityMeta ?? {};
   const debuffSpec = new Map(
@@ -194,12 +235,22 @@ export function roleSheet(
         debuffCounts.set(e.spellId, (debuffCounts.get(e.spellId) ?? 0) + 1);
       }
 
+      // On-use trinket/racial activations from this player's casts (per-fight scoped).
+      const trinketCounts = new Map<string, number>();
+      for (const c of report.playerCasts ?? []) {
+        if (c.playerId !== r.playerId || !fightIds.has(c.fightId)) continue;
+        const name = trinketSpec.get(c.spellId);
+        if (name) trinketCounts.set(name, (trinketCounts.get(name) ?? 0) + 1);
+      }
+
+      const myHits = hitsByPlayer.get(r.playerId);
+
       return {
         playerId: r.playerId,
         playerName: r.playerName,
         className: r.className,
-        hitStats: hitById.get(r.playerId),
-        trinketUses: trinketsById.get(r.playerId) ?? [],
+        hitStats: myHits && myHits.length > 0 ? aggregateHits(myHits) : undefined,
+        trinketUses: [...trinketCounts].map(([name, count]) => ({ playerId: r.playerId, name, count })),
         avoidableByAbility: [...dmgByAbility]
           .map(([id, amount]) => ({
             name: meta[String(id)]?.name ?? `#${id}`,

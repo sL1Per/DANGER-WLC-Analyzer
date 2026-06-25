@@ -14,30 +14,18 @@ import type { ReportData } from "@wcl/core";
  * roleSheet returns rows because the fixture has playerTotals.
  */
 
-/** A fixture with hitStats populated for Playerone (id 1, caster role). */
-const zero = { count: 0, pct: 0 };
+/** A fixture with per-fight hit counts for Playerone (id 1, caster) on a boss
+ *  fight (id 3 = Hydross kill). roleSheet aggregates the scoped boss fights;
+ *  outgoing crit = 35 of 100 → "35 (35%)". */
 const reportWithHitStats: ReportData = {
   ...reportFixture,
-  hitStats: [
+  hitStatsByFight: [
     {
       playerId: 1,
-      outgoing: {
-        crit: { count: 35, pct: 0.35 },
-        dodge: zero,
-        miss: zero,
-        parry: zero,
-        resist: zero,
-      },
-      incomingMelee: {
-        crit: zero,
-        crushing: { count: 3, pct: 0.03 },
-        blocked: zero,
-        dodge: zero,
-        immune: zero,
-        miss: zero,
-        parry: zero,
-      },
-      critHeals: { count: 20, pct: 0.2 },
+      fightId: 3,
+      outgoing: { hit: 65, crit: 35, dodge: 0, miss: 0, parry: 0, resist: 0 },
+      incomingMelee: { hit: 97, crit: 0, crushing: 3, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 },
+      heal: { hit: 80, crit: 20 },
       extraWindfury: 2,
       battleSquawk: 1,
     },

@@ -27,12 +27,10 @@ export interface ReportData {
   /** WCL parse-percentile rankings per ranked boss, grouped by WCL role
    *  (rankings feature); undefined = report cached before this feature. */
   rankings?: ReportRanking[];
-  /** per-player hit-type breakdown (RPB role sheets, boss fights);
-   *  undefined = report cached before this feature. */
-  hitStats?: PlayerHitStats[];
-  /** curated on-use trinket/racial counts (RPB role sheets);
-   *  undefined = report cached before this feature. */
-  trinketUses?: TrinketUse[];
+  /** per-player, per-boss-fight raw hit-type counts (RPB role sheets). roleSheet
+   *  sums the rows for the scoped fights, so a single boss pull and the combined
+   *  ALL-bosses view are both exact. undefined = cached before per-fight support. */
+  hitStatsByFight?: PlayerFightHits[];
   /** per-fight effective healing by source (performance breakdown);
    *  undefined = report cached before this feature (drives refresh notice). */
   healingEvents?: HealingEvent[];
@@ -229,3 +227,16 @@ export interface PlayerHitStats {
 
 /** A use of a curated on-use trinket or racial (count of casts/applications). */
 export interface TrinketUse { playerId: number; name: string; count: number; }
+
+/** Raw (un-normalized) hit-type counts for one player on one boss fight. Stored
+ *  per fight so roleSheet can sum the scoped fights and recompute percentages —
+ *  this is what makes the role sheet correct on a single boss pull. */
+export interface PlayerFightHits {
+  playerId: number;
+  fightId: number;
+  outgoing: { hit: number; crit: number; dodge: number; miss: number; parry: number; resist: number };
+  incomingMelee: { hit: number; crit: number; crushing: number; blocked: number; dodge: number; immune: number; miss: number; parry: number };
+  heal: { hit: number; crit: number };
+  extraWindfury: number;
+  battleSquawk: number;
+}

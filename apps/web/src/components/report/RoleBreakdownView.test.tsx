@@ -46,12 +46,20 @@ describe("RoleBreakdownView", () => {
     expect(screen.getByRole("button", { name: "Overview" })).toHaveClass("active");
   });
 
-  it("shows only Overview button on a single-pull card", () => {
-    // fight id 1 is a single boss pull in the fixture
+  it("shows only Overview on a non-boss (trash) fight", () => {
+    // fight id 1 is "Underbog Colossus" — a trash fight (isBoss: false)
     renderAt(1);
     expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Tank" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows all 9 sub-tabs on an individual boss pull", () => {
+    // fight id 3 is a boss fight (Hydross the Unstable kill) in the fixture
+    renderAt(3);
+    for (const t of ["Overview", "Tank", "Tank - Casts", "Caster - Casts", "Physical - Casts"]) {
+      expect(screen.getByRole("button", { name: t })).toBeInTheDocument();
+    }
   });
 });

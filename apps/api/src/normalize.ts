@@ -15,9 +15,7 @@ import {
   type ReportRanking,
   type RankingCharacter,
   type HealingEvent,
-  type PlayerHitStats,
-  type HitStat,
-  type TrinketUse,
+  type PlayerFightHits,
 } from "@wcl/core";
 import {
   WclError,
@@ -33,7 +31,6 @@ import {
   type RawRankingEntry,
   type RawRankingCharacter,
   type RawHitTableEntry,
-  type RawCastTableEntry,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -66,82 +63,89 @@ export interface NormalizeEventInputs {
   abilityMeta?: Record<string, { name: string }>;
   /** pet actor id → owner player id; pet damage/healing is credited to the owner */
   petOwners?: Record<number, number>;
-  damageDoneHitTable?: RawHitTableEntry[];
-  damageTakenHitTable?: RawHitTableEntry[];
-  healingHitTable?: RawHitTableEntry[];
-  castsTable?: RawCastTableEntry[];
-  /** curated on-use trinket/racial ids → display name (from @wcl/data, injected) */
-  trinketRacials?: { spellId: number; name: string }[];
+  /** WCL hit tables fetched PER boss fight (one entry per boss fight). The per-fight
+   *  split is what lets the role sheet be exact on a single boss pull. */
+  damageDoneHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
+  damageTakenHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
+  healingHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
   /** Windfury extra-attack proc ability id (verified: false — confirm via wago.tools) */
   extraWindfurySpellId?: number;
   /** Battle Squawk buff id from Cenarion Dart trinket (verified: false — confirm via wago.tools) */
   battleSquawkBuffId?: number;
 }
 
-function indexBy(entries?: RawHitTableEntry[]): Map<number, RawHitTableEntry> {
-  const m = new Map<number, RawHitTableEntry>();
-  for (const e of entries ?? []) m.set(e.id, e);
-  return m;
-}
-
-function buildHitStats(
+/** Build per-player, per-fight raw hit-type counts from the per-fight WCL hit
+ *  tables. Stored un-normalized so roleSheet can sum any fight subset and
+ *  recompute percentages — making the role sheet exact on a single boss pull. */
+function buildHitStatsByFight(
   events: NormalizeEventInputs, playerIds: Set<number>, bossFightIds: Set<number>,
-): { hitStats?: PlayerHitStats[]; trinketUses?: TrinketUse[] } {
-  if (events.damageDoneHitTable === undefined && events.castsTable === undefined) return {};
-  const byOut = indexBy(events.damageDoneHitTable);
-  const byTaken = indexBy(events.damageTakenHitTable);
-  const byHeal = indexBy(events.healingHitTable);
+): { hitStatsByFight?: PlayerFightHits[] } {
+  if (
+    events.damageDoneHitByFight === undefined &&
+    events.damageTakenHitByFight === undefined &&
+    events.healingHitByFight === undefined
+  ) return {};
 
-  const share = (count: number, denom: number): HitStat => ({ count, pct: denom > 0 ? count / denom : 0 });
-  const outDenom = (e?: RawHitTableEntry) =>
-    (e?.hitCount ?? 0) + (e?.critHitCount ?? 0) + (e?.dodgeCount ?? 0) + (e?.parryCount ?? 0) + (e?.missCount ?? 0) + (e?.resistCount ?? 0);
-  const takenDenom = (e?: RawHitTableEntry) =>
-    (e?.hitCount ?? 0) + (e?.critHitCount ?? 0) + (e?.crushingCount ?? 0) + (e?.blockCount ?? 0) + (e?.dodgeCount ?? 0) + (e?.immuneCount ?? 0) + (e?.missCount ?? 0) + (e?.parryCount ?? 0);
-  const healDenom = (e?: RawHitTableEntry) => (e?.hitCount ?? 0) + (e?.critHitCount ?? 0);
+  const byKey = new Map<string, PlayerFightHits>();
+  const ensure = (playerId: number, fightId: number): PlayerFightHits => {
+    const key = `${playerId}:${fightId}`;
+    let h = byKey.get(key);
+    if (!h) {
+      h = {
+        playerId, fightId,
+        outgoing: { hit: 0, crit: 0, dodge: 0, miss: 0, parry: 0, resist: 0 },
+        incomingMelee: { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 },
+        heal: { hit: 0, crit: 0 },
+        extraWindfury: 0, battleSquawk: 0,
+      };
+      byKey.set(key, h);
+    }
+    return h;
+  };
+
+  for (const { fightId, entries } of events.damageDoneHitByFight ?? []) {
+    if (!bossFightIds.has(fightId)) continue;
+    for (const e of entries) {
+      if (!playerIds.has(e.id)) continue;
+      const o = ensure(e.id, fightId).outgoing;
+      o.hit += e.hitCount ?? 0; o.crit += e.critHitCount ?? 0; o.dodge += e.dodgeCount ?? 0;
+      o.miss += e.missCount ?? 0; o.parry += e.parryCount ?? 0; o.resist += e.resistCount ?? 0;
+    }
+  }
+  for (const { fightId, entries } of events.damageTakenHitByFight ?? []) {
+    if (!bossFightIds.has(fightId)) continue;
+    for (const e of entries) {
+      if (!playerIds.has(e.id)) continue;
+      const t = ensure(e.id, fightId).incomingMelee;
+      t.hit += e.hitCount ?? 0; t.crit += e.critHitCount ?? 0; t.crushing += e.crushingCount ?? 0;
+      t.blocked += e.blockCount ?? 0; t.dodge += e.dodgeCount ?? 0; t.immune += e.immuneCount ?? 0;
+      t.miss += e.missCount ?? 0; t.parry += e.parryCount ?? 0;
+    }
+  }
+  for (const { fightId, entries } of events.healingHitByFight ?? []) {
+    if (!bossFightIds.has(fightId)) continue;
+    for (const e of entries) {
+      if (!playerIds.has(e.id)) continue;
+      const hl = ensure(e.id, fightId).heal;
+      hl.hit += e.hitCount ?? 0; hl.crit += e.critHitCount ?? 0;
+    }
+  }
 
   const wfId = events.extraWindfurySpellId;
-  const sqId = events.battleSquawkBuffId;
-  const wfBy = new Map<number, number>();
   if (wfId !== undefined) for (const d of events.damageDone ?? []) {
-    if (d.abilityGameID === wfId && playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) wfBy.set(d.sourceID, (wfBy.get(d.sourceID) ?? 0) + 1);
+    if (d.abilityGameID === wfId && playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {
+      ensure(d.sourceID, d.fight).extraWindfury += 1;
+    }
   }
-  const sqBy = new Map<number, number>();
+  const sqId = events.battleSquawkBuffId;
   if (sqId !== undefined) for (const e of events.buffEvents ?? []) {
-    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff") && playerIds.has(e.targetID) && bossFightIds.has(e.fight))
-      sqBy.set(e.targetID, (sqBy.get(e.targetID) ?? 0) + 1);
+    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff")
+      && playerIds.has(e.targetID) && bossFightIds.has(e.fight)) {
+      ensure(e.targetID, e.fight).battleSquawk += 1;
+    }
   }
 
-  const hitStats: PlayerHitStats[] = [...playerIds].map((playerId) => {
-    const o = byOut.get(playerId); const od = outDenom(o);
-    const t = byTaken.get(playerId); const td = takenDenom(t);
-    const h = byHeal.get(playerId); const hd = healDenom(h);
-    return {
-      playerId,
-      outgoing: {
-        crit: share(o?.critHitCount ?? 0, od), dodge: share(o?.dodgeCount ?? 0, od),
-        miss: share(o?.missCount ?? 0, od), parry: share(o?.parryCount ?? 0, od),
-        resist: share(o?.resistCount ?? 0, od),
-      },
-      incomingMelee: {
-        crit: share(t?.critHitCount ?? 0, td), crushing: share(t?.crushingCount ?? 0, td),
-        blocked: share(t?.blockCount ?? 0, td), dodge: share(t?.dodgeCount ?? 0, td),
-        immune: share(t?.immuneCount ?? 0, td), miss: share(t?.missCount ?? 0, td),
-        parry: share(t?.parryCount ?? 0, td),
-      },
-      critHeals: share(h?.critHitCount ?? 0, hd),
-      extraWindfury: wfBy.get(playerId) ?? 0,
-      battleSquawk: sqBy.get(playerId) ?? 0,
-    };
-  });
-
-  const trinketSet = new Map((events.trinketRacials ?? []).map((t) => [t.spellId, t.name]));
-  const trinketUses: TrinketUse[] = [];
-  for (const c of events.castsTable ?? []) {
-    if (!playerIds.has(c.id)) continue;
-    const name = trinketSet.get(c.guid);
-    if (name) trinketUses.push({ playerId: c.id, name, count: c.total });
-  }
-  return { hitStats, trinketUses };
+  return { hitStatsByFight: [...byKey.values()] };
 }
 
 function buildRpb(
@@ -341,7 +345,7 @@ export function normalizeReport(
         spellId: e.abilityGameID, timestamp: e.timestamp,
       })),
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
-    ...buildHitStats(events, new Set(players.map((p) => p.id)), new Set(fights.filter((f) => f.isBoss).map((f) => f.id))),
+    ...buildHitStatsByFight(events, new Set(players.map((p) => p.id)), new Set(fights.filter((f) => f.isBoss).map((f) => f.id))),
     rankings: events.rankings ? buildRankings(events.rankings) : undefined,
     itemMeta,
     abilityMeta: events.abilityMeta ?? {},
