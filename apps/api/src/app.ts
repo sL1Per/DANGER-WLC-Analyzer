@@ -202,7 +202,7 @@ export function createApp(deps: AppDeps = {
 
       const actorNames: Record<number, string> = {};
       for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
-      for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? `NPC ${n.gameID}`;
+      for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? n.name ?? `NPC ${n.gameID}`;
       const abilityMeta: Record<string, { name: string }> = {};
       for (const a of rawReport.masterData?.abilities ?? []) abilityMeta[String(a.gameID)] = { name: a.name };
       // pet actor id → owner player id, so pet damage/healing is credited to the owner

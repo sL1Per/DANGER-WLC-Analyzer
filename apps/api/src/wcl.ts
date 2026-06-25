@@ -33,7 +33,7 @@ query Report($code: String!) {
       fights { id name encounterID kill startTime endTime friendlyPlayers }
       masterData {
         actors(type: "Player") { id name subType }
-        npcs: actors(type: "NPC") { id gameID }
+        npcs: actors(type: "NPC") { id gameID name }
         pets: actors(type: "Pet") { id petOwner }
         abilities { gameID name }
       }
@@ -51,7 +51,7 @@ export interface RawReport {
   masterData: {
     actors: { id: number; name: string; subType: string }[];
     /** optional: absent on reports with no NPC actors / older fixtures (normalize falls back to []) */
-    npcs?: { id: number; gameID: number }[];
+    npcs?: { id: number; gameID: number; name?: string }[];
     /** pet actor id → owner player id, to attribute pet damage/healing to the owner */
     pets?: { id: number; petOwner: number }[];
     /** ability id → name, for damage-taken/death labels */

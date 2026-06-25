@@ -267,13 +267,15 @@ export function roleSheet(
   return result.rows
     .filter((r) => r.role === role)
     .map((r) => {
-      // Avoidable damage taken, grouped by WCL ability name.
+      // Avoidable damage taken, grouped by "Ability (Source)" — the source is the
+      // boss/add that dealt it, or "Environment" (matches the workbook labels).
       const dmgByName = new Map<string, number>();
       for (const d of report.damageTakenEvents ?? []) {
         if (d.targetPlayerId !== r.playerId || !fightIds.has(d.fightId)) continue;
         const nm = meta[String(d.abilityId)]?.name;
         if (!nm || !avoidableNames.has(normName(nm))) continue;
-        dmgByName.set(nm, (dmgByName.get(nm) ?? 0) + d.amount);
+        const label = d.sourceName ? `${nm} (${d.sourceName})` : nm;
+        dmgByName.set(label, (dmgByName.get(label) ?? 0) + d.amount);
       }
 
       // Tracked avoidable debuff APPLICATIONS this player sourced. enemyDebuffs are

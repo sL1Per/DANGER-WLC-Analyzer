@@ -167,6 +167,9 @@ export interface DamageTakenEvent {
   amount: number;
   /** true when the damage source is friendly (friendly fire / reflected setups) */
   fromFriendly: boolean;
+  /** display name of the damage source (boss/add) or "Environment"; for the
+   *  role sheet's "Ability (Source)" labels. */
+  sourceName?: string;
 }
 
 /** A player's cast (for activity). */

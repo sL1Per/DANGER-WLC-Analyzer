@@ -213,6 +213,7 @@ function buildRpb(
     .map((d) => ({
       fightId: d.fight, targetPlayerId: d.targetID, abilityId: d.abilityGameID,
       amount: d.amount, fromFriendly: d.sourceIsFriendly === true,
+      sourceName: names[d.sourceID] ?? "Environment",
     }));
 
   const playerCasts: PlayerCast[] = (events.allCasts ?? [])

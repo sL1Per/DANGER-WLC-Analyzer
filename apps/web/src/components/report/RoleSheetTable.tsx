@@ -70,6 +70,33 @@ export function RoleSheetTable({
     }),
   });
 
+  // Build one row per distinct item across the role's players (workbook layout:
+  // each trinket / avoidable ability / debuff is its own row).
+  const pivot = (
+    extract: (r: Row) => { name: string; value: number }[],
+    fmtVal: (v: number) => string,
+    order: "value-desc" | "first-seen" = "first-seen",
+  ): MetricRow[] => {
+    const totals = new Map<string, number>();
+    const firstSeen: string[] = [];
+    for (const r of rows)
+      for (const { name, value } of extract(r)) {
+        if (!totals.has(name)) firstSeen.push(name);
+        totals.set(name, (totals.get(name) ?? 0) + value);
+      }
+    const names =
+      order === "value-desc"
+        ? [...firstSeen].sort((a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0))
+        : firstSeen;
+    return names.map((name) => ({
+      label: name,
+      cell: (r) => {
+        const v = extract(r).find((x) => x.name === name)?.value;
+        return { content: v === undefined ? "—" : fmtVal(v), className: "mono" };
+      },
+    }));
+  };
+
   const sections: Section[] = [
     {
       band: "Stats & Misc",
@@ -106,21 +133,26 @@ export function RoleSheetTable({
     },
     {
       band: "Trinkets & Racials",
-      rows: [
-        {
-          label: "Trinkets / Racials",
-          cell: (r) => ({
-            content:
-              r.trinketUses.length === 0
-                ? "—"
-                : r.trinketUses.map((t) => `${t.name} ×${t.count}`).join(", "),
-          }),
-        },
-      ],
+      rows: pivot(
+        (r) => r.trinketUses.map((t) => ({ name: t.name, value: t.count })),
+        (v) => String(v),
+      ),
     },
     {
       band: "Raw avoidable damage taken by tracked abilities",
       rows: [
+        // one row per avoidable ability (largest first), then the summary rows
+        ...pivot(
+          (r) => r.avoidableByAbility.map((a) => ({ name: a.name, value: a.amount })),
+          (v) => v.toLocaleString(),
+          "value-desc",
+        ),
+        { label: "Damage Reflected", cell: (r) => ({ content: fmtNum(r.damageReflected), className: "mono" }) },
+        {
+          label: "Damage to Hostile Players",
+          cell: (r) => ({ content: fmtNum(r.damageToHostilePlayers), className: "mono" }),
+        },
+        { label: "Friendly Fire", cell: (r) => ({ content: fmtNum(r.friendlyFire), className: "mono" }) },
         {
           label: "# of deaths in total",
           labelClassName: "col-deaths",
@@ -135,38 +167,14 @@ export function RoleSheetTable({
             )}`,
           }),
         },
-        { label: "Friendly Fire", cell: (r) => ({ content: fmtNum(r.friendlyFire), className: "mono" }) },
-        { label: "Damage Reflected", cell: (r) => ({ content: fmtNum(r.damageReflected), className: "mono" }) },
-        {
-          label: "Damage to Hostile Players",
-          cell: (r) => ({ content: fmtNum(r.damageToHostilePlayers), className: "mono" }),
-        },
-        {
-          label: "By Ability",
-          cell: (r) => ({
-            content:
-              r.avoidableByAbility.length === 0
-                ? "—"
-                : r.avoidableByAbility
-                    .map((a) => `${a.name}: ${a.amount.toLocaleString()}`)
-                    .join("; "),
-          }),
-        },
       ],
     },
     {
       band: "Avoidable debuffs applied by tracked abilities",
-      rows: [
-        {
-          label: "Debuffs Applied",
-          cell: (r) => ({
-            content:
-              r.debuffsApplied.length === 0
-                ? "—"
-                : r.debuffsApplied.map((d) => `${d.name} ×${d.count}`).join(", "),
-          }),
-        },
-      ],
+      rows: pivot(
+        (r) => r.debuffsApplied.map((d) => ({ name: d.name, value: d.count })),
+        (v) => String(v),
+      ),
     },
   ];
 
