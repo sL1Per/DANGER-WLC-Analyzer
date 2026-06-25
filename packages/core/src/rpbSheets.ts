@@ -44,10 +44,29 @@ export interface ClassCastBlock {
 /** Kalecgos breaks RPB numbers (portal mechanic) — excluded from all aggregation. */
 const isKalecgos = (name: string) => name.toLowerCase().includes("kalecgos");
 
+/** Strip a trailing "(rank N)" / "(ranks N-M)" so rank variants collapse to one
+ *  ability — WCL reports every rank of a spell under the same base name. Form
+ *  parentheticals ("(Feral)", "(Bear)") are kept (they are distinct WCL names). */
+function rankStrip(name: string): string {
+  return name.replace(/\s*\((?:rank|ranks)\b[^)]*\)\s*$/i, "").trim();
+}
+
+/** Strip ALL parentheticals — used as a loose fallback so a catalog name carrying
+ *  an annotation WCL doesn't use ("Auto Shot (Expose Weakness)", "Shoot (wand)")
+ *  still matches the bare WCL name ("Auto Shot", "Shoot"). */
+function fullStrip(name: string): string {
+  return name.replace(/\s*\([^)]*\)/g, "").trim();
+}
+
 /**
  * For a given role, group its players by class and, per class, count each
- * catalog ability's casts per player, plus per-player activity.
- * Returns null when report.playerCasts is undefined (stale cache).
+ * curated ability's casts per player, plus per-player activity.
+ *
+ * Casts are matched to abilities by WCL's own ability NAME (resolved from
+ * report.abilityMeta), not by hand-curated spell ids — so unverified/incorrect
+ * catalog ids don't affect the counts. The catalog supplies the curated row list
+ * (which abilities to show) and their category; rank variants are collapsed to a
+ * single row per base name. Returns null when report.playerCasts is undefined.
  */
 export function roleCasts(
   report: ReportData,
@@ -56,8 +75,10 @@ export function roleCasts(
 ): ClassCastBlock[] | null {
   if (report.playerCasts === undefined) return null;
 
-  const scopedFights = report.fights.filter((f) => !isKalecgos(f.name));
-  const fightIds = new Set(scopedFights.map((f) => f.id));
+  const fightIds = new Set(
+    report.fights.filter((f) => !isKalecgos(f.name)).map((f) => f.id),
+  );
+  const meta = report.abilityMeta ?? {};
 
   const members = report.players.filter(
     (p) => detectRole(p.id, report, cfg.roles) === role,
@@ -72,25 +93,44 @@ export function roleCasts(
 
   const blocks: ClassCastBlock[] = [];
   for (const [className, players] of byClass) {
-    const abilities = cfg.catalog.filter((a) => a.className === className);
+    // Curated rows for this class, collapsed by base name and keyed by the
+    // lower-cased base name (the same key casts are matched against). `looseMap`
+    // maps a fully-paren-stripped name to its row key as a fallback (null when
+    // two rows share one — ambiguous, so only the exact match is used there).
+    const rowByKey = new Map<string, { key: string; name: string; category: CastCategory }>();
+    const looseMap = new Map<string, string | null>();
+    for (const a of cfg.catalog) {
+      if (a.className !== className) continue;
+      const name = rankStrip(a.name);
+      const key = name.toLowerCase();
+      if (!rowByKey.has(key)) rowByKey.set(key, { key, name, category: a.category });
+      const loose = fullStrip(a.name).toLowerCase();
+      if (loose && loose !== key) {
+        looseMap.set(loose, looseMap.has(loose) && looseMap.get(loose) !== key ? null : key);
+      }
+    }
+
+    const matchKey = (wclName: string): string | undefined => {
+      const exact = rankStrip(wclName).toLowerCase();
+      if (rowByKey.has(exact)) return exact;
+      return looseMap.get(fullStrip(wclName).toLowerCase()) ?? undefined;
+    };
+
     const counts = new Map<string, CastCell>();
     const act = new Map<number, ActivityResult | null>();
 
     for (const p of players) {
-      const myCasts = report.playerCasts.filter(
-        (c) => c.playerId === p.id && fightIds.has(c.fightId),
-      );
-
-      for (const a of abilities) {
-        const ids = new Set(a.spellIds);
-        const castCount = myCasts.filter((c) => ids.has(c.spellId)).length;
-        counts.set(`${p.id}:${a.key}`, {
-          key: a.key,
-          name: a.name,
-          category: a.category,
-          castCount,
-          rankFlag: false,
-        });
+      for (const c of report.playerCasts) {
+        if (c.playerId !== p.id || !fightIds.has(c.fightId)) continue;
+        const resolved = meta[String(c.spellId)]?.name;
+        if (!resolved) continue;
+        const key = matchKey(resolved);
+        if (key === undefined) continue; // not a curated ability for this class
+        const row = rowByKey.get(key)!;
+        const cellKey = `${p.id}:${key}`;
+        const cell = counts.get(cellKey);
+        if (cell) cell.castCount += 1;
+        else counts.set(cellKey, { key, name: row.name, category: row.category, castCount: 1, rankFlag: false });
       }
 
       act.set(p.id, activity(p.id, report, cfg.activity, fightIds));
@@ -99,7 +139,7 @@ export function roleCasts(
     blocks.push({
       className,
       players: players.map((p) => ({ playerId: p.id, playerName: p.name })),
-      abilities: abilities.map((a) => ({ key: a.key, name: a.name, category: a.category })),
+      abilities: [...rowByKey.values()].map((a) => ({ key: a.key, name: a.name, category: a.category })),
       counts,
       activity: act,
     });
