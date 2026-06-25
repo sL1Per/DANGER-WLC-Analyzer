@@ -17,3 +17,10 @@
 - Remove as many npm dependencies as possible
 
 ## Bugs
+
+- Cached reports must be manually refreshed from WCL to pick up new RPB data
+  (hitType-based stats, NPC source names, unmitigated avoidable damage, per-fight
+  hit stats) — consider cache-busting on analyzer changes or a "refresh to update" prompt.
+- Pre-existing failing test: `packages/data/src/data.test.ts` "JC necks map item id
+  to on-use buff id" expects `jcNecks.length >= 4` but there are 3 (fallout of the
+  JC-neck-detection fix) — update the test or restore the 4th neck.
