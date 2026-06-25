@@ -423,8 +423,10 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
+/* Row highlight on hover — a translucent inset overlay so it shows over any cell
+   background (heat/severity colors included), uniformly across every table. */
 tbody tr:hover td {
-  background: var(--row-hover, var(--surface-sunken));
+  box-shadow: inset 0 0 0 9999px rgba(128, 128, 128, 0.13);
 }
 
 /* ----------------------------------------------------------------- lists */
@@ -529,10 +531,6 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
   user-select: none;
 }
 .empty-toggle input { cursor: pointer; margin: 0; }
-
-/* Column highlight on hover (tableCrosshair). A translucent inset overlay so it
-   shows over any cell background (heat/severity colors included). */
-td.xh-col, th.xh-col { box-shadow: inset 0 0 0 9999px rgba(128, 128, 128, 0.13); }
 
 /* RPB Role Breakdown — transposed tables (players = columns, metrics = rows) */
 .rb-transposed .rb-row-label {
@@ -866,15 +864,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── gear matrix ──────────────────────────────────────────── */
 .gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
-/* Opt these tables out of the generic row-hover highlight (see `tbody tr:hover td`).
-   Plain cells fall back to transparent (their natural bg); colored sev/heat cells
-   keep their own backgrounds via the higher-specificity hover rules just below. */
-.gear-matrix, .rank-table, .perf table, .consumable-matrix, .buff-consumables { --row-hover: transparent; }
-/* Buff consumables uses sev-tinted uptime cells like the matrix tables — keep
-   their colors on hover, and don't underline the class-colored player links. */
-.buff-consumables tbody tr:hover td.sev-major { background: var(--danger-bg); }
-.buff-consumables tbody tr:hover td.sev-moderate { background: var(--warn-bg); }
-.buff-consumables tbody tr:hover td.sev-minor { background: var(--positive-bg); }
+/* Buff consumables: don't underline the class-colored player links on hover. */
 .buff-consumables .player-link:hover { text-decoration: none; }
 /* The generic `tbody tr:hover td` (0,1,3) outranks `tr td.sev-*` (0,1,2), so without
    this it would blank colored cells to the (transparent) hover bg. Re-assert the cell
