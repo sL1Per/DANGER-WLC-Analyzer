@@ -28,9 +28,9 @@ describe("ReportPage", () => {
   });
   it("renders the Performance tab and shows panel titles when clicked", async () => {
     renderAt("/report/abc");
+    // "Performance" tab is now labelled "Summary" in the nav (key=performance, label="Summary")
     expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Performance$/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^Performance$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Summary$/i }));
     await waitFor(() => expect(screen.getByText("Damage Done By Source")).toBeInTheDocument());
   });
   it("hides combatantInfo-only tabs on the TRASH card and falls back from a hidden tab", () => {
@@ -38,11 +38,12 @@ describe("ReportPage", () => {
     renderAt("/report/abc?fight=-2&cat=gear");
     expect(screen.queryByRole("button", { name: /^Rankings$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Gear$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Shadow Resi$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Resistances$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Consumables$/i })).toBeInTheDocument();
-    // the event-sourced Performance tab has trash data, so it stays visible here
-    expect(screen.getByRole("button", { name: /^Performance$/i })).toBeInTheDocument();
+    // the event-sourced Performance tab (now labelled "Summary") has trash data, so it stays visible
+    // (also verified by the getByRole("button", { name: /^Summary$/i }) assertion above)
+    expect(screen.getByRole("button", { name: /^Role Breakdown$/i })).toBeInTheDocument();
   });
   it("shows Rankings only on the BOSSES card, not on an individual boss fight", () => {
     // fight=3 is an individual boss pull; Rankings (boss-encounter percentiles)

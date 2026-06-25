@@ -4,8 +4,8 @@ import { ReportHeader } from "../components/ReportHeader";
 import { LensBar, type Lens } from "../components/LensBar";
 import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 import { SummaryRankings } from "../components/report/SummaryRankings";
-import { SummaryView } from "../components/report/SummaryView";
 import { PerformanceView } from "../components/report/PerformanceView";
+import { RoleBreakdownView } from "../components/report/RoleBreakdownView";
 import { GearMatrix } from "../components/report/GearMatrix";
 import { FightHeader } from "../components/report/FightHeader";
 import { ConsumablesCategory } from "../components/report/ConsumablesCategory";
@@ -15,8 +15,8 @@ import { ShadowResView } from "../components/ShadowResView";
 import { LoadingNugget } from "../components/LoadingNugget";
 
 const CATEGORIES = [
-  ["summary", "Rankings"], ["roles", "Summary"], ["performance", "Performance"], ["gear", "Gear"],
-  ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Shadow Resi"],
+  ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role Breakdown"], ["gear", "Gear"],
+  ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
@@ -96,7 +96,7 @@ export function ReportPage() {
           </nav>
           <div className="report-content">
             {cat === "summary" && <SummaryRankings report={report} onPlayer={goPlayer} />}
-            {cat === "roles" && <SummaryView report={report} fightId={fightId} onPlayer={goPlayer} />}
+            {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
             {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} onPlayer={goPlayer} />}
