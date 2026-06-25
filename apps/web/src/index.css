@@ -516,6 +516,20 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 
 .scroll-x { overflow-x: auto; }
 
+/* Hide empty rows/columns toggle (EmptyToggle) */
+.eh-hidden { display: none !important; }
+.empty-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.empty-toggle input { cursor: pointer; margin: 0; }
+
 /* RPB Role Breakdown — transposed tables (players = columns, metrics = rows) */
 .rb-transposed .rb-row-label {
   text-align: left;

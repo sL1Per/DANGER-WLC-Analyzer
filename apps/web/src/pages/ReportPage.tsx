@@ -11,6 +11,7 @@ import { FightHeader } from "../components/report/FightHeader";
 import { ConsumablesCategory } from "../components/report/ConsumablesCategory";
 import { ConsumablesView } from "../components/ConsumablesView";
 import { PlayerProfile } from "../components/report/PlayerProfile";
+import { EmptyToggle } from "../components/report/EmptyToggle";
 import { ShadowResView } from "../components/ShadowResView";
 import { LoadingNugget } from "../components/LoadingNugget";
 
@@ -95,18 +96,22 @@ export function ReportPage() {
             ))}
           </nav>
           <div className="report-content">
-            {cat === "summary" && <SummaryRankings report={report} onPlayer={goPlayer} />}
-            {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} onPlayer={goPlayer} />}
-            {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
-            {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
-            {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} onPlayer={goPlayer} />}
-            {cat === "buffconsumables" && <ConsumablesView report={report} onPlayer={goPlayer} />}
-            {cat === "shadowresi" && <ShadowResView report={report} />}
+            <EmptyToggle>
+              {cat === "summary" && <SummaryRankings report={report} onPlayer={goPlayer} />}
+              {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} onPlayer={goPlayer} />}
+              {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
+              {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
+              {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} onPlayer={goPlayer} />}
+              {cat === "buffconsumables" && <ConsumablesView report={report} onPlayer={goPlayer} />}
+              {cat === "shadowresi" && <ShadowResView report={report} />}
+            </EmptyToggle>
           </div>
         </div>
       ) : (
         <div className="report-body"><div className="report-content">
-          <PlayerProfile report={report} playerId={playerId} />
+          <EmptyToggle>
+            <PlayerProfile report={report} playerId={playerId} />
+          </EmptyToggle>
         </div></div>
       )}
     </div>
