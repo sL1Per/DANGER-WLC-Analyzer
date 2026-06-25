@@ -43,6 +43,24 @@ export const avoidableAbilities: AvoidableAbility[] = [
 
 export const avoidableAbilityIds: Set<number> = new Set(avoidableAbilities.map((a) => a.abilityId));
 
+/** Avoidable ability NAMES the role sheet matches against. WCL resolves every
+ *  DamageTaken event's name from masterData, so matching by name (case-insensitive,
+ *  parentheticals stripped) is robust to the unverified ids above. Covers the
+ *  existing curated abilities plus the SSC/TK + environment hazards confirmed in
+ *  reference logs. Extend per zone — each name is enemy/environment damage taken,
+ *  so generic names (Whirlwind, Rebirth, Burn) can't collide with friendly casts. */
+export const avoidableAbilityNames: string[] = [
+  ...new Set(avoidableAbilities.map((a) => a.name)),
+  // environmental hazards
+  "Falling", "Scalding Water", "Flame Patch", "Toxic Spores",
+  // Serpentshrine Cavern
+  "Whirlwind",   // Leotheras the Blind
+  "Spout",       // The Lurker Below
+  // Tempest Keep
+  "Burn",        // Al'ar (Phoenix)
+  "Rebirth",     // Al'ar
+];
+
 /** Avoidable enemy debuffs whose APPLICATION COUNT the RPB role sheet reports
  *  (distinct from avoidable-damage ids above). Unverified until wago-checked. */
 export const avoidableDebuffIds: { spellId: number; name: string; verified?: boolean }[] = [

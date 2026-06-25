@@ -157,8 +157,15 @@ export interface RoleSheetConfig {
   rpb: RpbConfig;
   /** debuff spell ids whose application count we want to surface per player */
   avoidableDebuffIds: { spellId: number; name: string }[];
-  /** on-use trinket/racial spell ids → name; counted from playerCasts (per-fight) */
+  /** on-use trinket/racial display names; matched against WCL cast names */
   trinketRacials: { spellId: number; name: string }[];
+  /** avoidable ability display names; matched against WCL damage-taken names */
+  avoidableAbilityNames: string[];
+}
+
+/** Normalize an ability name for matching: drop parentheticals, lower-case. */
+function normName(name: string): string {
+  return name.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase();
 }
 
 /** Sum a player's per-fight raw hit counts into the normalized {count, pct} shape.
@@ -249,40 +256,44 @@ export function roleSheet(
     arr.push(h);
     hitsByPlayer.set(h.playerId, arr);
   }
-  const trinketSpec = new Map(cfg.trinketRacials.map((t) => [t.spellId, t.name]));
-
   const meta = report.abilityMeta ?? {};
-  const debuffSpec = new Map(
-    cfg.avoidableDebuffIds.map((d) => [d.spellId, d.name]),
-  );
+  // Name-based matching (robust to unverified ids): WCL resolves every cast,
+  // debuff and damage-taken name via masterData, so match those against the
+  // curated names rather than the hand-curated spell ids.
+  const trinketNames = new Set(cfg.trinketRacials.map((t) => normName(t.name)));
+  const debuffNames = new Set(cfg.avoidableDebuffIds.map((d) => normName(d.name)));
+  const avoidableNames = new Set(cfg.avoidableAbilityNames.map((n) => normName(n)));
 
   return result.rows
     .filter((r) => r.role === role)
     .map((r) => {
-      // Avoidable damage broken out by ability (names via abilityMeta)
-      const dmgByAbility = new Map<number, number>();
+      // Avoidable damage taken, grouped by WCL ability name.
+      const dmgByName = new Map<string, number>();
       for (const d of report.damageTakenEvents ?? []) {
         if (d.targetPlayerId !== r.playerId || !fightIds.has(d.fightId)) continue;
-        if (!cfg.rpb.avoidableAbilityIds.has(d.abilityId)) continue;
-        dmgByAbility.set(d.abilityId, (dmgByAbility.get(d.abilityId) ?? 0) + d.amount);
+        const nm = meta[String(d.abilityId)]?.name;
+        if (!nm || !avoidableNames.has(normName(nm))) continue;
+        dmgByName.set(nm, (dmgByName.get(nm) ?? 0) + d.amount);
       }
 
-      // Tracked avoidable debuff APPLICATIONS this player sourced.
-      // enemyDebuffs are stored as merged intervals (one per application window),
-      // so counting intervals = counting applications — matches the sheet's count.
-      const debuffCounts = new Map<number, number>();
+      // Tracked avoidable debuff APPLICATIONS this player sourced. enemyDebuffs are
+      // merged intervals (one per application window), so counting intervals =
+      // counting applications — matches the sheet's count.
+      const debuffByName = new Map<string, number>();
       for (const e of report.enemyDebuffs ?? []) {
         if (e.sourceId !== r.playerId || !fightIds.has(e.fightId)) continue;
-        if (!debuffSpec.has(e.spellId)) continue;
-        debuffCounts.set(e.spellId, (debuffCounts.get(e.spellId) ?? 0) + 1);
+        const nm = meta[String(e.spellId)]?.name;
+        if (!nm || !debuffNames.has(normName(nm))) continue;
+        debuffByName.set(nm, (debuffByName.get(nm) ?? 0) + 1);
       }
 
       // On-use trinket/racial activations from this player's casts (per-fight scoped).
       const trinketCounts = new Map<string, number>();
       for (const c of report.playerCasts ?? []) {
         if (c.playerId !== r.playerId || !fightIds.has(c.fightId)) continue;
-        const name = trinketSpec.get(c.spellId);
-        if (name) trinketCounts.set(name, (trinketCounts.get(name) ?? 0) + 1);
+        const nm = meta[String(c.spellId)]?.name;
+        if (!nm || !trinketNames.has(normName(nm))) continue;
+        trinketCounts.set(nm, (trinketCounts.get(nm) ?? 0) + 1);
       }
 
       const myHits = hitsByPlayer.get(r.playerId);
@@ -293,21 +304,16 @@ export function roleSheet(
         className: r.className,
         hitStats: myHits && myHits.length > 0 ? aggregateHits(myHits) : undefined,
         trinketUses: [...trinketCounts].map(([name, count]) => ({ playerId: r.playerId, name, count })),
-        avoidableByAbility: [...dmgByAbility]
-          .map(([id, amount]) => ({
-            name: meta[String(id)]?.name ?? `#${id}`,
-            amount,
-          }))
+        avoidableByAbility: [...dmgByName]
+          .map(([name, amount]) => ({ name, amount }))
           .sort((a, b) => b.amount - a.amount),
-        debuffsApplied: [...debuffCounts].map(([id, count]) => ({
-          name: debuffSpec.get(id)!,
-          count,
-        })),
+        debuffsApplied: [...debuffByName].map(([name, count]) => ({ name, count })),
         deaths: r.deaths,
         friendlyFire: r.friendlyFire,
         damageReflected: r.damageReflected,
         damageToHostilePlayers: r.damageToHostilePlayers,
-        totalAvoidableDamageTaken: r.totalAvoidableDamageTaken,
+        // total computed from the name-matched breakdown so the two agree
+        totalAvoidableDamageTaken: [...dmgByName.values()].reduce((s, a) => s + a, 0),
         battleShoutUptime: r.battleShoutUptime,
       };
     });

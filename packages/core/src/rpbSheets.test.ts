@@ -338,6 +338,18 @@ function makeReportWithHitStats(): ReportData {
       { fightId: 1, sourceId: 7, targetEnemyId: 901, spellId: 35013, startTime: 100, endTime: 200 },
       { fightId: 1, sourceId: 7, targetEnemyId: 902, spellId: 35013, startTime: 300, endTime: 400 },
     ],
+    damageTakenEvents: [
+      // avoidable (Whirlwind) + non-avoidable (Melee) — only the former should count
+      { fightId: 1, targetPlayerId: 7, abilityId: 100, amount: 5000, fromFriendly: false },
+      { fightId: 1, targetPlayerId: 7, abilityId: 200, amount: 9999, fromFriendly: false },
+    ],
+    // WCL resolves every cast/debuff/damage name; roleSheet matches by name.
+    abilityMeta: {
+      "28714": { name: "Bloodlust Brooch" },
+      "35013": { name: "Nether Vapor" },
+      "100": { name: "Whirlwind" },
+      "200": { name: "Melee" },
+    },
     itemMeta: {},
   };
 }
@@ -348,8 +360,10 @@ describe("roleSheet", () => {
     const rows = roleSheet(report, "tank", {
       roles: roleCfg,
       rpb: defaultRpbConfig(),
-      avoidableDebuffIds: [{ spellId: 35013, name: "Nether Vapor" }],
-      trinketRacials: [{ spellId: 28714, name: "Bloodlust Brooch" }],
+      // names are matched against WCL ability names (ids in the data are ignored)
+      avoidableDebuffIds: [{ spellId: 0, name: "Nether Vapor" }],
+      trinketRacials: [{ spellId: 0, name: "Bloodlust Brooch" }],
+      avoidableAbilityNames: ["Whirlwind"],
     })!;
     expect(rows).not.toBeNull();
     const r = rows.find((x) => x.playerId === 7)!;
@@ -357,9 +371,13 @@ describe("roleSheet", () => {
     // hit stats aggregated from the per-fight raw counts (denom = 126+42+2 = 170)
     expect(r.hitStats?.outgoing.crit.count).toBe(42);
     expect(r.hitStats?.outgoing.crit.pct).toBeCloseTo(42 / 170, 5);
-    // trinket uses derived from playerCasts (two Bloodlust Brooch casts)
+    // trinket uses matched by WCL name (two Bloodlust Brooch casts)
     expect(r.trinketUses.find((t) => t.name === "Bloodlust Brooch")?.count).toBe(2);
+    // avoidable debuff applications matched by WCL name
     expect(r.debuffsApplied.find((d) => d.name === "Nether Vapor")?.count).toBe(2);
+    // avoidable damage matched by name (Whirlwind only, not the Melee hit)
+    expect(r.avoidableByAbility.find((a) => a.name === "Whirlwind")?.amount).toBe(5000);
+    expect(r.totalAvoidableDamageTaken).toBe(5000);
   });
 
   it("returns null on a stale cache (no playerTotals)", () => {
@@ -370,6 +388,7 @@ describe("roleSheet", () => {
         rpb: defaultRpbConfig(),
         avoidableDebuffIds: [],
         trinketRacials: [],
+        avoidableAbilityNames: [],
       }),
     ).toBeNull();
   });
