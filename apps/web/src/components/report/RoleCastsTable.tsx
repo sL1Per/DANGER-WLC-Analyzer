@@ -94,7 +94,7 @@ export function RoleCastsTable({
 
         // Build ordered flat ability list for column indexing
         const orderedAbilities = presentCategories.flatMap(
-          (c) => abilitiesByCategory.get(c)!,
+          (c) => abilitiesByCategory.get(c) ?? [],
         );
 
         // Relative heat for cast counts: per ability column
@@ -122,7 +122,7 @@ export function RoleCastsTable({
                       Player
                     </th>
                     {presentCategories.map((cat) => {
-                      const count = abilitiesByCategory.get(cat)!.length;
+                      const count = (abilitiesByCategory.get(cat) ?? []).length;
                       return (
                         <th
                           key={cat}
@@ -171,7 +171,7 @@ export function RoleCastsTable({
                             `${player.playerId}:${ability.key}`,
                           );
                           const count = cell?.castCount ?? 0;
-                          const vals = countsByAbility.get(ability.key)!;
+                          const vals = countsByAbility.get(ability.key) ?? [];
                           const min = Math.min(...vals, 0);
                           const max = Math.max(...vals, 0);
                           const heat = relativeHeat(count, min, max);

@@ -127,8 +127,10 @@ describe("RoleCastsTable", () => {
         onPlayer={() => {}}
       />,
     );
-    // The cast count of 1 should appear somewhere in the table
-    // (could also be 0 if the spell id doesn't match any catalog entry, that's OK)
+    // Verify the player name is present
     expect(screen.getByText("Playerone")).toBeInTheDocument();
+    // Assert the cast count of 1 appears in the cast count cells
+    // (if the spell is in the catalog, this verifies the count path works)
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
   });
 });
