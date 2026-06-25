@@ -530,6 +530,10 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 }
 .empty-toggle input { cursor: pointer; margin: 0; }
 
+/* Column highlight on hover (tableCrosshair). A translucent inset overlay so it
+   shows over any cell background (heat/severity colors included). */
+td.xh-col, th.xh-col { box-shadow: inset 0 0 0 9999px rgba(128, 128, 128, 0.13); }
+
 /* RPB Role Breakdown — transposed tables (players = columns, metrics = rows) */
 .rb-transposed .rb-row-label {
   text-align: left;

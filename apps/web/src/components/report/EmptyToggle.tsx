@@ -1,13 +1,15 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { applyHideEmpty } from "../../lib/hideEmpty";
+import { tagColumns, attachColumnHover } from "../../lib/tableCrosshair";
 
 const KEY = "wcl.hideEmpty";
 
 /**
- * Wraps report content with a "Hide empty rows & columns" checkbox that applies
- * to every <table> rendered inside it. Works on the rendered DOM, so it covers
- * all tabs/tables uniformly. A MutationObserver re-applies on tab/data changes;
- * the choice persists in localStorage.
+ * Wraps report content with a "Hide empty rows & columns" checkbox and a
+ * column-highlight-on-hover behaviour, both applied to every <table> rendered
+ * inside it. Works on the rendered DOM, so it covers all tabs/tables uniformly.
+ * A MutationObserver re-applies on tab/data changes; the choice persists in
+ * localStorage.
  */
 export function EmptyToggle({ children }: { children: ReactNode }) {
   const [hide, setHide] = useState(() => localStorage.getItem(KEY) === "1");
@@ -16,8 +18,12 @@ export function EmptyToggle({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const run = () => applyHideEmpty(el, hide);
+    const run = () => {
+      applyHideEmpty(el, hide);
+      tagColumns(el); // (re)tag columns for the hover crosshair
+    };
     run();
+    const detach = attachColumnHover(el);
     // Re-apply when the rendered tables change (tab switch, async load). Disconnect
     // around our own mutations so setting eh-hidden doesn't re-trigger the observer.
     const obs = new MutationObserver(() => {
@@ -26,7 +32,10 @@ export function EmptyToggle({ children }: { children: ReactNode }) {
       obs.observe(el, { childList: true, subtree: true, characterData: true });
     });
     obs.observe(el, { childList: true, subtree: true, characterData: true });
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      detach();
+    };
   }, [hide]);
 
   return (
