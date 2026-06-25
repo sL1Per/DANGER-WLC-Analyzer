@@ -30,7 +30,6 @@ import {
   type RawDebuffEvent,
   type RawRankingEntry,
   type RawRankingCharacter,
-  type RawHitTableEntry,
 } from "./wcl";
 
 export interface NormalizeEventInputs {
@@ -63,27 +62,30 @@ export interface NormalizeEventInputs {
   abilityMeta?: Record<string, { name: string }>;
   /** pet actor id → owner player id; pet damage/healing is credited to the owner */
   petOwners?: Record<number, number>;
-  /** WCL hit tables fetched PER boss fight (one entry per boss fight). The per-fight
-   *  split is what lets the role sheet be exact on a single boss pull. */
-  damageDoneHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
-  damageTakenHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
-  healingHitByFight?: { fightId: number; entries: RawHitTableEntry[] }[];
   /** Windfury extra-attack proc ability id (verified: false — confirm via wago.tools) */
   extraWindfurySpellId?: number;
   /** Battle Squawk buff id from Cenarion Dart trinket (verified: false — confirm via wago.tools) */
   battleSquawkBuffId?: number;
 }
 
-/** Build per-player, per-fight raw hit-type counts from the per-fight WCL hit
- *  tables. Stored un-normalized so roleSheet can sum any fight subset and
- *  recompute percentages — making the role sheet exact on a single boss pull. */
+/** WCL hit-type codes (stable across game versions; see WoWAnalyzer HIT_TYPES).
+ *  Crushing/glancing are Classic event FLAGS (not codes) and partial resists are
+ *  amounts, so those columns aren't broken out — the affected hits still count as
+ *  normal toward the totals. */
+const HIT = { MISS: 0, CRIT: 2, BLOCKED_NORMAL: 4, BLOCKED_CRIT: 5, DODGE: 7, PARRY: 8, IMMUNE: 10 } as const;
+/** Auto-attack ability ids — incoming stats are melee swings only (per the sheet). */
+const MELEE_ABILITY_IDS = new Set([1, 6603]);
+
+/** Build per-player, per-fight raw hit-type counts from the damage/healing EVENTS
+ *  (each carries a hitType). Stored un-normalized so roleSheet can sum any fight
+ *  subset and recompute percentages — exact on a single boss pull as well. */
 function buildHitStatsByFight(
   events: NormalizeEventInputs, playerIds: Set<number>, bossFightIds: Set<number>,
 ): { hitStatsByFight?: PlayerFightHits[] } {
   if (
-    events.damageDoneHitByFight === undefined &&
-    events.damageTakenHitByFight === undefined &&
-    events.healingHitByFight === undefined
+    events.damageDone === undefined &&
+    events.damageTaken === undefined &&
+    events.healingDone === undefined
   ) return {};
 
   const byKey = new Map<string, PlayerFightHits>();
@@ -103,34 +105,46 @@ function buildHitStatsByFight(
     return h;
   };
 
-  for (const { fightId, entries } of events.damageDoneHitByFight ?? []) {
-    if (!bossFightIds.has(fightId)) continue;
-    for (const e of entries) {
-      if (!playerIds.has(e.id)) continue;
-      const o = ensure(e.id, fightId).outgoing;
-      o.hit += e.hitCount ?? 0; o.crit += e.critHitCount ?? 0; o.dodge += e.dodgeCount ?? 0;
-      o.miss += e.missCount ?? 0; o.parry += e.parryCount ?? 0; o.resist += e.resistCount ?? 0;
-    }
-  }
-  for (const { fightId, entries } of events.damageTakenHitByFight ?? []) {
-    if (!bossFightIds.has(fightId)) continue;
-    for (const e of entries) {
-      if (!playerIds.has(e.id)) continue;
-      const t = ensure(e.id, fightId).incomingMelee;
-      t.hit += e.hitCount ?? 0; t.crit += e.critHitCount ?? 0; t.crushing += e.crushingCount ?? 0;
-      t.blocked += e.blockCount ?? 0; t.dodge += e.dodgeCount ?? 0; t.immune += e.immuneCount ?? 0;
-      t.miss += e.missCount ?? 0; t.parry += e.parryCount ?? 0;
-    }
-  }
-  for (const { fightId, entries } of events.healingHitByFight ?? []) {
-    if (!bossFightIds.has(fightId)) continue;
-    for (const e of entries) {
-      if (!playerIds.has(e.id)) continue;
-      const hl = ensure(e.id, fightId).heal;
-      hl.hit += e.hitCount ?? 0; hl.crit += e.critHitCount ?? 0;
+  // Outgoing: the player's own damage events, bucketed by hit-type.
+  for (const d of events.damageDone ?? []) {
+    if (!playerIds.has(d.sourceID) || !bossFightIds.has(d.fight)) continue;
+    const o = ensure(d.sourceID, d.fight).outgoing;
+    switch (d.hitType) {
+      case HIT.CRIT: o.crit++; break;
+      case HIT.DODGE: o.dodge++; break;
+      case HIT.MISS: o.miss++; break;
+      case HIT.PARRY: o.parry++; break;
+      default: o.hit++;
     }
   }
 
+  // Incoming melee swings only: damage taken on the player, bucketed by hit-type.
+  for (const d of events.damageTaken ?? []) {
+    if (!playerIds.has(d.targetID) || !bossFightIds.has(d.fight)) continue;
+    if (!MELEE_ABILITY_IDS.has(d.abilityGameID)) continue;
+    const t = ensure(d.targetID, d.fight).incomingMelee;
+    switch (d.hitType) {
+      case HIT.CRIT: t.crit++; break;
+      case HIT.BLOCKED_NORMAL:
+      case HIT.BLOCKED_CRIT: t.blocked++; break;
+      case HIT.DODGE: t.dodge++; break;
+      case HIT.IMMUNE: t.immune++; break;
+      case HIT.MISS: t.miss++; break;
+      case HIT.PARRY: t.parry++; break;
+      default: t.hit++;
+    }
+  }
+
+  // Crit heals: the player's actual heals (not shield absorbs) with a crit hit-type.
+  for (const h of events.healingDone ?? []) {
+    if (h.type !== "heal") continue;
+    if (!playerIds.has(h.sourceID) || !bossFightIds.has(h.fight)) continue;
+    const heal = ensure(h.sourceID, h.fight).heal;
+    if (h.hitType === HIT.CRIT) heal.crit++;
+    else heal.hit++;
+  }
+
+  // Extra Windfury attacks and Battle Squawk buffs (per fight).
   const wfId = events.extraWindfurySpellId;
   if (wfId !== undefined) for (const d of events.damageDone ?? []) {
     if (d.abilityGameID === wfId && playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {

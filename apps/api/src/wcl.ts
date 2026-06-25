@@ -202,6 +202,8 @@ export interface RawDamageEvent {
   timestamp: number; type: string; sourceID: number; targetID: number;
   abilityGameID: number; amount: number; absorbed?: number; fight: number;
   sourceIsFriendly?: boolean; targetIsFriendly?: boolean;
+  /** WCL hit-type code: 0 miss, 1 hit, 2 crit, 4/5 blocked, 7 dodge, 8 parry, 10 immune */
+  hitType?: number;
 }
 
 /** All player casts (no ability filter) — paged. Used for activity cast-time sums. */

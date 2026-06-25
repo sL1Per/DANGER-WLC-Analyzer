@@ -74,6 +74,13 @@ export function RoleSheetTable({
     {
       band: "Stats & Misc",
       rows: [
+        {
+          label: "Battle Shout uptime on you%",
+          cell: (r) => ({
+            content: r.battleShoutUptime > 0 ? `${Math.round(r.battleShoutUptime * 100)}%` : "—",
+            className: "mono",
+          }),
+        },
         hitRow("Out: Crit", (hs) => hs.outgoing.crit),
         hitRow("Out: Dodge", (hs) => hs.outgoing.dodge),
         hitRow("Out: Miss", (hs) => hs.outgoing.miss),

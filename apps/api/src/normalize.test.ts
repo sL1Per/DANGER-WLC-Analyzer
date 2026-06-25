@@ -510,22 +510,41 @@ describe("normalizeReport — rankings", () => {
 });
 
 describe("normalize hitStatsByFight", () => {
-  it("builds per-fight raw hit counts", () => {
+  it("buckets damage/heal events by hit-type (melee-only for incoming)", () => {
     const raw = makeRaw(); // 1 player id=7 (Paladin), 1 boss fight id=1
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 1000, hitCount: 100, critHitCount: 35, dodgeCount: 4, parryCount: 6, missCount: 2, resistCount: 3 }] }],
-      damageTakenHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 500, hitCount: 50, critHitCount: 1, blockCount: 10, dodgeCount: 5, missCount: 2, parryCount: 0, crushingCount: 3, immuneCount: 0 }] }],
-      healingHitByFight: [{ fightId: 1, entries: [{ id: 7, total: 0, hitCount: 80, critHitCount: 20 }] }],
+      damageDone: [
+        { type: "damage", sourceID: 7, targetID: 9, abilityGameID: 50, fight: 1, hitType: 2 }, // crit
+        { type: "damage", sourceID: 7, targetID: 9, abilityGameID: 50, fight: 1, hitType: 2 }, // crit
+        { type: "damage", sourceID: 7, targetID: 9, abilityGameID: 50, fight: 1, hitType: 7 }, // dodged
+        { type: "damage", sourceID: 7, targetID: 9, abilityGameID: 50, fight: 1, hitType: 0 }, // miss
+        { type: "damage", sourceID: 7, targetID: 9, abilityGameID: 50, fight: 1, hitType: 1 }, // hit
+      ] as any,
+      damageTaken: [
+        { type: "damage", sourceID: 9, targetID: 7, abilityGameID: 1, fight: 1, hitType: 2 }, // melee crit
+        { type: "damage", sourceID: 9, targetID: 7, abilityGameID: 1, fight: 1, hitType: 4 }, // melee blocked
+        { type: "damage", sourceID: 9, targetID: 7, abilityGameID: 1, fight: 1, hitType: 7 }, // melee dodge
+        { type: "damage", sourceID: 9, targetID: 7, abilityGameID: 99, fight: 1, hitType: 2 }, // NON-melee crit (excluded)
+      ] as any,
+      healingDone: [
+        { type: "heal", sourceID: 7, targetID: 7, abilityGameID: 60, fight: 1, hitType: 2 }, // crit heal
+        { type: "heal", sourceID: 7, targetID: 7, abilityGameID: 60, fight: 1, hitType: 1 }, // normal heal
+        { type: "absorbed", sourceID: 7, targetID: 7, abilityGameID: 61, fight: 1, hitType: 1 }, // absorb (excluded)
+      ] as any,
     });
     const h = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
-    // raw counts are stored un-normalized; roleSheet computes percentages
-    expect(h.outgoing.crit).toBe(35);
-    expect(h.outgoing.hit).toBe(100);
-    expect(h.incomingMelee.crushing).toBe(3);
-    expect(h.heal.crit).toBe(20);
+    expect(h.outgoing.crit).toBe(2);
+    expect(h.outgoing.dodge).toBe(1);
+    expect(h.outgoing.miss).toBe(1);
+    expect(h.outgoing.hit).toBe(1);
+    expect(h.incomingMelee.crit).toBe(1); // the non-melee crit is excluded
+    expect(h.incomingMelee.blocked).toBe(1);
+    expect(h.incomingMelee.dodge).toBe(1);
+    expect(h.heal.crit).toBe(1); // absorb excluded
+    expect(h.heal.hit).toBe(1);
   });
 
-  it("omits hitStatsByFight when no tables provided", () => {
+  it("omits hitStatsByFight when no damage/heal events provided", () => {
     const raw = makeRaw();
     const data = normalizeReport("rep", raw, [], {}, {});
     expect(data.hitStatsByFight).toBeUndefined();
@@ -534,7 +553,6 @@ describe("normalize hitStatsByFight", () => {
   it("counts extra Windfury attacks and Battle Squawk buffs per fight", () => {
     const raw = makeRaw(); // player 7, boss fight 1
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitByFight: [{ fightId: 1, entries: [] }],
       extraWindfurySpellId: 33010,
       battleSquawkBuffId: 23060,
       damageDone: [
@@ -557,7 +575,6 @@ describe("normalize hitStatsByFight", () => {
     const raw = makeRaw();
     raw.fights.push({ id: 2, name: "Trash", encounterID: 0, kill: null, startTime: 1001, endTime: 2000, friendlyPlayers: [7] });
     const data = normalizeReport("rep", raw, [], {}, {
-      damageDoneHitByFight: [{ fightId: 1, entries: [] }],
       extraWindfurySpellId: 33010,
       battleSquawkBuffId: 23060,
       damageDone: [

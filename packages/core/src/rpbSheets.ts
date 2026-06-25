@@ -216,6 +216,8 @@ export interface RoleSheetRow {
   damageReflected: number;
   damageToHostilePlayers: number;
   totalAvoidableDamageTaken: number;
+  /** fraction 0..1 of boss-fight time with Battle Shout on the player */
+  battleShoutUptime: number;
 }
 
 /**
@@ -306,6 +308,7 @@ export function roleSheet(
         damageReflected: r.damageReflected,
         damageToHostilePlayers: r.damageToHostilePlayers,
         totalAvoidableDamageTaken: r.totalAvoidableDamageTaken,
+        battleShoutUptime: r.battleShoutUptime,
       };
     });
 }
