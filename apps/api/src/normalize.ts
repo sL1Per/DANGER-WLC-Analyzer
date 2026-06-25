@@ -214,6 +214,7 @@ function buildRpb(
       fightId: d.fight, targetPlayerId: d.targetID, abilityId: d.abilityGameID,
       amount: d.amount, fromFriendly: d.sourceIsFriendly === true,
       sourceName: names[d.sourceID] ?? "Environment",
+      unmitigatedAmount: d.unmitigatedAmount,
     }));
 
   const playerCasts: PlayerCast[] = (events.allCasts ?? [])

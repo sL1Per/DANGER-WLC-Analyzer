@@ -275,7 +275,8 @@ export function roleSheet(
         const nm = meta[String(d.abilityId)]?.name;
         if (!nm || !avoidableNames.has(normName(nm))) continue;
         const label = d.sourceName ? `${nm} (${d.sourceName})` : nm;
-        dmgByName.set(label, (dmgByName.get(label) ?? 0) + d.amount);
+        // "Raw" avoidable damage = before mitigation (matches the workbook)
+        dmgByName.set(label, (dmgByName.get(label) ?? 0) + (d.unmitigatedAmount ?? d.amount));
       }
 
       // Tracked avoidable debuff APPLICATIONS this player sourced. enemyDebuffs are

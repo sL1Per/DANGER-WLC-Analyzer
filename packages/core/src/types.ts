@@ -170,6 +170,8 @@ export interface DamageTakenEvent {
   /** display name of the damage source (boss/add) or "Environment"; for the
    *  role sheet's "Ability (Source)" labels. */
   sourceName?: string;
+  /** damage before mitigation — the workbook's "Raw avoidable damage". */
+  unmitigatedAmount?: number;
 }
 
 /** A player's cast (for activity). */

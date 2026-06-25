@@ -339,8 +339,9 @@ function makeReportWithHitStats(): ReportData {
       { fightId: 1, sourceId: 7, targetEnemyId: 902, spellId: 35013, startTime: 300, endTime: 400 },
     ],
     damageTakenEvents: [
-      // avoidable (Whirlwind from a boss) + non-avoidable (Melee) — only the former counts
-      { fightId: 1, targetPlayerId: 7, abilityId: 100, amount: 5000, fromFriendly: false, sourceName: "Leotheras the Blind" },
+      // avoidable (Whirlwind from a boss) — uses the unmitigated (raw) amount, not amount
+      { fightId: 1, targetPlayerId: 7, abilityId: 100, amount: 5000, unmitigatedAmount: 6000, fromFriendly: false, sourceName: "Leotheras the Blind" },
+      // non-avoidable (Melee) — excluded
       { fightId: 1, targetPlayerId: 7, abilityId: 200, amount: 9999, fromFriendly: false, sourceName: "Leotheras the Blind" },
     ],
     // WCL resolves every cast/debuff/damage name; roleSheet matches by name.
@@ -375,9 +376,9 @@ describe("roleSheet", () => {
     expect(r.trinketUses.find((t) => t.name === "Bloodlust Brooch")?.count).toBe(2);
     // avoidable debuff applications matched by WCL name
     expect(r.debuffsApplied.find((d) => d.name === "Nether Vapor")?.count).toBe(2);
-    // avoidable damage matched by name, labeled with the source (Whirlwind only)
-    expect(r.avoidableByAbility.find((a) => a.name === "Whirlwind (Leotheras the Blind)")?.amount).toBe(5000);
-    expect(r.totalAvoidableDamageTaken).toBe(5000);
+    // avoidable damage matched by name, labeled with source, using the RAW amount
+    expect(r.avoidableByAbility.find((a) => a.name === "Whirlwind (Leotheras the Blind)")?.amount).toBe(6000);
+    expect(r.totalAvoidableDamageTaken).toBe(6000);
   });
 
   it("returns null on a stale cache (no playerTotals)", () => {

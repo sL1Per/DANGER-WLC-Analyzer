@@ -204,6 +204,8 @@ export interface RawDamageEvent {
   sourceIsFriendly?: boolean; targetIsFriendly?: boolean;
   /** WCL hit-type code: 0 miss, 1 hit, 2 crit, 4/5 blocked, 7 dodge, 8 parry, 10 immune */
   hitType?: number;
+  /** damage before mitigation (armor/resist/absorb) — the "raw" hit */
+  unmitigatedAmount?: number;
 }
 
 /** All player casts (no ability filter) — paged. Used for activity cast-time sums. */
