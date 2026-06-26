@@ -53,7 +53,10 @@ describe("consumable reference data", () => {
     for (const d of drumSpells) expect(d.buffId).toBeGreaterThan(0);
   });
   it("JC necks map item id to on-use buff id", () => {
-    expect(jcNecks.length).toBeGreaterThanOrEqual(4);
+    // The three jewelcrafter on-use *stat* necks (Braided Eternium Chain,
+    // Eye of the Night, Chain of the Twilight Owl). Regression guard for the
+    // detection fix that replaced the wrong on-use *absorb* pendants.
+    expect(jcNecks.map((n) => n.itemId).sort()).toEqual([24114, 24116, 24121]);
     for (const n of jcNecks) {
       expect(n.itemId).toBeGreaterThan(0);
       expect(n.buffId).toBeGreaterThan(0);

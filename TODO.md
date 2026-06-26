@@ -28,6 +28,7 @@
   (reusing the existing Refresh button). Bump `SCHEMA_VERSION` whenever the analyzer
   output changes so old caches are flagged. Non-destructive: stale data is still
   served (no surprise WCL point spend).
-- (5) Pre-existing failing test: `packages/data/src/data.test.ts` "JC necks map item id
-  to on-use buff id" expects `jcNecks.length >= 4` but there are 3 (fallout of the
-  JC-neck-detection fix) — update the test or restore the 4th neck.
+- (5) [DONE] Pre-existing failing test: `packages/data/src/data.test.ts` "JC necks map item
+  id to on-use buff id" expected `jcNecks.length >= 4` but there are 3. The 4th/5th were the
+  wrong items (on-use absorb pendants), correctly removed by the JC-neck-detection fix — the
+  test now asserts the exact 3 stat necks (24114/24116/24121) as a regression guard.
