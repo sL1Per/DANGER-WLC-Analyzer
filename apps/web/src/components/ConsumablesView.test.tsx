@@ -20,7 +20,8 @@ describe("ConsumablesView", () => {
     const cells = [...row.querySelectorAll("td")];
     expect(cells[1]!.textContent).toBe("100%"); // total average: (elixirOrFlask 1 + food 1) / 2, count-based
     expect(cells[2]!.textContent).toBe("100%"); // Elixir or Flask
-    expect(cells[2]!.className).toBe("sev-minor");
+    expect(cells[2]!.className).toContain("sev-minor");
+    expect(cells[8]!.textContent).toBe("Flask of Relentless Assault"); // Flask name
     expect(screen.getByText("Playertwo")).toBeTruthy();
   });
   it("renders '-' for Weapon Enhancement when a player has no gear snapshots", () => {
@@ -29,8 +30,8 @@ describe("ConsumablesView", () => {
     render(<ConsumablesView report={report} />);
     const row = screen.getByText("Playertwo").closest("tr")!;
     const cells = [...row.querySelectorAll("td")];
-    expect(cells[8]!.textContent).toBe("-"); // Weapon Enhancement
-    expect(cells[8]!.className).toBe("");
+    expect(cells[11]!.textContent).toBe("-"); // Weapon Enhancement
+    expect(cells[11]!.className).not.toContain("sev-"); // no severity color for missing data
   });
   it("shows a refresh notice for reports cached before consumable support", () => {
     const report = baseReport();
@@ -42,8 +43,8 @@ describe("ConsumablesView", () => {
     render(<ConsumablesView report={baseReport()} />);
     const row = screen.getByText("Playertwo").closest("tr")!;
     const cells = [...row.querySelectorAll("td")];
-    expect(cells[6]!.textContent).toBe("0%"); // Food Buff
-    expect(cells[6]!.className).toBe("sev-major");
+    expect(cells[9]!.textContent).toBe("0%"); // Food Buff
+    expect(cells[9]!.className).toContain("sev-major");
   });
   it("renders the player name as a link that navigates to that player", () => {
     const onPlayer = vi.fn();

@@ -13,7 +13,7 @@ const classRank = (c: string): number => {
 };
 
 function UptimeCell({ value }: { value: number }) {
-  return <td className={`sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
+  return <td className={`col-num sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
 }
 
 export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPlayer?: (name: string) => void }) {
@@ -41,16 +41,19 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
           <thead>
             <tr>
               <th>player</th>
-              <th>total average (excl. Scrolls)</th>
-              <th>Elixir or Flask</th>
-              <th>Battle Elixir</th>
-              <th>Guardian Elixir</th>
-              <th>Flask</th>
-              <th>Food Buff</th>
-              <th>Scrolls (* if lower than lvl 5)</th>
-              <th>Weapon Enhancement</th>
-              <th>JC neck</th>
-              <th>suboptimal stuff found</th>
+              <th className="col-num">total average (excl. Scrolls)</th>
+              <th className="col-num">Elixir or Flask</th>
+              <th className="col-num">Battle Elixir</th>
+              <th className="col-name">Battle Elixir name</th>
+              <th className="col-num">Guardian Elixir</th>
+              <th className="col-name">Guardian Elixir name</th>
+              <th className="col-num">Flask</th>
+              <th className="col-name">Flask name</th>
+              <th className="col-num">Food Buff</th>
+              <th className="col-name">Scrolls (* if lower than lvl 5)</th>
+              <th className="col-num">Weapon Enhancement</th>
+              <th className="col-name">JC neck</th>
+              <th className="col-name">suboptimal stuff found</th>
             </tr>
           </thead>
           <tbody>
@@ -63,20 +66,23 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
                 </td>
                 <UptimeCell value={r.totalAverage} />
                 <UptimeCell value={r.elixirOrFlask} />
-                <td>{pct(r.battleElixir)}</td>
-                <td>{pct(r.guardianElixir)}</td>
-                <td>{pct(r.flask)}</td>
+                <td className="col-num">{pct(r.battleElixir)}</td>
+                <td className="col-name">{r.battleElixirNames.join(", ")}</td>
+                <td className="col-num">{pct(r.guardianElixir)}</td>
+                <td className="col-name">{r.guardianElixirNames.join(", ")}</td>
+                <td className="col-num">{pct(r.flask)}</td>
+                <td className="col-name">{r.flaskNames.join(", ")}</td>
                 <UptimeCell value={r.food} />
-                <td>{r.scrolls}</td>
+                <td className="col-name">{r.scrolls}</td>
                 {r.weaponEnhancement === null
-                  ? <td>-</td>
+                  ? <td className="col-num">-</td>
                   : <UptimeCell value={r.weaponEnhancement} />}
-                <td className={r.jcNeck.inactiveOnFights > 0 ? "sev-moderate" : ""}>
+                <td className={`col-name${r.jcNeck.inactiveOnFights > 0 ? " sev-moderate" : ""}`}>
                   {r.jcNeck.equipped
                     ? `${r.jcNeck.usedOnFights}${r.jcNeck.inactiveOnFights > 0 ? ` — inactive on ${r.jcNeck.inactiveOnFights} fight(s)` : ""}`
                     : "-"}
                 </td>
-                <td className={r.suboptimal.length > 0 ? "sev-moderate" : ""}>{r.suboptimal.join(", ")}</td>
+                <td className={`col-name${r.suboptimal.length > 0 ? " sev-moderate" : ""}`}>{r.suboptimal.join(", ")}</td>
               </tr>
             ))}
           </tbody>

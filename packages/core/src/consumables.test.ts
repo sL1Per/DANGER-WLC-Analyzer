@@ -59,10 +59,28 @@ describe("consumables — category uptimes", () => {
     expect(p1.scrolls).toBe("");
     expect(p1.scrollUptime).toBe(0);
   });
+  it("lists the flask name(s) the player had at boss pulls", () => {
+    const p1 = rowFor(baseReport(), "Playerone"); // Flask of Relentless Assault in pull auras
+    expect(p1.flaskNames).toEqual(["Flask of Relentless Assault"]);
+    const p2 = rowFor(baseReport(), "Playertwo"); // no flask
+    expect(p2.flaskNames).toEqual([]);
+  });
+  it("lists each distinct flask once when a player re-flasks across boss fights", () => {
+    const report = twoBossReport();
+    report.gear.push({ fightId: 2, playerId: 1, auras: [28518], items: [] }); // Flask of Fortification on fight 2
+    const cfgWithSecondFlask: ConsumableConfig = {
+      ...cfg,
+      buffs: [...cfg.buffs, { spellId: 28518, name: "Flask of Fortification", category: "flask" }],
+    };
+    const row = consumables(report, cfgWithSecondFlask)!.rows.find((r) => r.playerName === "Playerone")!;
+    expect(row.flaskNames).toEqual(["Flask of Relentless Assault", "Flask of Fortification"]);
+  });
   it("computes elixir uptimes for Playertwo", () => {
     const p2 = rowFor(baseReport(), "Playertwo");
     expect(p2.battleElixir).toBe(1);
+    expect(p2.battleElixirNames).toEqual(["Elixir of Major Agility"]);
     expect(p2.guardianElixir).toBe(1);
+    expect(p2.guardianElixirNames).toEqual(["Elixir of Draenic Wisdom"]);
     expect(p2.flask).toBe(0);
     expect(p2.elixirOrFlask).toBe(1);
     expect(p2.food).toBe(0);

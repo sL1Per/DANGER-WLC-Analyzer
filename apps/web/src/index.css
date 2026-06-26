@@ -942,6 +942,21 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
 /* Buff consumables: don't underline the class-colored player links on hover. */
 .buff-consumables .player-link:hover { text-decoration: none; }
+/* Wrap the long header labels onto multiple lines so columns stay narrow and the
+   table fits the viewport (the .scroll-x wrapper still scrolls if it can't), and
+   give the two column kinds uniform widths so the layout reads evenly:
+   .col-num = compact, centered percentage columns; .col-name = wider text columns. */
+/* Fill the available width (global table width:100%), with every column given an
+   explicit base width so the slack is shared across all of them instead of pooling
+   into the player column. Widths act as minimums under auto layout — columns grow
+   to use the right-side space; .scroll-x scrolls only if content can't fit. */
+.buff-consumables { width: 100%; }
+/* Wrap header labels at spaces only (no mid-word breaks like "ENHA-NCEM-ENT"). */
+.buff-consumables thead th { white-space: normal; overflow-wrap: normal; vertical-align: bottom; }
+.buff-consumables thead th:first-child,
+.buff-consumables tbody td:first-child { width: 9em; } /* player column */
+.buff-consumables .col-num { width: 6.5em; text-align: center; }
+.buff-consumables .col-name { width: 12em; text-align: left; }
 /* The generic `tbody tr:hover td` (0,1,3) outranks `tr td.sev-*` (0,1,2), so without
    this it would blank colored cells to the (transparent) hover bg. Re-assert the cell
    colors on hover for the matrix tables at higher specificity. */

@@ -57,8 +57,14 @@ export interface ConsumableRow {
   /** max(flask, avg(battle, guardian)) — a flask = full credit, each elixir = half */
   elixirOrFlask: number;
   battleElixir: number;
+  /** distinct battle elixir names the player had at any boss pull (insertion order); empty when none */
+  battleElixirNames: string[];
   guardianElixir: number;
+  /** distinct guardian elixir names the player had at any boss pull (insertion order); empty when none */
+  guardianElixirNames: string[];
   flask: number;
+  /** distinct flask names the player had at any boss pull (insertion order); empty when none */
+  flaskNames: string[];
   food: number;
   /** e.g. "83% (Agi*,Prot)"; "" when no scrolls were used */
   scrolls: string;
@@ -106,6 +112,11 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
   const flaskIds = idsByCategory("flask");
   const foodIds = idsByCategory("food");
   const scrollIds = idsByCategory("scroll");
+  const nameByCategory = (category: ConsumableConfig["buffs"][number]["category"]) =>
+    new Map(cfg.buffs.filter((b) => b.category === category).map((b) => [b.spellId, b.name]));
+  const battleElixirNameById = nameByCategory("battleElixir");
+  const guardianElixirNameById = nameByCategory("guardianElixir");
+  const flaskNameById = nameByCategory("flask");
 
   const rows: ConsumableRow[] = [];
   for (const player of report.players) {
@@ -130,8 +141,11 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
       playerName: player.name,
       elixirOrFlask,
       battleElixir,
+      battleElixirNames: distinctAuraNames(auraSnapshots, battleElixirNameById),
       guardianElixir,
+      guardianElixirNames: distinctAuraNames(auraSnapshots, guardianElixirNameById),
       flask,
+      flaskNames: distinctAuraNames(auraSnapshots, flaskNameById),
       food,
       scrolls: formatScrolls(auraSnapshots, cfg, scrollUptime),
       scrollUptime,
@@ -168,6 +182,22 @@ function auraPresenceFraction(auraSnapshots: GearSnapshot[], ids: Set<number>): 
     if (snap.auras!.some((spellId) => ids.has(spellId))) present += 1;
   }
   return present / auraSnapshots.length;
+}
+
+/**
+ * Distinct names (insertion order) of the given id→name map's auras present in
+ * any of the player's boss-pull snapshots. Used to list which flask(s) a player
+ * actually had — a raider who re-flasks mid-raid can show more than one.
+ */
+function distinctAuraNames(auraSnapshots: GearSnapshot[], nameById: Map<number, string>): string[] {
+  const names: string[] = [];
+  for (const snap of auraSnapshots) {
+    for (const spellId of snap.auras!) {
+      const name = nameById.get(spellId);
+      if (name !== undefined && !names.includes(name)) names.push(name);
+    }
+  }
+  return names;
 }
 
 /**
