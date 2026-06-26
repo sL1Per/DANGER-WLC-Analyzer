@@ -1139,3 +1139,34 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   .report-header { display: none; }
   .cat-subnav { display: none; }
 }
+
+@media (max-width: 640px) {
+  /* lens bar: keep toggles, scroll the chip strip horizontally */
+  .lens-bar { padding: 12px 14px; }
+  .lens-strip {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px; scrollbar-width: thin;
+  }
+  .fight-chip, .player-chip { flex: 0 0 auto; min-height: 44px; }
+  .lens-toggle { flex-wrap: wrap; }
+  .lens-toggle > button { min-height: 44px; }
+  .lens-toggle__actions { margin-left: 0; width: 100%; }
+  .lens-hint { width: 100%; }
+  .roster-search { width: 100%; min-height: 44px; }
+
+  /* report body breathing room */
+  .report-body { padding: 16px 14px 40px; }
+
+  /* home + settings stack to one column, full-width controls */
+  .home { padding: 18px; gap: 18px; }
+  .home-card { padding: 20px; border-radius: 14px; }
+  .home-actions { flex-direction: column; align-items: stretch; }
+  .home-actions .btn-gold { width: 100%; min-height: 44px; }
+  .home-footer { flex-direction: column; gap: 6px; }
+  .settings-col { padding: 16px; }
+  .settings-col .btn-gold { width: 100%; min-height: 44px; }
+
+  /* never force horizontal page scroll on tiny screens */
+  .report, .home, .settings { overflow-x: hidden; }
+  .mono { overflow-wrap: anywhere; }
+}
