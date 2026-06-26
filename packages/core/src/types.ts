@@ -1,5 +1,28 @@
+/**
+ * Schema version of the normalized report payload. BUMP THIS whenever the
+ * analyzer output changes — a new/changed field in normalizeReport, or a
+ * semantic change in @wcl/data that alters the numbers. Cached reports stamped
+ * with an older version are flagged `stale` so the UI can prompt a WCL refresh
+ * (see isStaleSchema + apps/api GET /api/report/:id). This is the general signal
+ * that supersedes the per-field "undefined = cached before X" guesswork.
+ *
+ * History:
+ *   1 — introduced cache schema versioning (hitType stats, NPC source names,
+ *       unmitigated avoidable damage, per-fight hit stats all current as of v1).
+ */
+export const SCHEMA_VERSION = 1;
+
+/** A cached report is stale when its stamped version differs from the current
+ *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
+export function isStaleSchema(version: number | undefined): boolean {
+  return version !== SCHEMA_VERSION;
+}
+
 /** Normalized report payload produced by apps/api and consumed by all analyses. */
 export interface ReportData {
+  /** Analyzer schema version this payload was produced under (SCHEMA_VERSION at
+   *  fetch time). Absent on caches predating versioning → treated as stale. */
+  schemaVersion?: number;
   reportId: string;
   title: string;
   zoneName: string;

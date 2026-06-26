@@ -99,6 +99,17 @@ export function ReportPage() {
   return (
     <div className="report">
       <ReportHeader report={report} onRefresh={reload} />
+      {result.stale && (
+        <div className="stale-banner" role="status">
+          <span>
+            This report was cached by an older version of the analyzer and may be
+            missing the latest stats.
+          </span>
+          <button type="button" className="btn-outline" onClick={reload}>
+            Refresh from WCL
+          </button>
+        </div>
+      )}
       <LensBar
         report={report} lens={lens} fightId={fightId} playerId={playerId} query={query}
         onLens={(l) => patch({ lens: l })}

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { Context } from "hono";
-import { REPORT_ID_RE, type ItemMeta, type ReportData } from "@wcl/core";
+import { REPORT_ID_RE, isStaleSchema, type ItemMeta, type ReportData } from "@wcl/core";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs, battleShoutBuffIds, extraWindfurySpellId, battleSquawkBuffId } from "@wcl/data";
 import { TtlCache } from "./cache";
 import { normalizeReport } from "./normalize";
@@ -105,7 +105,12 @@ export function createApp(deps: AppDeps = {
     if (!REPORT_ID_RE.test(id)) return c.json({ error: "Malformed report id" }, 400);
 
     const cached = cache.get(id);
-    if (cached) return c.json({ data: cached.value, cachedAt: cached.cachedAt });
+    if (cached) {
+      // Stale = cached under an older analyzer schema. We still serve it (no
+      // surprise WCL point spend) but flag it so the UI prompts a refresh.
+      const stale = isStaleSchema(cached.value.schemaVersion);
+      return c.json({ data: cached.value, cachedAt: cached.cachedAt, stale });
+    }
 
     const token = c.req.header("Authorization")?.replace(/^Bearer /, "");
     if (!token) {
@@ -218,7 +223,8 @@ export function createApp(deps: AppDeps = {
         extraWindfurySpellId, battleSquawkBuffId,
       });
       cache.set(id, data);
-      return c.json({ data, cachedAt: cache.get(id)!.cachedAt });
+      // Freshly normalized under the current SCHEMA_VERSION, so never stale.
+      return c.json({ data, cachedAt: cache.get(id)!.cachedAt, stale: false });
     } catch (e) {
       return toErrorResponse(c, e);
     }

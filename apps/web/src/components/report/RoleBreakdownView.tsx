@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import type { ReportData, Role } from "@wcl/core";
+import { detectRole, type ReportData, type Role } from "@wcl/core";
+import { buildRpbConfig } from "../../lib/analysisConfig";
 import { RoleSheetTable } from "./RoleSheetTable";
 import { RoleCastsTable } from "./RoleCastsTable";
 
@@ -46,9 +48,30 @@ export function RoleBreakdownView({
     setParams(p, { replace: false });
   };
 
+  // Player count per role, for the role-tab badges (report-wide, like role detection).
+  const roleCounts = useMemo(() => {
+    const cfg = buildRpbConfig();
+    const counts: Record<Role, number> = { tank: 0, healer: 0, caster: 0, physical: 0 };
+    for (const p of report.players) counts[detectRole(p.id, report, cfg.roles)]++;
+    return counts;
+  }, [report]);
+
   return (
     <div className="role-breakdown-view">
-      <div className="segmented" role="group" aria-label="Breakdown mode">
+      <nav className="cat-subnav role-subnav">
+        {ROLES.map(([key, label]) => (
+          <button
+            key={key}
+            className={role === key ? "active" : ""}
+            onClick={() => patch({ role: key })}
+          >
+            {label}
+            <span className="subnav-count" aria-hidden>{roleCounts[key]}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="pill-toggle" role="group" aria-label="Breakdown mode">
         {MODES.map(([key, label]) => (
           <label key={key} className={mode === key ? "active" : ""}>
             <input
@@ -62,18 +85,6 @@ export function RoleBreakdownView({
           </label>
         ))}
       </div>
-
-      <nav className="cat-subnav">
-        {ROLES.map(([key, label]) => (
-          <button
-            key={key}
-            className={role === key ? "active" : ""}
-            onClick={() => patch({ role: key })}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
 
       <div className="role-breakdown-content">
         {mode === "casts" ? (

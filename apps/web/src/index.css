@@ -494,6 +494,24 @@ li {
   font-weight: 550;
 }
 
+/* Shown when a cached report predates the current analyzer schema version
+   (see SCHEMA_VERSION) — prompts a WCL refresh to pick up the latest stats. */
+.stale-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius-control);
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-weight: 550;
+}
+.stale-banner .btn-outline { flex: none; }
+
 /* ----------------------------------------------------------- severity */
 /* Mirrors the original sheet's conditional formatting, harmonized to the
    new palette: red = major, amber = moderate, green = minor / OK. */
@@ -534,7 +552,12 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 }
 .empty-toggle input { cursor: pointer; margin: 0; }
 
-/* RPB Role Breakdown — transposed tables (players = columns, metrics = rows) */
+/* RPB Role Breakdown — transposed tables (players = columns, metrics = rows).
+   Size to content instead of stretching to 100% (the global table width), so a
+   table with 1 player doesn't blow its single column across the page. Player
+   columns get a fixed width → identical layout no matter the player count; the
+   .scroll-x wrapper handles overflow when there are many players. */
+.rb-transposed { width: auto; }
 .rb-transposed .rb-row-label {
   text-align: left;
   font-weight: 600;
@@ -545,30 +568,32 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
   background: var(--surface-sunken);
   z-index: 1;
 }
-.rb-transposed thead .player-cell { text-align: center; border-left: none; border-bottom: 3px solid var(--class-color, transparent); }
+.rb-transposed thead .player-cell {
+  text-align: center;
+  border-left: none;
+  border-bottom: 3px solid var(--class-color, transparent);
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+}
+.rb-transposed thead .player-cell .player-link {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .rb-transposed td { text-align: right; }
 .rb-transposed .rb-band .band-header { background: var(--surface); font-weight: 700; text-align: left; }
 
-/* Casts class filter — pill toggles that show one class block or all of them */
-.cast-class-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-.cast-class-filter button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-.cast-class-filter button:hover { color: var(--text); }
-.cast-class-filter button.active {
+/* Casts class filter — pill toggles that show one class block or all of them.
+   Shares the .pill-toggle look; the All button goes gold, class buttons tint
+   to their class colour when active. */
+.cast-class-filter { margin-bottom: 14px; }
+.cast-class-filter button.active.cf-class {
   color: var(--text);
   border-color: var(--class-color, var(--primary));
-  background: color-mix(in srgb, var(--class-color, var(--primary)) 16%, var(--surface-sunken));
+  background: color-mix(in srgb, var(--class-color, var(--primary)) 16%, transparent);
 }
 
 /* ---------------------------------------------- RPB redesign (M8) */
@@ -793,7 +818,15 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   color: var(--on-accent, #fff); font-family: var(--font-display); font-size: 20px;
 }
 .report-header__title { display: block; font-family: var(--font-display); font-size: 19px; }
-.brand-tag { font-family: var(--font-sans); font-size: .58em; font-weight: 400; letter-spacing: .04em; color: var(--text-subtle); white-space: nowrap; }
+.brand-tag {
+  display: inline-block; vertical-align: middle; margin-left: 8px;
+  font-family: var(--font-sans); font-size: .52em; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  color: var(--accent-gold, var(--primary));
+  background: var(--primary-tint, color-mix(in srgb, var(--primary) 14%, transparent));
+  border: 1px solid var(--accent-gold, var(--primary));
+  border-radius: var(--radius-pill); padding: 3px 9px;
+}
 .report-header__subtitle { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); }
 .report-header__identity { display: flex; flex-direction: column; gap: 2px; padding-left: 18px; border-left: 1px solid var(--border); }
 .report-header__actions { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
@@ -831,6 +864,24 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .lens-toggle > button.active { background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff); border-color: var(--accent-gold, var(--primary)); }
 .lens-hint { font-size: 12px; color: var(--text-subtle); }
 .lens-toggle__actions { margin-left: auto; display: flex; align-items: center; }
+
+/* shared pill toggle — same look as the Boss fights / Players details lens toggle,
+   reused by the role-breakdown mode toggle and the class selector */
+.pill-toggle { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pill-toggle button, .pill-toggle label {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0;
+  padding: 7px 16px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  font-size: .85rem; font-weight: 600;
+}
+.pill-toggle button:hover, .pill-toggle label:hover { color: var(--text); }
+.pill-toggle button.active, .pill-toggle label.active {
+  background: var(--accent-gold-grad, var(--primary)); color: var(--on-accent, #fff);
+  border-color: var(--accent-gold, var(--primary));
+}
+.pill-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; pointer-events: none; }
+.pill-toggle__label { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-subtle); margin-right: 2px; }
+.role-breakdown-view > .pill-toggle { margin-bottom: 18px; }
 .lens-strip { display: flex; flex-wrap: wrap; gap: 8px; }
 .fight-chip { min-width: 170px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }
 .fight-chip.selected { border-color: var(--accent-gold, var(--primary)); background: var(--primary-tint); }
@@ -954,6 +1005,13 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .cat-subnav { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 .cat-subnav button { background: none; border: none; border-radius: 0; padding: 8px 14px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .cat-subnav button.active { color: var(--text); border-bottom-color: var(--accent-gold, var(--primary)); }
+.subnav-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin-left: 7px;
+  border-radius: 9px; font-size: .68rem; font-weight: 700; line-height: 1;
+  color: var(--text-muted); background: var(--surface-sunken);
+}
+.cat-subnav button.active .subnav-count { color: var(--text); background: var(--primary-tint, var(--surface-sunken)); }
 
 /* ── home / paste-link screen ─────────────────────────────── */
 .home { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 24px; background: radial-gradient(120% 80% at 80% 0%, var(--surface-sunken), var(--canvas)); }

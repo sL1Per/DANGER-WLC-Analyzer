@@ -1,5 +1,6 @@
 import {
   isTbcRaidZone,
+  SCHEMA_VERSION,
   type BuffInterval,
   type Fight,
   type ItemMeta,
@@ -325,6 +326,7 @@ export function normalizeReport(
     ? allParticipants.filter((p) => activeIds.has(p.id))
     : allParticipants;
   return {
+    schemaVersion: SCHEMA_VERSION,
     reportId,
     title: raw.title,
     zoneName: raw.zone.name,
