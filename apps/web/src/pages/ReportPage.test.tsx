@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { reportFixture } from "@wcl/core";
@@ -16,7 +16,25 @@ function renderAt(url: string) {
   );
 }
 
+afterEach(() => {
+  localStorage.clear();
+  vi.unstubAllGlobals();
+});
+
 describe("ReportPage", () => {
+  it("shares the current view to Discord, including the category and fight name", async () => {
+    localStorage.setItem("wcl.discordWebhook", "https://discord.com/api/webhooks/1/tok");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderAt("/report/abc");
+    fireEvent.click(screen.getByRole("button", { name: /Share to Discord/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.content).toContain("Rankings · BOSSES");
+  });
+
   it("defaults to the Rankings category", () => {
     renderAt("/report/abc");
     expect(screen.getByText(/Damage Dealers/i)).toBeInTheDocument();
@@ -43,7 +61,7 @@ describe("ReportPage", () => {
     expect(screen.getByRole("button", { name: /^Consumables$/i })).toBeInTheDocument();
     // the event-sourced Performance tab (now labelled "Summary") has trash data, so it stays visible
     // (also verified by the getByRole("button", { name: /^Summary$/i }) assertion above)
-    expect(screen.getByRole("button", { name: /^Role Breakdown$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Role breakdown$/i })).toBeInTheDocument();
   });
   it("shows Rankings only on the BOSSES card, not on an individual boss fight", () => {
     // fight=3 is an individual boss pull; Rankings (boss-encounter percentiles)

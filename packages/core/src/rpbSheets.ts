@@ -257,12 +257,19 @@ export function roleSheet(
     hitsByPlayer.set(h.playerId, arr);
   }
   const meta = report.abilityMeta ?? {};
-  // Name-based matching (robust to unverified ids): WCL resolves every cast,
+  // Debuffs / avoidable damage are matched by name: WCL resolves every cast,
   // debuff and damage-taken name via masterData, so match those against the
   // curated names rather than the hand-curated spell ids.
-  const trinketNames = new Set(cfg.trinketRacials.map((t) => normName(t.name)));
   const debuffNames = new Set(cfg.avoidableDebuffIds.map((d) => normName(d.name)));
   const avoidableNames = new Set(cfg.avoidableAbilityNames.map((n) => normName(n)));
+  // Trinkets/racials are matched by on-use SPELL id first, name second. WCL
+  // labels an on-use cast inconsistently — by item name for some, by buff name
+  // for others (e.g. Bloodlust Brooch logs as "Lust for Battle") — so name-only
+  // matching silently drops half of them. The id map maps each on-use cast id to
+  // its canonical display name; the name map is a fallback that also catches
+  // racial rank variants. Both resolve to the same canonical label per effect.
+  const trinketById = new Map(cfg.trinketRacials.map((t) => [t.spellId, t.name]));
+  const trinketByName = new Map(cfg.trinketRacials.map((t) => [normName(t.name), t.name]));
 
   return result.rows
     .filter((r) => r.role === role)
@@ -291,12 +298,15 @@ export function roleSheet(
       }
 
       // On-use trinket/racial activations from this player's casts (per-fight scoped).
+      // Match by on-use id first, then by resolved name; count under the canonical
+      // display name so e.g. "Lust for Battle" is reported as "Bloodlust Brooch".
       const trinketCounts = new Map<string, number>();
       for (const c of report.playerCasts ?? []) {
         if (c.playerId !== r.playerId || !fightIds.has(c.fightId)) continue;
         const nm = meta[String(c.spellId)]?.name;
-        if (!nm || !trinketNames.has(normName(nm))) continue;
-        trinketCounts.set(nm, (trinketCounts.get(nm) ?? 0) + 1);
+        const canonical = trinketById.get(c.spellId) ?? (nm ? trinketByName.get(normName(nm)) : undefined);
+        if (!canonical) continue;
+        trinketCounts.set(canonical, (trinketCounts.get(canonical) ?? 0) + 1);
       }
 
       const myHits = hitsByPlayer.get(r.playerId);

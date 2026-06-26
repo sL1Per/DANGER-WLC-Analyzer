@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   roleCasts,
   type ReportData,
@@ -60,6 +60,9 @@ export function RoleCastsTable({
     [scoped, role, cfg],
   );
 
+  // Class filter — "all" shows every class block; otherwise only the picked one.
+  const [selectedClass, setSelectedClass] = useState<string>("all");
+
   if (blocks === null) {
     return (
       <p className="notice">
@@ -73,9 +76,43 @@ export function RoleCastsTable({
     return <p className="notice">No {role} players found in this report.</p>;
   }
 
+  // The class names present in this role, in block order. If the current
+  // selection no longer exists (e.g. after switching role tabs), fall back to
+  // "all" so we never render an empty table.
+  const classNames = blocks.map((b) => b.className);
+  const effectiveClass =
+    selectedClass !== "all" && classNames.includes(selectedClass)
+      ? selectedClass
+      : "all";
+  const visibleBlocks =
+    effectiveClass === "all"
+      ? blocks
+      : blocks.filter((b) => b.className === effectiveClass);
+
   return (
     <div className="role-casts-table">
-      {blocks.map((block) => {
+      {classNames.length > 1 && (
+        <div className="cast-class-filter" role="group" aria-label="Filter by class">
+          <button
+            className={effectiveClass === "all" ? "active" : ""}
+            onClick={() => setSelectedClass("all")}
+          >
+            All
+          </button>
+          {classNames.map((cn) => (
+            <button
+              key={cn}
+              className={effectiveClass === cn ? "active" : ""}
+              style={classColorVar(cn)}
+              onClick={() => setSelectedClass(cn)}
+            >
+              <span className="class-dot" />
+              {cn}
+            </button>
+          ))}
+        </div>
+      )}
+      {visibleBlocks.map((block) => {
         // Group abilities by category, in canonical order
         const abilitiesByCategory = new Map<
           CastCategory,

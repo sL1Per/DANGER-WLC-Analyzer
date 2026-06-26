@@ -10,8 +10,8 @@ import {
   classAbilityCatalog, avoidableDebuffIds, trinketRacials, avoidableAbilityNames,
 } from "@wcl/data";
 
-/** RPB config — identical to the object RpbView built inline; centralised so the
- *  Performance view, By-Player profile, and per-fight scoped runs share one source. */
+/** RPB config — centralised so the role-breakdown views, player profile, and
+ *  per-fight scoped runs share one source. */
 export function buildRpbConfig(): RpbConfig {
   return {
     roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },

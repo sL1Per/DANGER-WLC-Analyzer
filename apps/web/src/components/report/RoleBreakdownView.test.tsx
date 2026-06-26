@@ -5,61 +5,50 @@ import { RoleBreakdownView } from "./RoleBreakdownView";
 import { reportFixture } from "@wcl/core";
 import { ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
 
-function renderAt(fightId: number) {
+const ROLE_TABS = ["Tanks", "Healers", "Casters", "Melee/Ranged"];
+
+function renderAt(fightId: number, initialEntries: string[] = ["/"]) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <RoleBreakdownView report={reportFixture} fightId={fightId} onPlayer={() => {}} />
     </MemoryRouter>,
   );
 }
 
 describe("RoleBreakdownView", () => {
-  it("shows all 9 sub-tabs on the BOSSES card", () => {
+  it("renders the By Stats / By Casts mode toggle", () => {
     renderAt(ALL_FIGHTS);
-    for (const t of [
-      "Overview",
-      "Tank",
-      "Tank - Casts",
-      "Healer",
-      "Healer - Casts",
-      "Caster",
-      "Caster - Casts",
-      "Physical",
-      "Physical - Casts",
-    ]) {
+    expect(screen.getByRole("radio", { name: "By Stats" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "By Casts" })).toBeInTheDocument();
+  });
+
+  it("renders the four role tabs", () => {
+    renderAt(ALL_FIGHTS);
+    for (const t of ROLE_TABS) {
       expect(screen.getByRole("button", { name: t })).toBeInTheDocument();
     }
   });
 
-  it("shows only Overview on the TRASH card", () => {
-    renderAt(ALL_TRASH);
-    expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Tank - Casts" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("defaults to the Overview sub-tab content", () => {
+  it("defaults to By Stats and Tank", () => {
     renderAt(ALL_FIGHTS);
-    // SummaryView renders role sections; fixture has Mage (caster) and Warrior (physical)
-    // so at least one role heading should be present
-    expect(screen.getByRole("button", { name: "Overview" })).toHaveClass("active");
+    expect(screen.getByRole("radio", { name: "By Stats" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Tanks" })).toHaveClass("active");
   });
 
-  it("shows only Overview on a non-boss (trash) fight", () => {
-    // fight id 1 is "Underbog Colossus" — a trash fight (isBoss: false)
-    renderAt(1);
-    expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Tank" }),
-    ).not.toBeInTheDocument();
+  it("honors mode and role from the URL", () => {
+    renderAt(ALL_FIGHTS, ["/?mode=casts&role=healer"]);
+    expect(screen.getByRole("radio", { name: "By Casts" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Healers" })).toHaveClass("active");
   });
 
-  it("shows all 9 sub-tabs on an individual boss pull", () => {
-    // fight id 3 is a boss fight (Hydross the Unstable kill) in the fixture
-    renderAt(3);
-    for (const t of ["Overview", "Tank", "Tank - Casts", "Caster - Casts", "Physical - Casts"]) {
-      expect(screen.getByRole("button", { name: t })).toBeInTheDocument();
+  it("renders the same structure on the TRASH card and non-boss fights", () => {
+    for (const fid of [ALL_TRASH, 1 /* Underbog Colossus, a trash fight */]) {
+      const { unmount } = renderAt(fid);
+      expect(screen.getByRole("radio", { name: "By Stats" })).toBeInTheDocument();
+      for (const t of ROLE_TABS) {
+        expect(screen.getByRole("button", { name: t })).toBeInTheDocument();
+      }
+      unmount();
     }
   });
 });

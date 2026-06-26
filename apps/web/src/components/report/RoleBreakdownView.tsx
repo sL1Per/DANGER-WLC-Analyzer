@@ -1,36 +1,23 @@
 import { useSearchParams } from "react-router-dom";
 import type { ReportData, Role } from "@wcl/core";
-import { ALL_FIGHTS } from "../../lib/scopeReport";
-import { SummaryView } from "./SummaryView";
 import { RoleSheetTable } from "./RoleSheetTable";
 import { RoleCastsTable } from "./RoleCastsTable";
 
-const SUBS = [
-  ["overview", "Overview"],
-  ["tank", "Tank"],
-  ["tank-casts", "Tank - Casts"],
-  ["healer", "Healer"],
-  ["healer-casts", "Healer - Casts"],
-  ["caster", "Caster"],
-  ["caster-casts", "Caster - Casts"],
-  ["physical", "Physical"],
-  ["physical-casts", "Physical - Casts"],
+const MODES = [
+  ["stats", "By Stats"],
+  ["casts", "By Casts"],
 ] as const;
+type Mode = (typeof MODES)[number][0];
 
-type SubKey = (typeof SUBS)[number][0];
-type SubEntry = readonly [SubKey, string];
+const ROLES: readonly (readonly [Role, string])[] = [
+  ["tank", "Tanks"],
+  ["healer", "Healers"],
+  ["caster", "Casters"],
+  ["physical", "Melee/Ranged"],
+];
 
-/** Map sub key → role (for role and casts subs). */
-const SUB_TO_ROLE: Partial<Record<SubKey, Role>> = {
-  tank: "tank",
-  "tank-casts": "tank",
-  healer: "healer",
-  "healer-casts": "healer",
-  caster: "caster",
-  "caster-casts": "caster",
-  physical: "physical",
-  "physical-casts": "physical",
-};
+const DEFAULT_MODE: Mode = "stats";
+const DEFAULT_ROLE: Role = "tank";
 
 export function RoleBreakdownView({
   report,
@@ -43,20 +30,15 @@ export function RoleBreakdownView({
 }) {
   const [params, setParams] = useSearchParams();
 
-  // Boss contexts — the combined ALL-bosses card and individual boss pulls —
-  // show all role/casts sub-tabs (the data scopes per-fight). The TRASH card and
-  // any non-boss fight have no boss-only hit data, so they show only Overview.
-  const bossContext =
-    fightId === ALL_FIGHTS ||
-    (report.fights.find((f) => f.id === fightId)?.isBoss ?? false);
-  const visibleSubs: readonly SubEntry[] = bossContext ? SUBS : [SUBS[0]];
+  const requestedMode = (params.get("mode") ?? DEFAULT_MODE) as Mode;
+  const mode: Mode = MODES.some(([key]) => key === requestedMode)
+    ? requestedMode
+    : DEFAULT_MODE;
 
-  const requestedSub = (params.get("sub") ?? "overview") as SubKey;
-  // If the current sub is not visible (e.g. switching from bosses card to single
-  // pull), fall back to overview.
-  const sub: SubKey = visibleSubs.some(([key]) => key === requestedSub)
-    ? requestedSub
-    : "overview";
+  const requestedRole = (params.get("role") ?? DEFAULT_ROLE) as Role;
+  const role: Role = ROLES.some(([key]) => key === requestedRole)
+    ? requestedRole
+    : DEFAULT_ROLE;
 
   const patch = (next: Record<string, string>) => {
     const p = new URLSearchParams(params);
@@ -66,12 +48,27 @@ export function RoleBreakdownView({
 
   return (
     <div className="role-breakdown-view">
+      <div className="segmented" role="group" aria-label="Breakdown mode">
+        {MODES.map(([key, label]) => (
+          <label key={key} className={mode === key ? "active" : ""}>
+            <input
+              type="radio"
+              name="rb-mode"
+              aria-label={label}
+              checked={mode === key}
+              onChange={() => patch({ mode: key })}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+
       <nav className="cat-subnav">
-        {visibleSubs.map(([key, label]) => (
+        {ROLES.map(([key, label]) => (
           <button
             key={key}
-            className={sub === key ? "active" : ""}
-            onClick={() => patch({ sub: key })}
+            className={role === key ? "active" : ""}
+            onClick={() => patch({ role: key })}
           >
             {label}
           </button>
@@ -79,22 +76,18 @@ export function RoleBreakdownView({
       </nav>
 
       <div className="role-breakdown-content">
-        {sub === "overview" && (
-          <SummaryView report={report} fightId={fightId} onPlayer={onPlayer} />
-        )}
-        {sub !== "overview" && !sub.endsWith("-casts") && SUB_TO_ROLE[sub] && (
-          <RoleSheetTable
-            report={report}
-            fightId={fightId}
-            role={SUB_TO_ROLE[sub]!}
-            onPlayer={onPlayer}
-          />
-        )}
-        {sub.endsWith("-casts") && SUB_TO_ROLE[sub] && (
+        {mode === "casts" ? (
           <RoleCastsTable
             report={report}
             fightId={fightId}
-            role={SUB_TO_ROLE[sub]!}
+            role={role}
+            onPlayer={onPlayer}
+          />
+        ) : (
+          <RoleSheetTable
+            report={report}
+            fightId={fightId}
+            role={role}
             onPlayer={onPlayer}
           />
         )}

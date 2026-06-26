@@ -8,3 +8,6 @@ dist/
 *.png
 .superpowers/
 docs/
+CLAUDE.md
+handoff.md
+TODO.md

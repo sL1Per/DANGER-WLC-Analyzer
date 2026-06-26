@@ -381,6 +381,31 @@ describe("roleSheet", () => {
     expect(r.totalAvoidableDamageTaken).toBe(6000);
   });
 
+  it("matches on-use trinkets by spell id and reports the canonical item name", () => {
+    // WCL labels Bloodlust Brooch's on-use cast as its buff "Lust for Battle"
+    // (spell 35166), NOT the item name — so name-only matching misses it. The
+    // id match must still resolve it and surface the canonical item label.
+    const report = makeReportWithHitStats();
+    report.playerCasts = [
+      { fightId: 1, playerId: 7, spellId: 35166, timestamp: 100 },
+      { fightId: 1, playerId: 7, spellId: 35166, timestamp: 500 },
+      { fightId: 1, playerId: 7, spellId: 35166, timestamp: 900 },
+    ];
+    report.abilityMeta = { ...report.abilityMeta, "35166": { name: "Lust for Battle" } };
+    const rows = roleSheet(report, "tank", {
+      roles: roleCfg,
+      rpb: defaultRpbConfig(),
+      avoidableDebuffIds: [],
+      // canonical display name differs from the WCL cast name; match is by id
+      trinketRacials: [{ spellId: 35166, name: "Bloodlust Brooch" }],
+      avoidableAbilityNames: [],
+    })!;
+    const r = rows.find((x) => x.playerId === 7)!;
+    expect(r.trinketUses.find((t) => t.name === "Bloodlust Brooch")?.count).toBe(3);
+    // the raw WCL buff name is never surfaced
+    expect(r.trinketUses.find((t) => t.name === "Lust for Battle")).toBeUndefined();
+  });
+
   it("returns null on a stale cache (no playerTotals)", () => {
     const report = { ...makeReportWithHitStats(), playerTotals: undefined } as ReportData;
     expect(

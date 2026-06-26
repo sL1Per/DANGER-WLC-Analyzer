@@ -1,5 +1,3 @@
-import type { Role } from "@wcl/core";
-
 export interface Credentials { clientId: string; clientSecret: string; }
 export interface StoredToken { accessToken: string; expiresAt: number; }
 
@@ -8,8 +6,6 @@ const TOKEN_KEY = "wcl.token";
 const LAST_REPORT_KEY = "wcl.lastReportId";
 const WEBHOOK_KEY = "wcl.discordWebhook";
 const THEME_KEY = "wcl.theme";
-const RPB_VIEW_KEY = "wcl.rpbViewMode";
-const RPB_TAB_KEY = "wcl.rpbTab";
 
 export type Theme = "light" | "dark";
 
@@ -34,24 +30,6 @@ export function saveTheme(t: Theme): void {
 export function loadTheme(): Theme | null {
   const v = localStorage.getItem(THEME_KEY);
   return v === "light" || v === "dark" ? v : null;
-}
-
-export type RpbViewMode = "rows" | "cards";
-
-export function saveRpbViewMode(m: RpbViewMode): void {
-  localStorage.setItem(RPB_VIEW_KEY, m);
-}
-export function loadRpbViewMode(): RpbViewMode {
-  return localStorage.getItem(RPB_VIEW_KEY) === "cards" ? "cards" : "rows";
-}
-
-export type RpbTab = "general" | "roles";
-
-export function saveRpbTab(t: RpbTab): void {
-  localStorage.setItem(RPB_TAB_KEY, t);
-}
-export function loadRpbTab(): RpbTab {
-  return localStorage.getItem(RPB_TAB_KEY) === "roles" ? "roles" : "general";
 }
 
 export function saveLastReportId(id: string): void {
@@ -123,16 +101,4 @@ export function loadToken(): StoredToken | null {
     return null;
   }
   return token;
-}
-
-const ROLE_KEY = "wcl.roles";
-
-export function loadRoleOverrides(): Record<string, Role> {
-  try { return JSON.parse(localStorage.getItem(ROLE_KEY) ?? "{}"); } catch { return {}; }
-}
-
-export function saveRoleOverride(characterName: string, role: Role): void {
-  const all = loadRoleOverrides();
-  all[characterName] = role;
-  localStorage.setItem(ROLE_KEY, JSON.stringify(all));
 }

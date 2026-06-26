@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Fight, ReportData } from "@wcl/core";
 import { CLASS_ORDER, classColorVar, classSlug } from "../lib/classColors";
 import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
@@ -28,9 +29,11 @@ interface LensBarProps {
   onFight: (id: number) => void;
   onPlayer: (id: number) => void;
   onQuery: (q: string) => void;
+  // Right-aligned slot in the toggle row (e.g. the Share-to-Discord button).
+  actions?: ReactNode;
 }
 
-export function LensBar({ report, lens, fightId, playerId, query, onLens, onFight, onPlayer, onQuery }: LensBarProps) {
+export function LensBar({ report, lens, fightId, playerId, query, onLens, onFight, onPlayer, onQuery, actions }: LensBarProps) {
   const players = [...report.players]
     .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => classRank(a.class) - classRank(b.class) || a.name.localeCompare(b.name));
@@ -38,13 +41,14 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
   return (
     <div className="lens-bar">
       <div className="lens-toggle" role="group" aria-label="Report lens">
-        <button className={lens === "fight" ? "active" : ""} onClick={() => onLens("fight")}>By Boss Fight</button>
-        <button className={lens === "player" ? "active" : ""} onClick={() => onLens("player")}>By Player</button>
+        <button className={lens === "fight" ? "active" : ""} onClick={() => onLens("fight")}>Boss fights</button>
+        <button className={lens === "player" ? "active" : ""} onClick={() => onLens("player")}>Players details</button>
         <span className="lens-hint">
           {lens === "fight"
             ? "Reviewing one boss pull — everyone who was there."
             : "Reviewing one raider — everything they did, all night."}
         </span>
+        {actions && <span className="lens-toggle__actions">{actions}</span>}
       </div>
 
       {lens === "fight" ? (

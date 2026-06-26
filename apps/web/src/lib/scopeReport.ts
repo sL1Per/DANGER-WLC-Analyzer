@@ -10,7 +10,7 @@ export const ALL_FIGHTS = -1;
 export const ALL_TRASH = -2;
 
 /**
- * A report projected to a single fight. The per-pull views ("By Boss Fight")
+ * A report projected to a single fight. The per-pull views ("Boss fights")
  * pass this to the report-wide analyses (`rpb`, `consumables`, `rpbConsumables`,
  * `drums`) which derive their fight set from `report.fights` — so filtering that
  * array re-scopes them to one pull. Every other field (event arrays, playerTotals

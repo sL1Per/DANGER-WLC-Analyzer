@@ -18,7 +18,7 @@ function setup(over: Partial<ComponentProps<typeof LensBar>> = {}) {
 describe("LensBar", () => {
   it("toggles to the player lens", () => {
     const p = setup();
-    fireEvent.click(screen.getByRole("button", { name: /by player/i }));
+    fireEvent.click(screen.getByRole("button", { name: /players details/i }));
     expect(p.onLens).toHaveBeenCalledWith("player");
   });
   it("shows a BOSSES chip first that selects all bosses combined", () => {

@@ -1,9 +1,22 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { RoleCastsTable } from "./RoleCastsTable";
 import { reportFixture } from "@wcl/core";
 import { ALL_FIGHTS } from "../../lib/scopeReport";
 import type { ReportData } from "@wcl/core";
+
+/**
+ * A report whose physical role contains TWO classes (Warrior + Rogue), so the
+ * class filter has something to filter between.
+ */
+const twoClassReport: ReportData = {
+  ...reportFixture,
+  players: [...reportFixture.players, { id: 3, name: "Playerthree", class: "Rogue" }],
+  playerTotals: [
+    ...(reportFixture.playerTotals ?? []),
+    { playerId: 3, healingDone: 0, damageDone: 50000, damageTaken: 1000, magicDamageDone: 0 },
+  ],
+};
 
 /**
  * The shared reportFixture has:
@@ -113,6 +126,53 @@ describe("RoleCastsTable", () => {
     // Playertwo is a Warrior → physical role
     expect(screen.getByText("Warriors")).toBeInTheDocument();
     expect(screen.getByText("Playertwo")).toBeInTheDocument();
+  });
+
+  it("does not render the class filter when the role has a single class", () => {
+    render(
+      <RoleCastsTable
+        report={reportFixture}
+        fightId={ALL_FIGHTS}
+        role="caster"
+        onPlayer={() => {}}
+      />,
+    );
+    // Only Mages in caster role → no filter group
+    expect(screen.queryByRole("group", { name: /filter by class/i })).toBeNull();
+  });
+
+  it("renders a class filter with an 'All' option when the role has multiple classes", () => {
+    render(
+      <RoleCastsTable
+        report={twoClassReport}
+        fightId={ALL_FIGHTS}
+        role="physical"
+        onPlayer={() => {}}
+      />,
+    );
+    const group = screen.getByRole("group", { name: /filter by class/i });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Warrior" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rogue" })).toBeInTheDocument();
+    // Default: every class block is shown.
+    expect(screen.getByText("Warriors")).toBeInTheDocument();
+    expect(screen.getByText("Rogues")).toBeInTheDocument();
+  });
+
+  it("filters to a single class block when a class is selected", () => {
+    render(
+      <RoleCastsTable
+        report={twoClassReport}
+        fightId={ALL_FIGHTS}
+        role="physical"
+        onPlayer={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Rogue" }));
+    // Only the Rogues block remains; Warriors is filtered out.
+    expect(screen.getByText("Rogues")).toBeInTheDocument();
+    expect(screen.queryByText("Warriors")).toBeNull();
   });
 
   it("shows a non-zero cast count when playerCasts has a matching spell", () => {

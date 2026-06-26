@@ -9,10 +9,6 @@ import {
   clearWebhookUrl,
   loadTheme,
   saveTheme,
-  loadRpbViewMode,
-  saveRpbViewMode,
-  loadRpbTab,
-  saveRpbTab,
   loadRecentReports,
   addRecentReport,
 } from "./storage";
@@ -74,34 +70,6 @@ describe("theme storage", () => {
   it("ignores a junk stored value", () => {
     localStorage.setItem("wcl.theme", "neon");
     expect(loadTheme()).toBeNull();
-  });
-});
-
-describe("rpb view-mode storage", () => {
-  it("defaults to rows when nothing stored", () => {
-    expect(loadRpbViewMode()).toBe("rows");
-  });
-  it("round-trips a view mode", () => {
-    saveRpbViewMode("cards");
-    expect(loadRpbViewMode()).toBe("cards");
-  });
-  it("falls back to rows for a junk stored value", () => {
-    localStorage.setItem("wcl.rpbViewMode", "spreadsheet");
-    expect(loadRpbViewMode()).toBe("rows");
-  });
-});
-
-describe("rpb tab storage", () => {
-  it("defaults to general when nothing stored", () => {
-    expect(loadRpbTab()).toBe("general");
-  });
-  it("round-trips a tab", () => {
-    saveRpbTab("roles");
-    expect(loadRpbTab()).toBe("roles");
-  });
-  it("falls back to general for a junk stored value", () => {
-    localStorage.setItem("wcl.rpbTab", "consumables");
-    expect(loadRpbTab()).toBe("general");
   });
 });
 

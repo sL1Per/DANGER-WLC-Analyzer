@@ -14,9 +14,10 @@ import { PlayerProfile } from "../components/report/PlayerProfile";
 import { EmptyToggle } from "../components/report/EmptyToggle";
 import { ShadowResView } from "../components/ShadowResView";
 import { LoadingNugget } from "../components/LoadingNugget";
+import { ShareToDiscord } from "../components/ShareToDiscord";
 
 const CATEGORIES = [
-  ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role Breakdown"], ["gear", "Gear"],
+  ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
   ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
@@ -76,6 +77,21 @@ export function ReportPage() {
     if (p) patch({ lens: "player", player: String(p.id) });
   };
 
+  // Human-readable description of the current view, posted alongside the deep
+  // link when sharing to Discord.
+  const viewLabel = (() => {
+    if (lens === "player") {
+      const name = report.players.find((p) => p.id === playerId)?.name ?? "Player";
+      return `Players details · ${name}`;
+    }
+    const catLabel = CATEGORIES.find(([key]) => key === cat)?.[1] ?? cat;
+    const fightName =
+      fightId === ALL_FIGHTS ? "BOSSES" :
+      fightId === ALL_TRASH ? "TRASH" :
+      report.fights.find((f) => f.id === fightId)?.name ?? "fight";
+    return `${catLabel} · ${fightName}`;
+  })();
+
   return (
     <div className="report">
       <ReportHeader report={report} onRefresh={reload} />
@@ -85,6 +101,14 @@ export function ReportPage() {
         onFight={(id) => patch({ fight: String(id) })}
         onPlayer={(id) => patch({ player: String(id) })}
         onQuery={(q) => patch({ q })}
+        actions={
+          <ShareToDiscord
+            title={report.title}
+            zoneName={report.zoneName}
+            link={typeof window !== "undefined" ? window.location.href : ""}
+            view={viewLabel}
+          />
+        }
       />
 
       {lens === "fight" ? (

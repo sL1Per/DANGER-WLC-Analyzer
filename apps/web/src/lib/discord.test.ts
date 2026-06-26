@@ -29,6 +29,21 @@ describe("buildShareMessage", () => {
     expect(msg).toContain("Serpentshrine Cavern");
     expect(msg).toContain("https://x/cla/abc");
   });
+
+  it("includes the view description when provided", () => {
+    const msg = buildShareMessage({
+      title: "Tuesday SSC",
+      zoneName: "SSC",
+      link: "https://x/cla/abc",
+      view: "Role breakdown · Lady Vashj",
+    });
+    expect(msg).toContain("Role breakdown · Lady Vashj");
+  });
+
+  it("omits the view line when no view is given", () => {
+    const msg = buildShareMessage({ title: "T", zoneName: "Z", link: "https://x" });
+    expect(msg).toBe("📊 **T** — Z\nhttps://x");
+  });
 });
 
 describe("postToDiscord", () => {
