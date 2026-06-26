@@ -92,7 +92,8 @@ export function RoleCastsTable({
   return (
     <div className="role-casts-table">
       {classNames.length > 1 && (
-        <div className="cast-class-filter" role="group" aria-label="Filter by class">
+        <div className="cast-class-filter pill-toggle" role="group" aria-label="Filter by class">
+          <span className="pill-toggle__label" aria-hidden>Class</span>
           <button
             className={effectiveClass === "all" ? "active" : ""}
             onClick={() => setSelectedClass("all")}
@@ -102,7 +103,7 @@ export function RoleCastsTable({
           {classNames.map((cn) => (
             <button
               key={cn}
-              className={effectiveClass === cn ? "active" : ""}
+              className={`cf-class${effectiveClass === cn ? " active" : ""}`}
               style={classColorVar(cn)}
               onClick={() => setSelectedClass(cn)}
             >

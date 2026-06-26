@@ -29,7 +29,7 @@ async function ensureToken(): Promise<string | null> {
   return accessToken;
 }
 
-export interface ReportResponse { data: ReportData; cachedAt: number; }
+export interface ReportResponse { data: ReportData; cachedAt: number; stale?: boolean; }
 
 export async function fetchReport(reportId: string): Promise<ReportResponse> {
   const token = await ensureToken();

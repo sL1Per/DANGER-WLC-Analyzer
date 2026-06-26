@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { SCHEMA_VERSION } from "@wcl/core";
 import { createApp } from "./app";
 import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
 
@@ -125,6 +126,18 @@ describe("GET /api/report/:id", () => {
     const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
     expect(r2.status).toBe(200);
     expect(fetchRawReport).toHaveBeenCalledTimes(1);
+  });
+  it("stamps the schema version and reports stale: false on a fresh fetch", async () => {
+    const app = makeApp();
+    const r1 = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
+      headers: { Authorization: "Bearer tok" },
+    });
+    const body1 = await r1.json();
+    expect(body1.data.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(body1.stale).toBe(false);
+    // a cache hit under the current version is likewise not stale
+    const body2 = await (await app.request("/api/report/a1B2c3D4e5F6g7H8")).json();
+    expect(body2.stale).toBe(false);
   });
   it("GET cachedAt matches the stored entry timestamp", async () => {
     const app = makeApp();
