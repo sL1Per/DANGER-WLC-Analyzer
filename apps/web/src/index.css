@@ -1089,6 +1089,26 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   border-radius: 3px;
 }
 
+/* ── stat cards (phone presentation of dense tables) ─────── */
+.stat-cards { display: flex; flex-direction: column; gap: 12px; }
+.stat-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.stat-card__title {
+  padding: 10px 14px; font-weight: 700; font-size: 15px;
+  border-bottom: 1px solid var(--border); background: var(--surface-sunken);
+}
+.stat-card__title .player-link { font: inherit; color: inherit; }
+.stat-card__rows { margin: 0; padding: 4px 0; }
+.stat-card__row {
+  display: flex; justify-content: space-between; gap: 14px;
+  padding: 7px 14px; align-items: baseline;
+}
+.stat-card__row dt { color: var(--text-muted); font-size: 13px; flex: 0 0 auto; max-width: 50%; }
+.stat-card__row dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+/* severity/heat classes set on the row tint its value */
+.stat-card__row.sev-major dd, .stat-card__row.bad dd { color: var(--danger); }
+.stat-card__row.sev-moderate dd, .stat-card__row.watch dd { color: var(--warn); }
+.stat-card__row.sev-minor dd, .stat-card__row.sev-ok dd, .stat-card__row.good dd { color: var(--positive); }
+
 /* ── mobile report nav (≤640px) ──────────────────────────── */
 .report-slimbar { display: none; }
 .report-drawer, .report-drawer__backdrop { display: none; }
