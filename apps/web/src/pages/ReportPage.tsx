@@ -1,6 +1,8 @@
 import { useSearchParams, useParams, Link } from "react-router-dom";
 import { useReport } from "../lib/useReport";
+import { useIsPhone } from "../lib/useMediaQuery";
 import { ReportHeader } from "../components/ReportHeader";
+import { ReportDrawer } from "../components/report/ReportDrawer";
 import { LensBar, type Lens } from "../components/LensBar";
 import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 import { SummaryRankings } from "../components/report/SummaryRankings";
@@ -36,6 +38,7 @@ export function ReportPage() {
   const { reportId = "" } = useParams();
   const { result, error, loading, reload } = useReport(reportId);
   const [params, setParams] = useSearchParams();
+  const isPhone = useIsPhone();
 
   if (loading) return <LoadingNugget />;
   if (error) {
@@ -98,7 +101,22 @@ export function ReportPage() {
 
   return (
     <div className="report">
-      <ReportHeader report={report} onRefresh={reload} />
+      {isPhone ? (
+        <ReportDrawer title={report.title} activeLabel={viewLabel}>
+          <nav className="drawer-nav">
+            {categories.map(([key, label]) => (
+              <button key={key} className={cat === key ? "active" : ""} onClick={() => patch({ cat: key })}>{label}</button>
+            ))}
+          </nav>
+          <div className="drawer-actions">
+            <Link to="/settings" className="btn-outline">Settings</Link>
+            <Link to="/" className="btn-outline">New report</Link>
+            <button className="btn-outline" onClick={reload}>Refresh from WCL</button>
+          </div>
+        </ReportDrawer>
+      ) : (
+        <ReportHeader report={report} onRefresh={reload} />
+      )}
       {result.stale && (
         <div className="stale-banner" role="status">
           <span>

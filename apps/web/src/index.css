@@ -1088,3 +1088,54 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   background: color-mix(in srgb, var(--primary, #4f8cff) 35%, transparent);
   border-radius: 3px;
 }
+
+/* ── mobile report nav (≤640px) ──────────────────────────── */
+.report-slimbar { display: none; }
+.report-drawer, .report-drawer__backdrop { display: none; }
+
+@media (max-width: 640px) {
+  .report-slimbar {
+    position: sticky; top: 0; z-index: 35;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border);
+  }
+  .report-slimbar__title {
+    font-family: var(--font-display); font-size: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45vw;
+  }
+  .report-slimbar__active {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .report-slimbar__menu {
+    margin-left: auto; min-width: 44px; min-height: 44px;
+    display: grid; place-items: center; font-size: 22px;
+    background: transparent; border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); cursor: pointer;
+  }
+  .report-drawer__backdrop {
+    display: block; position: fixed; inset: 0; z-index: 45;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .report-drawer {
+    display: flex; flex-direction: column; gap: 18px;
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 46;
+    width: min(82vw, 320px); padding: 20px 18px;
+    background: var(--surface); border-left: 1px solid var(--border);
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35); overflow-y: auto;
+  }
+  .drawer-nav { display: flex; flex-direction: column; gap: 4px; }
+  .drawer-nav button {
+    text-align: left; padding: 12px 14px; min-height: 44px;
+    border: 0; border-radius: 10px; background: transparent;
+    color: var(--text-muted); font-weight: 600; font-size: 15px; cursor: pointer;
+  }
+  .drawer-nav button.active { background: var(--primary-tint); color: var(--text); }
+  .drawer-actions { display: flex; flex-direction: column; gap: 8px; }
+  .drawer-actions .btn-outline { width: 100%; min-height: 44px; text-align: center; }
+
+  /* desktop header + the in-body category subnav are replaced by the drawer */
+  .report-header { display: none; }
+  .cat-subnav { display: none; }
+}

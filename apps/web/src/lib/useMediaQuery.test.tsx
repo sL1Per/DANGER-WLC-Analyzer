@@ -32,8 +32,7 @@ describe("useMediaQuery", () => {
       addEventListener: () => {}, removeEventListener: () => {},
       addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
     }));
-    // @ts-expect-error stub
-    window.matchMedia = spy;
+    window.matchMedia = spy as unknown as typeof window.matchMedia;
     renderHook(() => useIsPhone());
     expect(spy).toHaveBeenCalledWith(PHONE_QUERY);
   });
