@@ -8,10 +8,18 @@ export function isValidWebhookUrl(url: string): boolean {
   return WEBHOOK_RE.test(url.trim());
 }
 
-export function buildShareMessage(opts: { title: string; zoneName: string; link: string; view?: string }): string {
-  const header = `📊 **${opts.title}** — ${opts.zoneName}`;
-  const viewLine = opts.view ? `\n${opts.view}` : "";
-  return `${header}${viewLine}\n${opts.link}`;
+export function buildShareMessage(opts: {
+  title: string;
+  zoneName: string;
+  link: string;
+  details?: string;
+  view?: string;
+}): string {
+  const lines = [`📊 **${opts.title}** — ${opts.zoneName}`];
+  if (opts.details) lines.push(opts.details);
+  if (opts.view) lines.push(opts.view);
+  lines.push(opts.link);
+  return lines.join("\n");
 }
 
 // Posts straight from the browser; Discord webhook endpoints send

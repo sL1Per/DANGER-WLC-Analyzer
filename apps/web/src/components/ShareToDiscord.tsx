@@ -9,11 +9,13 @@ export function ShareToDiscord({
   title,
   zoneName,
   link,
+  details,
   view,
 }: {
   title: string;
   zoneName: string;
   link: string;
+  details?: string;
   view?: string;
 }) {
   const webhookUrl = loadWebhookUrl();
@@ -32,7 +34,7 @@ export function ShareToDiscord({
     setStatus("posting");
     setMessage("");
     try {
-      await postToDiscord(webhookUrl!, buildShareMessage({ title, zoneName, link, view }));
+      await postToDiscord(webhookUrl!, buildShareMessage({ title, zoneName, link, details, view }));
       setStatus("done");
       setMessage("Posted to Discord.");
     } catch (e) {

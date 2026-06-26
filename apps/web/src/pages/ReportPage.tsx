@@ -92,6 +92,10 @@ export function ReportPage() {
     return `${catLabel} · ${fightName}`;
   })();
 
+  // Report identity line (mirrors the header subtitle): zone · players · date.
+  const reportDetails =
+    `${report.zoneName} · ${report.players.length} players · ${new Date(report.startTime).toLocaleDateString()}`;
+
   return (
     <div className="report">
       <ReportHeader report={report} onRefresh={reload} />
@@ -105,6 +109,7 @@ export function ReportPage() {
           <ShareToDiscord
             title={report.title}
             zoneName={report.zoneName}
+            details={reportDetails}
             link={typeof window !== "undefined" ? window.location.href : ""}
             view={viewLabel}
           />

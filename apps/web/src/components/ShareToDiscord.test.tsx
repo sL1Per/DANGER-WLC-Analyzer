@@ -38,14 +38,20 @@ describe("ShareToDiscord", () => {
     expect(body.content).toContain("Tuesday SSC");
   });
 
-  it("includes the current view description in the posted message", async () => {
+  it("includes the current view description and report details in the posted message", async () => {
     localStorage.setItem("wcl.discordWebhook", "https://discord.com/api/webhooks/1/tok");
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
     vi.stubGlobal("fetch", fetchMock);
 
     render(
       <MemoryRouter>
-        <ShareToDiscord title="Tuesday SSC" zoneName="SSC" link="https://x/cla/abc" view="Role breakdown · Lady Vashj" />
+        <ShareToDiscord
+          title="Tuesday SSC"
+          zoneName="SSC"
+          details="SSC / TK · 25 players · 6/21/2026"
+          link="https://x/cla/abc"
+          view="Role breakdown · Lady Vashj"
+        />
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole("button", { name: /Share to Discord/i }));
@@ -53,6 +59,7 @@ describe("ShareToDiscord", () => {
     await waitFor(() => expect(screen.getByText(/Posted to Discord/i)).toBeInTheDocument());
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.content).toContain("Role breakdown · Lady Vashj");
+    expect(body.content).toContain("SSC / TK · 25 players · 6/21/2026");
   });
 
   it("surfaces an error when the post fails", async () => {

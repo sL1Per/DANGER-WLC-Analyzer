@@ -33,6 +33,7 @@ describe("ReportPage", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.content).toContain("Rankings · BOSSES");
+    expect(body.content).toContain(`${reportFixture.players.length} players`);
   });
 
   it("defaults to the Rankings category", () => {

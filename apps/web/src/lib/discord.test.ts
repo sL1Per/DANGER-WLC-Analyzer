@@ -44,6 +44,19 @@ describe("buildShareMessage", () => {
     const msg = buildShareMessage({ title: "T", zoneName: "Z", link: "https://x" });
     expect(msg).toBe("📊 **T** — Z\nhttps://x");
   });
+
+  it("places the details line between the header and the view", () => {
+    const msg = buildShareMessage({
+      title: "ssc / tk",
+      zoneName: "SSC / TK",
+      details: "SSC / TK · 25 players · 6/21/2026",
+      view: "Rankings · BOSSES",
+      link: "https://x",
+    });
+    expect(msg).toBe(
+      "📊 **ssc / tk** — SSC / TK\nSSC / TK · 25 players · 6/21/2026\nRankings · BOSSES\nhttps://x",
+    );
+  });
 });
 
 describe("postToDiscord", () => {
