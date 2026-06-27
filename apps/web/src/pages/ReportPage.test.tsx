@@ -1,12 +1,34 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { reportFixture } from "@wcl/core";
 import { ReportPage } from "./ReportPage";
 
+// Mutable so individual tests can simulate loading / error states without
+// needing a separate mock per test.
+let mockHookState: any = {};
+
 vi.mock("../lib/useReport", () => ({
-  useReport: () => ({ result: { data: reportFixture, cachedAt: Date.now() }, error: null, loading: false, reload: vi.fn() }),
+  useReport: () => mockHookState,
 }));
+
+function defaultLoaded() {
+  return {
+    result: { data: reportFixture, stale: false },
+    error: null,
+    loading: false,
+    reload: vi.fn(),
+  };
+}
+
+beforeEach(() => {
+  mockHookState = defaultLoaded();
+});
+
+afterEach(() => {
+  localStorage.clear();
+  vi.unstubAllGlobals();
+});
 
 function renderAt(url: string) {
   return render(
@@ -16,26 +38,58 @@ function renderAt(url: string) {
   );
 }
 
-afterEach(() => {
-  localStorage.clear();
-  vi.unstubAllGlobals();
-});
-
-describe("ReportPage", () => {
-  it("shares the current view to Discord, including the category and fight name", async () => {
-    localStorage.setItem("wcl.discordWebhook", "https://discord.com/api/webhooks/1/tok");
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
-    vi.stubGlobal("fetch", fetchMock);
-
+describe("ReportPage — loader branches", () => {
+  it("renders ReportView content (category nav) when the report loads successfully", () => {
     renderAt("/report/abc");
-    fireEvent.click(screen.getByRole("button", { name: /Share to Discord/i }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.content).toContain("Rankings · BOSSES");
-    expect(body.content).toContain(`${reportFixture.players.length} players`);
+    // The Rankings tab is the default visible category when data is available.
+    expect(screen.getByRole("button", { name: /^Rankings$/i })).toBeInTheDocument();
   });
 
+  it("renders a loading indicator and no report content while fetching", () => {
+    mockHookState = { result: null, error: null, loading: true, reload: vi.fn() };
+    renderAt("/report/abc");
+    expect(screen.queryByRole("button", { name: /^Rankings$/i })).not.toBeInTheDocument();
+  });
+
+  it("shows an error alert when the report fails to load", () => {
+    mockHookState = { result: null, error: { message: "Request failed with status 500" }, loading: false, reload: vi.fn() };
+    renderAt("/report/abc");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/Request failed with status 500/i)).toBeInTheDocument();
+  });
+
+  it("shows a link to /settings when error.needsKey is true", () => {
+    mockHookState = {
+      result: null,
+      error: { message: "API key required", needsKey: true },
+      loading: false,
+      reload: vi.fn(),
+    };
+    renderAt("/report/abc");
+    expect(screen.getByRole("link", { name: /Add your WCL credentials/i })).toBeInTheDocument();
+  });
+
+  it("does not show the settings link when error.needsKey is false", () => {
+    mockHookState = {
+      result: null,
+      error: { message: "Network error", needsKey: false },
+      loading: false,
+      reload: vi.fn(),
+    };
+    renderAt("/report/abc");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Add your WCL credentials/i })).not.toBeInTheDocument();
+  });
+});
+
+// NOTE: Discord-posting coverage is NOT lost — it is fully covered by
+// ShareToDiscord.test.tsx (which tests the component in isolation, including
+// the webhook POST, success confirmation, and error surfacing). The old
+// Discord assertion that lived here was removed because ReportPage now passes
+// shareActions={null}; PublishShare.test.tsx (Task 10) will cover the wired-up
+// publish action.
+
+describe("ReportPage — category / tab behaviour (via ReportView)", () => {
   it("defaults to the Rankings category", () => {
     renderAt("/report/abc");
     expect(screen.getByText(/Damage Dealers/i)).toBeInTheDocument();
