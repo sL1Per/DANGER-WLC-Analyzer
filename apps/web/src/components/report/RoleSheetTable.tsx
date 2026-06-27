@@ -4,6 +4,8 @@ import { scopeReportToFight } from "../../lib/scopeReport";
 import { roleSheetConfig } from "../../lib/analysisConfig";
 import { heatClass, relativeHeat, deathsHeat } from "../../lib/heatmap";
 import { classColorVar } from "../../lib/classColors";
+import { useIsPhone } from "../../lib/useMediaQuery";
+import { StatCard, StatCards } from "./StatCard";
 
 const fmt = (count: number, pct: number) =>
   count === 0 ? "—" : `${count} (${Math.round(pct * 100)}%)`;
@@ -25,6 +27,8 @@ export function RoleSheetTable({
   role: Role;
   onPlayer: (name: string) => void;
 }) {
+  const isPhone = useIsPhone();
+
   const scoped = useMemo(
     () => scopeReportToFight(report, fightId),
     [report, fightId],
@@ -177,6 +181,27 @@ export function RoleSheetTable({
       ),
     },
   ];
+
+  if (isPhone) {
+    return (
+      <StatCards>
+        {rows.map((r) => (
+          <StatCard
+            key={r.playerId}
+            title={r.playerName}
+            titleStyle={classColorVar(r.className)}
+            onTitleClick={() => onPlayer(r.playerName)}
+            rows={sections.flatMap((s) =>
+              s.rows.map((mr) => {
+                const c = mr.cell(r);
+                return { label: `${s.band} · ${mr.label}`, value: c.content, className: c.className };
+              }),
+            )}
+          />
+        ))}
+      </StatCards>
+    );
+  }
 
   return (
     <div className="scroll-x">
