@@ -1,6 +1,8 @@
 import type { RpbConsumableRow } from "@wcl/core";
 import { CLASS_ORDER, classColorVar } from "../lib/classColors";
 import { relativeHeat, heatClass } from "../lib/heatmap";
+import { useIsPhone } from "../lib/useMediaQuery";
+import { StatCard, StatCards } from "./report/StatCard";
 
 const classRank = (c: string): number => {
   const i = (CLASS_ORDER as readonly string[]).indexOf(c);
@@ -24,6 +26,8 @@ export function ConsumableMatrix({
   catalog: { key: string; name: string; uptime?: boolean }[];
   onPlayer?: (name: string) => void;
 }) {
+  const isPhone = useIsPhone();
+
   if (rows.length === 0) {
     return <p className="muted">No boss-fight data for consumables.</p>;
   }
@@ -31,6 +35,31 @@ export function ConsumableMatrix({
   const players = [...rows].sort(
     (a, b) => classRank(a.className) - classRank(b.className) || a.playerName.localeCompare(b.playerName),
   );
+
+  if (isPhone) {
+    return (
+      <StatCards>
+        {players.map((p) => (
+          <StatCard
+            key={p.playerId}
+            title={p.playerName}
+            titleStyle={classColorVar(p.className)}
+            onTitleClick={onPlayer ? () => onPlayer(p.playerName) : undefined}
+            rows={catalog
+              .map((c) => {
+                const count = p.counts[c.key] ?? 0;
+                if (count === 0) return null;
+                const value = c.uptime
+                  ? `${count} (${Math.round((p.uptimes?.[c.key] ?? 0) * 100)}%)`
+                  : String(count);
+                return { label: c.name, value };
+              })
+              .filter((r): r is { label: string; value: string } => r !== null)}
+          />
+        ))}
+      </StatCards>
+    );
+  }
 
   return (
     <div className="consumable-card scroll-x">
