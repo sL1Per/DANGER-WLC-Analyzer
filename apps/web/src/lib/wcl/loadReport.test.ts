@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // Mock the whole WCL fetch layer so loadReport exercises only orchestration.
 vi.mock("./wcl", () => ({
-  WclError: class WclError extends Error { constructor(public status: number, m: string) { super(m); } },
+  WclError: class WclError extends Error { status: number; constructor(status: number, m: string) { super(m); this.status = status; } },
   fetchRawReport: vi.fn().mockResolvedValue({
     title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
     fights: [], masterData: { actors: [], npcs: [] },
