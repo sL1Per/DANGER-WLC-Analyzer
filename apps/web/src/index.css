@@ -1095,6 +1095,9 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .stat-card__title {
   padding: 10px 14px; font-weight: 700; font-size: 15px;
   border-bottom: 1px solid var(--border); background: var(--surface-sunken);
+  /* match the desktop tables: player titles take their class color (set via
+     classColorVar's --class-color); non-player titles fall back to --text */
+  color: var(--class-color, var(--text));
 }
 .stat-card__title .player-link { font: inherit; color: inherit; }
 .stat-card__rows { margin: 0; padding: 4px 0; }
