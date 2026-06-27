@@ -10,6 +10,8 @@ import { scopeReportToFight } from "../../lib/scopeReport";
 import { roleCastsConfig } from "../../lib/analysisConfig";
 import { classColorVar } from "../../lib/classColors";
 import { heatClass, relativeHeat } from "../../lib/heatmap";
+import { useIsPhone } from "../../lib/useMediaQuery";
+import { StatCard, StatCards } from "./StatCard";
 
 const CATEGORY_LABELS: Record<CastCategory, string> = {
   single: "Single Target",
@@ -48,6 +50,8 @@ export function RoleCastsTable({
   role: Role;
   onPlayer: (name: string) => void;
 }) {
+  const isPhone = useIsPhone();
+
   const scoped = useMemo(
     () => scopeReportToFight(report, fightId),
     [report, fightId],
@@ -89,43 +93,81 @@ export function RoleCastsTable({
       ? blocks
       : blocks.filter((b) => b.className === effectiveClass);
 
+  const groupAbilities = (block: (typeof visibleBlocks)[number]) => {
+    const byCat = new Map<CastCategory, { key: string; name: string; category: CastCategory }[]>();
+    for (const cat of CATEGORY_ORDER) {
+      const abils = block.abilities.filter((a) => a.category === cat);
+      if (abils.length > 0) byCat.set(cat, abils);
+    }
+    return { byCat, present: CATEGORY_ORDER.filter((c) => byCat.has(c)) };
+  };
+
+  const classFilter = classNames.length > 1 ? (
+    <div className="cast-class-filter pill-toggle" role="group" aria-label="Filter by class">
+      <span className="pill-toggle__label" aria-hidden>Class</span>
+      <button
+        className={effectiveClass === "all" ? "active" : ""}
+        onClick={() => setSelectedClass("all")}
+      >
+        All
+      </button>
+      {classNames.map((cn) => (
+        <button
+          key={cn}
+          className={`cf-class${effectiveClass === cn ? " active" : ""}`}
+          style={classColorVar(cn)}
+          onClick={() => setSelectedClass(cn)}
+        >
+          <span className="class-dot" />
+          {cn}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
+  if (isPhone) {
+    return (
+      <div className="role-casts-table">
+        {classFilter}
+        {visibleBlocks.map((block) => {
+          const { byCat, present } = groupAbilities(block);
+          return (
+            <section key={block.className} className="class-cast-block">
+              <h3 className="class-cast-title">{block.className}s</h3>
+              <StatCards>
+                {block.players.map((player) => (
+                  <StatCard
+                    key={player.playerId}
+                    title={player.playerName}
+                    titleStyle={classColorVar(block.className)}
+                    onTitleClick={() => onPlayer(player.playerName)}
+                    rows={[
+                      ...present.flatMap((cat) =>
+                        (byCat.get(cat) ?? []).map((ability) => {
+                          const count = block.counts.get(`${player.playerId}:${ability.key}`)?.castCount ?? 0;
+                          return { label: `${CATEGORY_LABELS[cat]} · ${ability.name}`, value: count === 0 ? "—" : count };
+                        }),
+                      ),
+                      ...ACTIVITY_ROWS.map((ar) => {
+                        const act = block.activity.get(player.playerId) ?? null;
+                        return { label: `Activity · ${ar.label}`, value: act ? ar.fmt(act) : "—" };
+                      }),
+                    ]}
+                  />
+                ))}
+              </StatCards>
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="role-casts-table">
-      {classNames.length > 1 && (
-        <div className="cast-class-filter pill-toggle" role="group" aria-label="Filter by class">
-          <span className="pill-toggle__label" aria-hidden>Class</span>
-          <button
-            className={effectiveClass === "all" ? "active" : ""}
-            onClick={() => setSelectedClass("all")}
-          >
-            All
-          </button>
-          {classNames.map((cn) => (
-            <button
-              key={cn}
-              className={`cf-class${effectiveClass === cn ? " active" : ""}`}
-              style={classColorVar(cn)}
-              onClick={() => setSelectedClass(cn)}
-            >
-              <span className="class-dot" />
-              {cn}
-            </button>
-          ))}
-        </div>
-      )}
+      {classFilter}
       {visibleBlocks.map((block) => {
-        // Group abilities by category, in canonical order
-        const abilitiesByCategory = new Map<
-          CastCategory,
-          { key: string; name: string; category: CastCategory }[]
-        >();
-        for (const cat of CATEGORY_ORDER) {
-          const abils = block.abilities.filter((a) => a.category === cat);
-          if (abils.length > 0) abilitiesByCategory.set(cat, abils);
-        }
-        const presentCategories = CATEGORY_ORDER.filter((c) =>
-          abilitiesByCategory.has(c),
-        );
+        const { byCat: abilitiesByCategory, present: presentCategories } = groupAbilities(block);
 
         // Per-ability cast counts across players, for relative heat.
         const countsByAbility = new Map<string, number[]>();

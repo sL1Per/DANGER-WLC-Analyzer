@@ -8,6 +8,8 @@ import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/an
 import { consumablesStatus, statusHeat, verdict } from "../../lib/playerRollups";
 import { heatClass, deathsHeat, uptimeHeat, type Heat } from "../../lib/heatmap";
 import { classColorVar, classSlug } from "../../lib/classColors";
+import { useIsPhone } from "../../lib/useMediaQuery";
+import { StatCard, StatCards } from "./StatCard";
 
 const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 9, 6, 15];
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -16,6 +18,7 @@ const initials = (name: string) => name.slice(0, 2).toUpperCase();
 const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n));
 
 export function PlayerProfile({ report, playerId }: { report: ReportData; playerId: number }) {
+  const isPhone = useIsPhone();
   const player = report.players.find((p) => p.id === playerId);
   const cfg = useMemo(() => buildRpbConfig(), []);
   // all-night profile numbers are boss-only by spec; rpb now honors report.fights
@@ -87,21 +90,37 @@ export function PlayerProfile({ report, playerId }: { report: ReportData; player
         <div className="profile-col">
           <section className="card">
             <h3>Per-boss breakdown</h3>
-            <div className="scroll-x">
-              <table>
-                <thead><tr><th>Boss</th><th>Deaths</th><th>Avoidable</th><th>Uptime</th></tr></thead>
-                <tbody>
-                  {perBoss.map(({ fight, row: br }) => (
-                    <tr key={fight.id}>
-                      <td>{fight.name}</td>
-                      <td className={heatClass(deathsHeat(br?.deaths ?? 0))}>{br?.deaths ?? 0}</td>
-                      <td className="mono">{(br?.totalAvoidableDamageTaken ?? 0).toLocaleString()}</td>
-                      <td className="mono">{br?.activity ? pct(br.activity.relativeActiveST) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {isPhone ? (
+              <StatCards>
+                {perBoss.map(({ fight, row: br }) => (
+                  <StatCard
+                    key={fight.id}
+                    title={fight.name}
+                    rows={[
+                      { label: "Deaths", value: br?.deaths ?? 0, className: heatClass(deathsHeat(br?.deaths ?? 0)) },
+                      { label: "Avoidable", value: (br?.totalAvoidableDamageTaken ?? 0).toLocaleString() },
+                      { label: "Uptime", value: br?.activity ? pct(br.activity.relativeActiveST) : "—" },
+                    ]}
+                  />
+                ))}
+              </StatCards>
+            ) : (
+              <div className="scroll-x">
+                <table>
+                  <thead><tr><th>Boss</th><th>Deaths</th><th>Avoidable</th><th>Uptime</th></tr></thead>
+                  <tbody>
+                    {perBoss.map(({ fight, row: br }) => (
+                      <tr key={fight.id}>
+                        <td>{fight.name}</td>
+                        <td className={heatClass(deathsHeat(br?.deaths ?? 0))}>{br?.deaths ?? 0}</td>
+                        <td className="mono">{(br?.totalAvoidableDamageTaken ?? 0).toLocaleString()}</td>
+                        <td className="mono">{br?.activity ? pct(br.activity.relativeActiveST) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           <section className="card">

@@ -5,6 +5,8 @@ import {
 import { gearIssueConfig } from "../../lib/analysisConfig";
 import { ALL_FIGHTS } from "../../lib/scopeReport";
 import { classColorVar, CLASS_ORDER } from "../../lib/classColors";
+import { useIsPhone } from "../../lib/useMediaQuery";
+import { StatCard, StatCards } from "./StatCard";
 
 const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 9, 6, 15]; // Head Neck Shoulders Cloak Chest Hands Legs Weapon
 
@@ -53,7 +55,37 @@ export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; 
 
   const [selected, setSelected] = useState<Selection | null>(null);
 
+  const isPhone = useIsPhone();
+
   if (!fight) return <p className="notice">No gear data for this pull (combatantInfo missing).</p>;
+
+  if (isPhone) {
+    return (
+      <>
+        {isAll && <p className="notice">Gear is a snapshot per pull — showing {fight.name}.</p>}
+        <StatCards>
+          {sortedRows.map((r) => (
+            <StatCard
+              key={r.playerId}
+              title={r.playerName}
+              titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
+              onTitleClick={() => onPlayer(r.playerName)}
+              rows={PROFILE_GEAR_SLOTS.map((s) => {
+                const item = r.items[s];
+                const itemIssues = item ? issues.get(r.playerId)?.get(item.itemId) : undefined;
+                const worst = itemIssues?.reduce((a, b) => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? b : a));
+                return {
+                  label: SLOT_NAMES[s],
+                  value: item?.name ?? "—",
+                  className: worst ? `sev-${worst.severity}` : undefined,
+                };
+              })}
+            />
+          ))}
+        </StatCards>
+      </>
+    );
+  }
 
   return (
     <>

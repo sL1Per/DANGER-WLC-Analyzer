@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { consumables, uptimeSeverity, type ReportData } from "@wcl/core";
 import { CLASS_ORDER, classColorVar } from "../lib/classColors";
 import { consumablesConfig } from "../lib/analysisConfig";
+import { useIsPhone } from "../lib/useMediaQuery";
+import { StatCard, StatCards } from "./report/StatCard";
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -17,6 +19,7 @@ function UptimeCell({ value }: { value: number }) {
 }
 
 export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPlayer?: (name: string) => void }) {
+  const isPhone = useIsPhone();
   const result = useMemo(() => consumables(report, consumablesConfig), [report]);
   const classOf = useMemo(() => new Map(report.players.map((p) => [p.id, p.class])), [report.players]);
   const rows = useMemo(() => {
@@ -32,6 +35,36 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
   }
   if (rows.length === 0) {
     return <p>No boss fights in this report.</p>;
+  }
+  if (isPhone) {
+    const sev = (v: number) => `sev-${uptimeSeverity(v)}`;
+    return (
+      <div>
+        <p><small>Only boss fights evaluated. Some T6 fights miss combatantInfo — stand close to the boss at pull.</small></p>
+        <StatCards>
+          {rows.map((r) => (
+            <StatCard
+              key={r.playerId}
+              title={r.playerName}
+              titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
+              onTitleClick={onPlayer ? () => onPlayer(r.playerName) : undefined}
+              rows={[
+                { label: "Total avg (excl. Scrolls)", value: pct(r.totalAverage), className: sev(r.totalAverage) },
+                { label: "Elixir or Flask", value: pct(r.elixirOrFlask), className: sev(r.elixirOrFlask) },
+                { label: "Battle Elixir", value: `${pct(r.battleElixir)}${r.battleElixirNames.length ? ` — ${r.battleElixirNames.join(", ")}` : ""}` },
+                { label: "Guardian Elixir", value: `${pct(r.guardianElixir)}${r.guardianElixirNames.length ? ` — ${r.guardianElixirNames.join(", ")}` : ""}` },
+                { label: "Flask", value: `${pct(r.flask)}${r.flaskNames.length ? ` — ${r.flaskNames.join(", ")}` : ""}` },
+                { label: "Food Buff", value: pct(r.food), className: sev(r.food) },
+                { label: "Scrolls", value: r.scrolls || "—" },
+                { label: "Weapon Enhancement", value: r.weaponEnhancement === null ? "—" : pct(r.weaponEnhancement), className: r.weaponEnhancement === null ? undefined : sev(r.weaponEnhancement) },
+                { label: "JC neck", value: r.jcNeck.equipped ? `${r.jcNeck.usedOnFights}${r.jcNeck.inactiveOnFights > 0 ? ` — inactive on ${r.jcNeck.inactiveOnFights}` : ""}` : "—", className: r.jcNeck.inactiveOnFights > 0 ? "sev-moderate" : undefined },
+                { label: "Suboptimal found", value: r.suboptimal.length ? r.suboptimal.join(", ") : "—", className: r.suboptimal.length ? "sev-moderate" : undefined },
+              ]}
+            />
+          ))}
+        </StatCards>
+      </div>
+    );
   }
   return (
     <div>
