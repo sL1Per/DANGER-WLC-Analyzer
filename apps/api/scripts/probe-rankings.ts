@@ -4,7 +4,7 @@
  * Usage:
  *   WCL_CLIENT_ID=xxx WCL_CLIENT_SECRET=yyy pnpm --filter @wcl/api exec tsx scripts/probe-rankings.ts <reportCode>
  */
-import { fetchRankings, fetchToken } from "../src/wcl";
+import { fetchRankings, fetchToken } from "../../web/src/lib/wcl/wcl";
 
 const code = process.argv[2];
 const { WCL_CLIENT_ID, WCL_CLIENT_SECRET } = process.env;

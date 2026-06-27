@@ -11,7 +11,7 @@ export async function fetchToken(clientId: string, clientSecret: string): Promis
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: {
-      Authorization: "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64"),
+      Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({ grant_type: "client_credentials" }),

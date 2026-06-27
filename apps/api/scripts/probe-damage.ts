@@ -6,7 +6,7 @@
  * event, a few samples, and the distinct `hitType` values seen — so the M5b
  * enrichment (school + hitType) can be designed against the real shapes.
  */
-import { fetchRawReport, fetchToken } from "../src/wcl";
+import { fetchRawReport, fetchToken } from "../../web/src/lib/wcl/wcl";
 
 const API_URL = "https://classic.warcraftlogs.com/api/v2/client";
 const code = process.argv[2];

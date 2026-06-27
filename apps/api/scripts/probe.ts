@@ -4,7 +4,7 @@
  * Prints fight list, one raw combatantinfo event, and a gameData item lookup,
  * so the shapes assumed in wcl.ts can be verified against the live API.
  */
-import { fetchCombatantInfo, fetchItemMeta, fetchRawReport, fetchToken } from "../src/wcl";
+import { fetchCombatantInfo, fetchItemMeta, fetchRawReport, fetchToken } from "../../web/src/lib/wcl/wcl";
 
 const code = process.argv[2];
 const { WCL_CLIENT_ID, WCL_CLIENT_SECRET } = process.env;
