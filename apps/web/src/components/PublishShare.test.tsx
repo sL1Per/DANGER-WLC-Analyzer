@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PublishShare } from "./PublishShare";
 import type { ReportData } from "@wcl/core";
@@ -15,7 +14,7 @@ const report = { reportId: "abc", title: "T5", zoneName: "Karazhan" } as unknown
 describe("PublishShare", () => {
   it("publishes on click and reveals the key-free share link", async () => {
     render(<MemoryRouter><PublishShare report={report} /></MemoryRouter>);
-    await userEvent.click(screen.getByRole("button", { name: /publish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /publish/i }));
     await waitFor(() => expect(screen.getByDisplayValue("https://app.test/s/xyz123")).toBeInTheDocument());
   });
 });

@@ -6,11 +6,13 @@ import { buildShareMessage, postToDiscord } from "../lib/discord";
 import { loadWebhookUrl } from "../lib/storage";
 
 type Status = "idle" | "publishing" | "ready" | "error";
+type MessageKind = "ok" | "error";
 
 export function PublishShare({ report }: { report: ReportData }) {
   const [status, setStatus] = useState<Status>("idle");
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<MessageKind>("ok");
   const webhookUrl = loadWebhookUrl();
 
   async function onPublish() {
@@ -26,8 +28,14 @@ export function PublishShare({ report }: { report: ReportData }) {
   }
 
   async function onCopy() {
-    await navigator.clipboard.writeText(url);
-    setMessage("Link copied.");
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessageKind("ok");
+      setMessage("Link copied.");
+    } catch {
+      setMessageKind("error");
+      setMessage("Couldn't copy — select the link and copy manually.");
+    }
   }
 
   async function onPostDiscord() {
@@ -36,8 +44,10 @@ export function PublishShare({ report }: { report: ReportData }) {
       await postToDiscord(webhookUrl, buildShareMessage({
         title: report.title, zoneName: report.zoneName, link: url,
       }));
+      setMessageKind("ok");
       setMessage("Posted to Discord.");
     } catch (e) {
+      setMessageKind("error");
       setMessage(e instanceof Error ? e.message : "Failed to post.");
     }
   }
@@ -60,7 +70,7 @@ export function PublishShare({ report }: { report: ReportData }) {
       {webhookUrl
         ? <button className="btn-outline" onClick={onPostDiscord}>Post to Discord</button>
         : <span className="navitem--disabled"><Link to="/settings">Set a webhook</Link> to post</span>}
-      {message && <span role="status" className="sev-ok">{message}</span>}
+      {message && <span role="status" className={messageKind === "ok" ? "sev-ok" : "sev-major"}>{message}</span>}
     </div>
   );
 }
