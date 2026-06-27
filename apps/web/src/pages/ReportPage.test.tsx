@@ -82,12 +82,10 @@ describe("ReportPage — loader branches", () => {
   });
 });
 
-// NOTE: Discord-posting coverage is NOT lost — it is fully covered by
-// ShareToDiscord.test.tsx (which tests the component in isolation, including
-// the webhook POST, success confirmation, and error surfacing). The old
-// Discord assertion that lived here was removed because ReportPage now passes
-// shareActions={null}; PublishShare.test.tsx (Task 10) will cover the wired-up
-// publish action.
+// NOTE: Discord-posting and publish-share coverage lives in PublishShare.test.tsx,
+// which tests the component in isolation (webhook POST, snapshot upload, success
+// confirmation, and error surfacing). The old Discord assertion that lived here
+// was removed because ReportPage now passes shareActions={null}.
 
 describe("ReportPage — category / tab behaviour (via ReportView)", () => {
   it("defaults to the Rankings category", () => {

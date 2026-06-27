@@ -9,6 +9,7 @@
 - (2) Clean up
 - (3) Security review
 - (4) Deploy Online FREE
+  - The production `ShareStore` adapter (Cloudflare KV/R2) must add auth, size cap, eviction policy, and rate-limiting. The current dev in-memory `POST /api/share` is an open, unbounded write endpoint — acceptable locally, not in production.
 - totem twist tracker (https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=15 // https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=28)
 
 ## Changes

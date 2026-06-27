@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import type { ReportData } from "@wcl/core";
 import { useIsPhone } from "../../lib/useMediaQuery";
 import { ReportHeader } from "../ReportHeader";
@@ -73,8 +72,8 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
     if (p) patch({ lens: "player", player: String(p.id) });
   };
 
-  // Human-readable description of the current view (used by shareActions content
-  // when injected by the parent, e.g. PublishShare in Task 10).
+  // Human-readable description of the current view — passed to ReportDrawer as
+  // activeLabel (mobile subtitle) and used as the desktop subtitle in ReportHeader.
   const viewLabel = (() => {
     if (lens === "player") {
       const name = report.players.find((p) => p.id === playerId)?.name ?? "Player";
