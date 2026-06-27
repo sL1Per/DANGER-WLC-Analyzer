@@ -25,6 +25,27 @@ export function applyHideEmpty(root: HTMLElement, hide: boolean): void {
   for (const el of root.querySelectorAll(".eh-hidden")) el.classList.remove("eh-hidden");
   if (!hide) return;
   for (const table of root.querySelectorAll("table")) hideInTable(table);
+  hideInCards(root);
+}
+
+/**
+ * Mobile presentation of the same toggle: report views render one `.stat-card`
+ * per player instead of a table, with each metric a `.stat-card__row` (`dt`
+ * label + `dd` value). Hide rows whose value is empty, and hide a whole card
+ * when every row is empty (the per-card analog of an empty column/row).
+ */
+function hideInCards(root: HTMLElement): void {
+  for (const card of root.querySelectorAll<HTMLElement>(".stat-card")) {
+    const rows = [...card.querySelectorAll<HTMLElement>(".stat-card__row")];
+    if (rows.length === 0) continue;
+    let visible = 0;
+    for (const row of rows) {
+      const value = row.querySelector("dd");
+      if (value && isEmptyCell(value)) row.classList.add("eh-hidden");
+      else visible++;
+    }
+    if (visible === 0) card.classList.add("eh-hidden");
+  }
 }
 
 interface GridCell {

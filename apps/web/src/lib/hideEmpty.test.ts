@@ -86,4 +86,45 @@ describe("applyHideEmpty", () => {
     expect(hidden(root.querySelector("#t1"))).toBe(true);
     expect(hidden(root.querySelector("#t2"))).toBe(false);
   });
+
+  // ── mobile per-player cards ──────────────────────────────
+  const card = (rowsHtml: string) =>
+    `<div class="stat-card"><div class="stat-card__title">Thrall</div>${rowsHtml}</div>`;
+  const cardRow = (id: string, value: string) =>
+    `<div class="stat-card__row" id="${id}"><dt>L</dt><dd>${value}</dd></div>`;
+
+  it("hides a card row whose value is empty, keeps non-empty rows", () => {
+    const root = host(card(cardRow("full", "5") + cardRow("dash", "—") + cardRow("blank", "")));
+    applyHideEmpty(root, true);
+    expect(hidden(root.querySelector("#full"))).toBe(false);
+    expect(hidden(root.querySelector("#dash"))).toBe(true);
+    expect(hidden(root.querySelector("#blank"))).toBe(true);
+  });
+
+  it("does not treat a literal 0 in a card row as empty", () => {
+    const root = host(card(cardRow("zero", "0")));
+    applyHideEmpty(root, true);
+    expect(hidden(root.querySelector("#zero"))).toBe(false);
+  });
+
+  it("hides the whole card when every row is empty", () => {
+    const root = host(card(cardRow("a", "—") + cardRow("b", "")));
+    applyHideEmpty(root, true);
+    expect(hidden(root.querySelector(".stat-card"))).toBe(true);
+  });
+
+  it("keeps a card that has at least one non-empty row", () => {
+    const root = host(card(cardRow("a", "—") + cardRow("b", "9")));
+    applyHideEmpty(root, true);
+    expect(hidden(root.querySelector(".stat-card"))).toBe(false);
+  });
+
+  it("restores hidden card rows and cards when hide=false", () => {
+    const root = host(card(cardRow("a", "—") + cardRow("b", "")));
+    applyHideEmpty(root, true);
+    expect(hidden(root.querySelector(".stat-card"))).toBe(true);
+    applyHideEmpty(root, false);
+    expect(hidden(root.querySelector(".stat-card"))).toBe(false);
+    expect(hidden(root.querySelector("#a"))).toBe(false);
+  });
 });
