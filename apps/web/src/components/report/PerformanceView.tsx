@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { performanceSummary, type ReportData, type PerfRanked, type PerfDeathRow } from "@wcl/core";
 import { scopeReportToFight } from "../../lib/scopeReport";
 import { classColorVar } from "../../lib/classColors";
+import { useIsPhone } from "../../lib/useMediaQuery";
+import { StatCard, StatCards } from "./StatCard";
 
 const amount = (n: number) => Math.round(n).toLocaleString();
 const rate = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(1));
@@ -33,7 +35,30 @@ function maxAmount(rows: PerfRanked[]): number {
 }
 
 function SourcePanel({ title, rateLabel, rows, onPlayer }: { title: string; rateLabel: string; rows: PerfRanked[]; onPlayer: (name: string) => void }) {
+  const isPhone = useIsPhone();
   const max = maxAmount(rows);
+  if (isPhone) {
+    return (
+      <section className="card perf-panel">
+        <h3>{title}</h3>
+        <StatCards>
+          {rows.map((r) => (
+            <StatCard
+              key={r.id}
+              title={r.name}
+              titleStyle={classColorVar(r.className ?? "")}
+              onTitleClick={() => onPlayer(r.name)}
+              rows={[
+                { label: "%", value: pct(r.percent) },
+                { label: "Amount", value: amount(r.amount) },
+                { label: rateLabel, value: rate(r.perSecond) },
+              ]}
+            />
+          ))}
+        </StatCards>
+      </section>
+    );
+  }
   return (
     <section className="card perf-panel">
       <h3>{title}</h3>
@@ -62,7 +87,28 @@ function SourcePanel({ title, rateLabel, rows, onPlayer }: { title: string; rate
 }
 
 function AbilityPanel({ title, rateLabel, rows }: { title: string; rateLabel: string; rows: PerfRanked[] }) {
+  const isPhone = useIsPhone();
   const max = maxAmount(rows);
+  if (isPhone) {
+    return (
+      <section className="card perf-panel">
+        <h3>{title}</h3>
+        <StatCards>
+          {rows.map((r) => (
+            <StatCard
+              key={r.id}
+              title={r.name}
+              rows={[
+                { label: "%", value: pct(r.percent) },
+                { label: "Amount", value: amount(r.amount) },
+                { label: rateLabel, value: rate(r.perSecond) },
+              ]}
+            />
+          ))}
+        </StatCards>
+      </section>
+    );
+  }
   return (
     <section className="card perf-panel">
       <h3>{title}</h3>
@@ -89,6 +135,30 @@ function AbilityPanel({ title, rateLabel, rows }: { title: string; rateLabel: st
 }
 
 function DeathsPanel({ rows, onPlayer }: { rows: PerfDeathRow[]; onPlayer: (name: string) => void }) {
+  const isPhone = useIsPhone();
+  if (isPhone) {
+    return (
+      <section className="card perf-panel">
+        <h3>Deaths</h3>
+        <StatCards>
+          {rows.length === 0
+            ? <p className="sev-neutral">No deaths</p>
+            : rows.map((r, i) => (
+              <StatCard
+                key={`${r.playerId}-${i}`}
+                title={r.playerName}
+                titleStyle={classColorVar(r.className ?? "")}
+                onTitleClick={() => onPlayer(r.playerName)}
+                rows={[
+                  { label: "Killing Blow", value: r.killingBlow },
+                  { label: "Time", value: mmss(r.timeMs) },
+                ]}
+              />
+            ))}
+        </StatCards>
+      </section>
+    );
+  }
   return (
     <section className="card perf-panel">
       <h3>Deaths</h3>
