@@ -1158,9 +1158,13 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   .drawer-actions { display: flex; flex-direction: column; gap: 8px; }
   .drawer-actions .btn-outline { width: 100%; min-height: 44px; text-align: center; }
 
-  /* desktop header + the in-body category subnav are replaced by the drawer */
+  /* desktop header + the in-body category subnav are replaced by the drawer.
+     The role-breakdown tabs (.role-subnav) reuse the .cat-subnav look but are
+     a per-view filter, not report navigation — keep them, just let them scroll. */
   .report-header { display: none; }
-  .cat-subnav { display: none; }
+  .cat-subnav:not(.role-subnav) { display: none; }
+  .role-subnav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .role-subnav button { flex: 0 0 auto; min-height: 44px; }
 }
 
 @media (max-width: 640px) {
