@@ -170,7 +170,7 @@ function normName(name: string): string {
 
 /** Sum a player's per-fight raw hit counts into the normalized {count, pct} shape.
  *  Percentages are recomputed from the summed counts, so any fight subset is exact. */
-function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
+export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
   const o = { hit: 0, crit: 0, dodge: 0, miss: 0, parry: 0, resist: 0 };
   const t = { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 };
   const h = { hit: 0, crit: 0 };

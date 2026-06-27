@@ -8,7 +8,8 @@ import { classColorVar, CLASS_ORDER } from "../../lib/classColors";
 import { useIsPhone } from "../../lib/useMediaQuery";
 import { StatCard, StatCards } from "./StatCard";
 
-const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 9, 6, 15]; // Head Neck Shoulders Cloak Chest Hands Legs Weapon
+// Head Neck Shoulders Cloak Chest Bracers Hands Waist Legs Ring1 Ring2 Trinket1 Trinket2 Weapon Off-Hand
+const PROFILE_GEAR_SLOTS = [0, 1, 2, 14, 4, 8, 9, 5, 6, 10, 11, 12, 13, 15, 16];
 
 const SEVERITY_LABEL: Record<IssueSeverity, string> = { major: "Major", moderate: "Moderate", minor: "Minor" };
 

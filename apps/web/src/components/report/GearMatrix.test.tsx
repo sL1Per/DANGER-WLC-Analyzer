@@ -4,11 +4,14 @@ import { reportFixture } from "@wcl/core";
 import { GearMatrix } from "./GearMatrix";
 
 describe("GearMatrix", () => {
-  it("renders the eight slot headers", () => {
+  it("renders all gear slot headers", () => {
     const report = reportFixture;
     const fightId = report.gear[0]?.fightId ?? report.fights.find((f) => f.isBoss)!.id;
     render(<GearMatrix report={report} fightId={fightId} onPlayer={() => {}} />);
-    for (const label of ["Head", "Neck", "Shoulders", "Cloak", "Chest", "Hands", "Legs", "Weapon"]) {
+    for (const label of [
+      "Head", "Neck", "Shoulders", "Cloak", "Chest", "Bracers", "Hands", "Waist", "Legs",
+      "Ring1", "Ring2", "Trinket1", "Trinket2", "Weapon", "Off-Hand",
+    ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });

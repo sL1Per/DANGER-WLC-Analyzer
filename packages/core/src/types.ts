@@ -9,8 +9,11 @@
  * History:
  *   1 — introduced cache schema versioning (hitType stats, NPC source names,
  *       unmitigated avoidable damage, per-fight hit stats all current as of v1).
+ *   2 — added per-boss DPS/HPS parse value (RankingCharacter.parse).
+ *   3 — fixed parse to read WCL's `amount` field (v2 report rankings) — v2
+ *       cached it from the wrong field (`total`) and always got 0.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
@@ -226,6 +229,8 @@ export interface RankingCharacter {
   rankPercent: number;
   /** item-level (bracket) parse percentile, 0–100 */
   bracketPercent: number;
+  /** the parse metric value: DPS for dps/tank rankings, HPS for healer rankings */
+  parse: number;
 }
 
 /** WCL parse rankings for one ranked (killed) boss fight, grouped by WCL role. */

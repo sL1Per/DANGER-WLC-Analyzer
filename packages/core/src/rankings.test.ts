@@ -43,8 +43,8 @@ describe("buildRankingsGrid", () => {
       {
         fightID: 3, encounterId: 623, encounterName: "Hydross",
         dps: [
-          { name: "Low", class: "Mage", rankPercent: 30, bracketPercent: 30 },
-          { name: "High", class: "Mage", rankPercent: 90, bracketPercent: 90 },
+          { name: "Low", class: "Mage", rankPercent: 30, bracketPercent: 30, parse: 300 },
+          { name: "High", class: "Mage", rankPercent: 90, bracketPercent: 90, parse: 900 },
         ],
         healers: [], tanks: [],
       },

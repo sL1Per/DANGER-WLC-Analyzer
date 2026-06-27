@@ -29,7 +29,7 @@ function ranking(name: string, className: string, spec: string): ReportRanking[]
   return [{
     fightID: 1, encounterId: 1, encounterName: "Boss",
     tanks: [], healers: [],
-    dps: [{ name, class: className, spec, rankPercent: 90, bracketPercent: 90 }],
+    dps: [{ name, class: className, spec, rankPercent: 90, bracketPercent: 90, parse: 900 }],
   }];
 }
 

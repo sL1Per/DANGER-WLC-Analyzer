@@ -389,6 +389,8 @@ export interface RawRankingCharacter {
   spec?: string;
   rankPercent?: number;
   bracketPercent?: number;
+  /** parse metric value (DPS for dps/tank rankings, HPS for healer rankings) */
+  amount?: number;
 }
 
 export interface RawRankingEntry {

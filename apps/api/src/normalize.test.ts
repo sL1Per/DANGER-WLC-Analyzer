@@ -475,13 +475,13 @@ describe("normalizeReport — rankings", () => {
         roles: {
           tanks: { characters: [] },
           healers: { characters: [] },
-          dps: { characters: [{ name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: 95.8, bracketPercent: 88.4 }] },
+          dps: { characters: [{ name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: 95.8, bracketPercent: 88.4, amount: 1234.6 }] },
         },
       }],
     });
     expect(data.rankings).toHaveLength(1);
     expect(data.rankings![0]!.encounterName).toBe("Hydross the Unstable");
-    expect(data.rankings![0]!.dps[0]).toEqual({ name: "Dpsone", class: "Mage", spec: "Fire", rankPercent: 96, bracketPercent: 88 });
+    expect(data.rankings![0]!.dps[0]).toEqual({ name: "Dpsone", class: "Mage", spec: "Fire", rankPercent: 96, bracketPercent: 88, parse: 1235 });
   });
 
   it("leaves rankings undefined when not provided", () => {

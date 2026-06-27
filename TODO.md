@@ -3,20 +3,21 @@
 ## New features / todo
 
 - (1) [DONE] Class selector on RPB  "* - casts" tabs. Make sure there is an option to select all
-- (7) Make there whole app mobile friendly
+- (7) [DONE] Make there whole app mobile friendly
 - (2) [DONE] Discord webhook — "Share to Discord" button posts the current view (deep link + title/zone/view) via a local webhook URL. Note: links are localhost until deploy (#14).
+- (11) Remove as many npm dependencies as possible
 - (12) Clean up
 - (13) Security review
 - (14) Deploy Online FREE
-- (10) totem twist tracker (https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=15 // https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=28)
+- (9) totem twist tracker (https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=15 // https://www.warcraftlogs.com/reports/GPAaJQBnF19VLft4?fight=65&type=casts&source=28)
 
 ## Changes
 
 - (2) [DONE] Rename By Boss Fight and By Player into Boss fights and Players
-- (9) Make WCL API credentials and Discord webhook local settings and not stored in the backend like now. Idea is that in the future i will have this app online and anyone can use it with their own keys
+- (10) Make WCL API credentials and Discord webhook local settings and not stored in the backend like now. Idea is that in the future i will have this app online and anyone can use it with their own keys
 - (6) [DONE] Overview page needs revamp
-- (8) By Player details needs revamp
-- (11) Remove as many npm dependencies as possible
+- (8) [DONE] By Player details needs revamp
+- Player view, summary cards needs some review
 
 ## Bugs
 

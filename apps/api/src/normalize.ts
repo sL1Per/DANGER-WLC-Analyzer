@@ -277,6 +277,7 @@ function buildRankings(entries: RawRankingEntry[]): ReportRanking[] {
     spec: c.spec,
     rankPercent: Math.round(c.rankPercent ?? 0),
     bracketPercent: Math.round(c.bracketPercent ?? 0),
+    parse: Math.round(c.amount ?? 0),
   });
   return entries
     .filter((e) => e.fightID != null && e.encounter?.id != null)
