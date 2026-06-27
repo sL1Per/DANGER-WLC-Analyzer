@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useReport } from "../lib/useReport";
 import { LoadingNugget } from "../components/LoadingNugget";
 import { ReportView } from "../components/report/ReportView";
+import { PublishShare } from "../components/PublishShare";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
@@ -23,7 +24,7 @@ export function ReportPage() {
       report={result.data}
       stale={result.stale}
       onRefresh={reload}
-      shareActions={null}
+      shareActions={<PublishShare report={result.data} />}
     />
   );
 }
