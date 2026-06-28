@@ -11,6 +11,10 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
     expect(screen.getByText(/saved to this browser/i)).toBeInTheDocument();
   });
+  it("advises using a dedicated WCL API client for this tool", () => {
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>);
+    expect(screen.getByText(/dedicated/i)).toBeInTheDocument();
+  });
   it("rejects an invalid webhook url", () => {
     render(<MemoryRouter><SettingsPage /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/webhook url/i), { target: { value: "http://example.com" } });

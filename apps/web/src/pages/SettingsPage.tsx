@@ -41,6 +41,7 @@ export function SettingsPage() {
           <p>Create a (free) v2 API client at{" "}
             <a href="https://classic.warcraftlogs.com/api/clients/" target="_blank" rel="noreferrer">classic.warcraftlogs.com/api/clients</a>{" "}
             and paste the client ID and secret here. Stored only in this browser.</p>
+          <p>Use a <strong>dedicated</strong> API client for this tool, not one you reuse elsewhere — the secret is kept in this browser's local storage and can be revoked from your WCL account at any time.</p>
           <label>Client ID <input value={clientId} onChange={(e) => setClientId(e.target.value)} required /></label>
           <label>Client secret <input value={clientSecret} type="password" onChange={(e) => setClientSecret(e.target.value)} required /></label>
           <button type="submit" className="btn-gold">Save</button>

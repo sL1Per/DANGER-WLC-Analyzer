@@ -13,7 +13,7 @@ import {
   addRecentReport,
 } from "./storage";
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
 describe("credentials storage", () => {
   it("round-trips credentials", () => {
@@ -31,6 +31,11 @@ describe("credentials storage", () => {
   it("returns valid tokens", () => {
     saveToken({ accessToken: "tok", expiresAt: Date.now() + 60_000 });
     expect(loadToken()?.accessToken).toBe("tok");
+  });
+  it("keeps the token in sessionStorage (not persisted to disk like the secret)", () => {
+    saveToken({ accessToken: "tok", expiresAt: Date.now() + 60_000 });
+    expect(sessionStorage.getItem("wcl.token")).not.toBeNull();
+    expect(localStorage.getItem("wcl.token")).toBeNull();
   });
   it("drops corrupt credentials", () => {
     localStorage.setItem("wcl.credentials", "{bad json");

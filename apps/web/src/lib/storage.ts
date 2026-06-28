@@ -83,21 +83,25 @@ export function loadCredentials(): Credentials | null {
     return null;
   }
 }
+// The access token lives in sessionStorage, not localStorage: it's short-lived
+// and silently re-fetched from the stored credentials, so there's no reason to
+// persist it to disk across sessions. (The secret stays in localStorage so the
+// per-browser key survives — an accepted tradeoff.)
 export function saveToken(t: StoredToken): void {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(t));
+  sessionStorage.setItem(TOKEN_KEY, JSON.stringify(t));
 }
 export function loadToken(): StoredToken | null {
-  const raw = localStorage.getItem(TOKEN_KEY);
+  const raw = sessionStorage.getItem(TOKEN_KEY);
   if (!raw) return null;
   let token: StoredToken;
   try {
     token = JSON.parse(raw) as StoredToken;
   } catch {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     return null;
   }
   if (token.expiresAt <= Date.now()) {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     return null;
   }
   return token;
