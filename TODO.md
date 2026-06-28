@@ -2,9 +2,7 @@
 
 ## New features / todo
 
-- (10) [DONE] Publish-snapshot sharing model: `POST /api/share` stores a key-free ReportData snapshot; `GET /api/share/:id` retrieves it. The viewer route `/s/:shareId` loads it via `fetchSnapshot` and renders `ReportView` read-only (no WCL credentials, no Refresh). Production snapshot storage (Cloudflare KV/R2) deferred to #14.
-
-
+- [DONE] Publish-snapshot sharing model: `POST /api/share` stores a key-free ReportData snapshot; `GET /api/share/:id` retrieves it. The viewer route `/s/:shareId` loads it via `fetchSnapshot` and renders `ReportView` read-only (no WCL credentials, no Refresh). Production snapshot storage (Cloudflare KV/R2) deferred to #14.
 - (1) Remove as many npm dependencies as possible
 - (2) Clean up
 - (3) Security review

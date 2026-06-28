@@ -118,7 +118,7 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
                 style={classColorVar(p.class)}
                 onClick={() => onPlayer(p.id)}
               >
-                <span className="class-dot" /> {p.name}
+                <span className="player-chip__name">{p.name}</span>
               </button>
             ))}
           </div>

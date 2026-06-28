@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 interface ReportDrawerProps {
   title: string;
@@ -23,18 +24,26 @@ export function ReportDrawer({ title, activeLabel, children }: ReportDrawerProps
 
   return (
     <div className="report-slimbar">
-      <span className="report-slimbar__title">{title}</span>
-      <span className="report-slimbar__active">{activeLabel}</span>
-      <button
-        type="button"
-        className="report-slimbar__menu"
-        aria-label="Menu"
-        aria-expanded={open}
-        aria-controls="report-drawer"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span aria-hidden>☰</span>
-      </button>
+      <div className="report-slimbar__brand">
+        <Link to="/" className="report-slimbar__logo">
+          <img src="/favicon.svg" alt="" className="report-slimbar__logo-icon" />
+          <span className="report-slimbar__logo-text">DANGER Raid Analyzer</span>
+        </Link>
+        <button
+          type="button"
+          className="report-slimbar__menu"
+          aria-label="Menu"
+          aria-expanded={open}
+          aria-controls="report-drawer"
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span aria-hidden>☰</span>
+        </button>
+      </div>
+      <div className="report-slimbar__info">
+        <span className="report-slimbar__title">{title}</span>
+        <span className="report-slimbar__active">{activeLabel}</span>
+      </div>
 
       {open && (
         <>

@@ -21,7 +21,7 @@ export function HomePage() {
   return (
     <div className="home">
       <div className="home-brand">
-        <span className="home-mark" aria-hidden>D</span>
+        <span className="home-mark" aria-hidden><img src="/favicon.svg" alt="" className="home-mark__icon" /></span>
         <h1 className="home-title">DANGER Raid Analyzer <span className="brand-tag">For TBC Anniversary</span></h1>
         <p className="home-tag">Combat Log Analytics &amp; Role Performance Breakdown</p>
       </div>

@@ -1,12 +1,15 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { ReportDrawer } from "./ReportDrawer";
 
 const setup = () =>
   render(
-    <ReportDrawer title="My Raid" activeLabel="Gear · BOSSES">
-      <button>Inside drawer</button>
-    </ReportDrawer>,
+    <MemoryRouter>
+      <ReportDrawer title="My Raid" activeLabel="Gear · BOSSES">
+        <button>Inside drawer</button>
+      </ReportDrawer>
+    </MemoryRouter>,
   );
 
 describe("ReportDrawer", () => {
