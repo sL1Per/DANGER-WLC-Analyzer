@@ -97,4 +97,20 @@ describe("share endpoints", () => {
     });
     expect(res.status).toBe(413);
   });
+
+  it("allows any origin by default (dev, no corsOrigin configured)", async () => {
+    const app = createApp(createMemoryShareStore());
+    const res = await app.request("/api/share/x", { headers: { Origin: "https://evil.example" } });
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
+  it("restricts CORS to the configured web origin when corsOrigin is set", async () => {
+    const app = createApp(createMemoryShareStore(), { corsOrigin: "https://app.example" });
+    // A disallowed origin gets no allow-origin header at all (browser blocks it)...
+    const evil = await app.request("/api/share/x", { headers: { Origin: "https://evil.example" } });
+    expect(evil.headers.get("access-control-allow-origin")).toBeNull();
+    // ...while the configured origin is echoed back.
+    const ok = await app.request("/api/share/x", { headers: { Origin: "https://app.example" } });
+    expect(ok.headers.get("access-control-allow-origin")).toBe("https://app.example");
+  });
 });

@@ -9,6 +9,8 @@ const DEFAULT_MAX_BODY_BYTES = 512 * 1024;
 export interface AppOptions {
   /** Reject /api/share bodies larger than this (bytes). Defaults to 512 KB. */
   maxBodyBytes?: number;
+  /** Restrict CORS to this exact web origin. Unset → "*" (dev only). */
+  corsOrigin?: string;
 }
 
 // Defensive strip at the publish boundary: a published snapshot is shared
@@ -35,7 +37,9 @@ function isReportShape(data: unknown): data is ReportData {
 export function createApp(store: ShareStore = createMemoryShareStore(), opts: AppOptions = {}) {
   const maxSize = opts.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
   const app = new Hono();
-  app.use("/api/*", cors());
+  // Restrict to the deployed web origin when known; "*" is acceptable only because
+  // the store holds public, key-free data with no cookies — but lock it down anyway.
+  app.use("/api/*", cors({ origin: opts.corsOrigin ?? "*" }));
 
   app.post("/api/share", bodyLimit({ maxSize }), async (c) => {
     let data: unknown;
