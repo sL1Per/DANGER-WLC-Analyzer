@@ -1,44 +1,12 @@
-import { useSearchParams, useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useReport } from "../lib/useReport";
-import { useIsPhone } from "../lib/useMediaQuery";
-import { ReportHeader } from "../components/ReportHeader";
-import { ReportDrawer } from "../components/report/ReportDrawer";
-import { LensBar, type Lens } from "../components/LensBar";
-import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
-import { SummaryRankings } from "../components/report/SummaryRankings";
-import { PerformanceView } from "../components/report/PerformanceView";
-import { RoleBreakdownView } from "../components/report/RoleBreakdownView";
-import { GearMatrix } from "../components/report/GearMatrix";
-import { FightHeader } from "../components/report/FightHeader";
-import { ConsumablesCategory } from "../components/report/ConsumablesCategory";
-import { ConsumablesView } from "../components/ConsumablesView";
-import { PlayerProfile } from "../components/report/PlayerProfile";
-import { EmptyToggle } from "../components/report/EmptyToggle";
-import { ShadowResView } from "../components/ShadowResView";
 import { LoadingNugget } from "../components/LoadingNugget";
-import { ShareToDiscord } from "../components/ShareToDiscord";
-
-const CATEGORIES = [
-  ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
-  ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
-] as const;
-type Cat = (typeof CATEGORIES)[number][0];
-
-// Tabs sourced from combatantInfo have no data on trash fights (WCL only records
-// combatantInfo at boss pull), so the TRASH card hides them rather than showing
-// empty tables. Rankings are handled separately — they only show on the combined
-// BOSSES card (see below).
-const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["gear", "shadowresi"]);
-
-// Tabs that aggregate across all boss pulls (CLA report-wide audits): they only
-// make sense on the combined BOSSES card, not on a single pull or the TRASH card.
-const BOSSES_ONLY_CATS: ReadonlySet<Cat> = new Set(["summary", "buffconsumables"]);
+import { ReportView } from "../components/report/ReportView";
+import { PublishShare } from "../components/PublishShare";
 
 export function ReportPage() {
   const { reportId = "" } = useParams();
   const { result, error, loading, reload } = useReport(reportId);
-  const [params, setParams] = useSearchParams();
-  const isPhone = useIsPhone();
 
   if (loading) return <LoadingNugget />;
   if (error) {
@@ -50,128 +18,13 @@ export function ReportPage() {
     );
   }
   if (!result) return null;
-  const report = result.data;
-
-  const lens = (params.get("lens") as Lens) ?? "fight";
-  const query = params.get("q") ?? "";
-  const fightId = Number(params.get("fight")) || ALL_FIGHTS; // ALL card by default
-  const playerId = Number(params.get("player")) || report.players[0]?.id || 0;
-
-  const isTrash = fightId === ALL_TRASH;
-  // Rankings (WCL boss-encounter percentiles) only make sense for the combined
-  // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
-  const categories = CATEGORIES.filter(([key]) =>
-    BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key)),
-  );
-  const requestedCat = (params.get("cat") as Cat) ?? "summary";
-  // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
-  // fall back to the first visible tab so the body is never blank.
-  const cat: Cat = categories.some(([key]) => key === requestedCat)
-    ? requestedCat
-    : categories[0]![0];
-
-  const patch = (next: Record<string, string>) => {
-    const p = new URLSearchParams(params);
-    for (const [k, v] of Object.entries(next)) p.set(k, v);
-    setParams(p, { replace: false });
-  };
-  const goPlayer = (name: string) => {
-    const p = report.players.find((pl) => pl.name === name);
-    if (p) patch({ lens: "player", player: String(p.id) });
-  };
-
-  // Human-readable description of the current view, posted alongside the deep
-  // link when sharing to Discord.
-  const viewLabel = (() => {
-    if (lens === "player") {
-      const name = report.players.find((p) => p.id === playerId)?.name ?? "Player";
-      return `Players details · ${name}`;
-    }
-    const catLabel = CATEGORIES.find(([key]) => key === cat)?.[1] ?? cat;
-    const fightName =
-      fightId === ALL_FIGHTS ? "BOSSES" :
-      fightId === ALL_TRASH ? "TRASH" :
-      report.fights.find((f) => f.id === fightId)?.name ?? "fight";
-    return `${catLabel} · ${fightName}`;
-  })();
-
-  // Report identity line (mirrors the header subtitle): zone · players · date.
-  const reportDetails =
-    `${report.zoneName} · ${report.players.length} players · ${new Date(report.startTime).toLocaleDateString()}`;
 
   return (
-    <div className="report">
-      {isPhone ? (
-        <ReportDrawer title={report.title} activeLabel={viewLabel}>
-          <nav className="drawer-nav">
-            {categories.map(([key, label]) => (
-              <button key={key} className={cat === key ? "active" : ""} onClick={() => patch({ cat: key })}>{label}</button>
-            ))}
-          </nav>
-          <div className="drawer-actions">
-            <Link to="/settings" className="btn-outline">Settings</Link>
-            <Link to="/" className="btn-outline">New report</Link>
-            <button className="btn-outline" onClick={reload}>Refresh from WCL</button>
-          </div>
-        </ReportDrawer>
-      ) : (
-        <ReportHeader report={report} onRefresh={reload} />
-      )}
-      {result.stale && (
-        <div className="stale-banner" role="status">
-          <span>
-            This report was cached by an older version of the analyzer and may be
-            missing the latest stats.
-          </span>
-          <button type="button" className="btn-outline" onClick={reload}>
-            Refresh from WCL
-          </button>
-        </div>
-      )}
-      <LensBar
-        report={report} lens={lens} fightId={fightId} playerId={playerId} query={query}
-        onLens={(l) => patch({ lens: l })}
-        onFight={(id) => patch({ fight: String(id) })}
-        onPlayer={(id) => patch({ player: String(id) })}
-        onQuery={(q) => patch({ q })}
-        actions={
-          <ShareToDiscord
-            title={report.title}
-            zoneName={report.zoneName}
-            details={reportDetails}
-            link={typeof window !== "undefined" ? window.location.href : ""}
-            view={viewLabel}
-          />
-        }
-      />
-
-      {lens === "fight" ? (
-        <div className="report-body">
-          <FightHeader report={report} fightId={fightId} />
-          <nav className="cat-subnav">
-            {categories.map(([key, label]) => (
-              <button key={key} className={cat === key ? "active" : ""} onClick={() => patch({ cat: key })}>{label}</button>
-            ))}
-          </nav>
-          <div className="report-content">
-            <EmptyToggle>
-              {cat === "summary" && <SummaryRankings report={report} onPlayer={goPlayer} />}
-              {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} onPlayer={goPlayer} />}
-              {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
-              {cat === "gear" && <GearMatrix report={report} fightId={fightId} onPlayer={goPlayer} />}
-              {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} onPlayer={goPlayer} />}
-              {cat === "buffconsumables" && <ConsumablesView report={report} onPlayer={goPlayer} />}
-              {cat === "shadowresi" && <ShadowResView report={report} />}
-            </EmptyToggle>
-          </div>
-        </div>
-      ) : (
-        <div className="report-body"><div className="report-content">
-          <EmptyToggle>
-            <PlayerProfile report={report} playerId={playerId} />
-          </EmptyToggle>
-        </div></div>
-      )}
-    </div>
+    <ReportView
+      report={result.data}
+      stale={result.stale}
+      onRefresh={reload}
+      shareActions={<PublishShare report={result.data} />}
+    />
   );
 }

@@ -2,7 +2,8 @@ const TOKEN_URL = "https://www.warcraftlogs.com/oauth/token";
 const API_URL = "https://classic.warcraftlogs.com/api/v2/client";
 
 export class WclError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  status: number;
+  constructor(status: number, message: string) { super(message); this.status = status; }
 }
 
 export interface Token { accessToken: string; expiresIn: number; }
@@ -11,7 +12,7 @@ export async function fetchToken(clientId: string, clientSecret: string): Promis
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: {
-      Authorization: "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64"),
+      Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({ grant_type: "client_credentials" }),

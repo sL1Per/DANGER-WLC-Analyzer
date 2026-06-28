@@ -4,7 +4,7 @@
    hit-type / cast-count field names before writing normalization (RPB role
    sheets). The recorded field names feed wcl.ts's RawHitTableEntry/fetchHitTable
    and fetchCastsTable — adjust those if the keys printed here differ. */
-import { fetchToken } from "../src/wcl";
+import { fetchToken } from "../../web/src/lib/wcl/wcl";
 
 const API = "https://classic.warcraftlogs.com/api/v2/client";
 

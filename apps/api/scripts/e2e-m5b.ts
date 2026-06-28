@@ -16,8 +16,8 @@ import {
   fetchDeaths, fetchInterrupts, fetchDamageTaken, fetchDamageDone, fetchAllCasts,
   fetchTable, fetchEnemyDebuffs, fetchAbsorbs,
   type RawInterruptEvent, type RawDamageEvent,
-} from "../src/wcl";
-import { normalizeReport } from "../src/normalize";
+} from "../../web/src/lib/wcl/wcl";
+import { normalizeReport } from "../../web/src/lib/wcl/normalize";
 import { rpb } from "@wcl/core";
 import {
   consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs,

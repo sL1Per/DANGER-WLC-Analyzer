@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { HomePage } from "./pages/HomePage";
 import { ReportPage } from "./pages/ReportPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SharedReportPage } from "./pages/SharedReportPage";
 
 function LegacyRedirect({ cat }: { cat: string }) {
   const { reportId = "" } = useParams();
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/report/:reportId" element={<ReportPage />} />
         <Route path="/cla/:reportId" element={<LegacyRedirect cat="gear" />} />
         <Route path="/rpb/:reportId" element={<LegacyRedirect cat="performance" />} />
+        <Route path="/s/:shareId" element={<SharedReportPage />} />
       </Routes>
     </AppShell>
   );

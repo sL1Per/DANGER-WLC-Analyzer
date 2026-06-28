@@ -3,4 +3,4 @@ import { createApp } from "./app";
 
 const port = Number(process.env.PORT ?? 8787);
 serve({ fetch: createApp().fetch, port });
-console.log(`API listening on http://localhost:${port}`);
+console.log(`Snapshot store listening on http://localhost:${port}`);

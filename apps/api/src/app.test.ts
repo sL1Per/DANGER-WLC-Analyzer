@@ -1,335 +1,80 @@
-import { describe, expect, it, vi } from "vitest";
-import { SCHEMA_VERSION } from "@wcl/core";
+import { describe, expect, it } from "vitest";
 import { createApp } from "./app";
-import { WclError, type RawCombatantInfo, type RawReport } from "./wcl";
+import { createMemoryShareStore } from "./shareStore";
+import type { ReportData } from "@wcl/core";
 
-const testDeps: Parameters<typeof createApp>[0] = {
-  fetchToken: vi.fn().mockResolvedValue({ accessToken: "tok", expiresIn: 86400 }),
-  fetchRawReport: vi.fn().mockResolvedValue({
-    title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
-    fights: [], masterData: { actors: [], npcs: [] },
-  } satisfies RawReport),
-  fetchCombatantInfo: vi.fn().mockResolvedValue([]),
-  fetchItemMeta: vi.fn().mockResolvedValue({}),
-  fetchBuffEvents: vi.fn().mockResolvedValue([]),
-  fetchCastEvents: vi.fn().mockResolvedValue([]),
-  fetchDeaths: vi.fn().mockResolvedValue([]),
-  fetchInterrupts: vi.fn().mockResolvedValue([]),
-  fetchDamageTaken: vi.fn().mockResolvedValue([]),
-  fetchDamageDone: vi.fn().mockResolvedValue([]),
-  fetchHealingDone: vi.fn().mockResolvedValue([]),
-  fetchAllCasts: vi.fn().mockResolvedValue([]),
-  fetchTable: vi.fn().mockResolvedValue([]),
-  fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
-  fetchAbsorbs: vi.fn().mockResolvedValue([]),
-  fetchRankings: vi.fn().mockResolvedValue([]),
-  cacheTtlMs: 60_000,
-};
+const data = { reportId: "abc", title: "T5", players: [] } as unknown as ReportData;
 
-const raw: RawReport = {
-  title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
-  fights: [], masterData: { actors: [], npcs: [] },
-};
-
-function makeApp(overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
-  return createApp({
-    fetchToken: vi.fn().mockResolvedValue({ accessToken: "tok", expiresIn: 86400 }),
-    fetchRawReport: vi.fn().mockResolvedValue(raw),
-    fetchCombatantInfo: vi.fn().mockResolvedValue([]),
-    fetchItemMeta: vi.fn().mockResolvedValue({}),
-    fetchBuffEvents: vi.fn().mockResolvedValue([]),
-    fetchCastEvents: vi.fn().mockResolvedValue([]),
-    fetchDeaths: vi.fn().mockResolvedValue([]),
-    fetchInterrupts: vi.fn().mockResolvedValue([]),
-    fetchDamageTaken: vi.fn().mockResolvedValue([]),
-    fetchDamageDone: vi.fn().mockResolvedValue([]),
-    fetchHealingDone: vi.fn().mockResolvedValue([]),
-    fetchAllCasts: vi.fn().mockResolvedValue([]),
-    fetchTable: vi.fn().mockResolvedValue([]),
-    fetchEnemyDebuffs: vi.fn().mockResolvedValue([]),
-    fetchAbsorbs: vi.fn().mockResolvedValue([]),
-    fetchRankings: vi.fn().mockResolvedValue([]),
-    cacheTtlMs: 60_000,
-    ...overrides,
-  });
-}
-
-describe("POST /api/token", () => {
-  it("mints a token from client credentials", async () => {
-    const res = await makeApp().request("/api/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId: "id", clientSecret: "sec" }),
+describe("share endpoints", () => {
+  it("POST /api/share stores and returns a shareId; GET returns it back", async () => {
+    const app = createApp(createMemoryShareStore());
+    const post = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ accessToken: "tok", expiresIn: 86400 });
-  });
-  it("maps WCL 401 to 401 with a friendly message", async () => {
-    const app = makeApp({ fetchToken: vi.fn().mockRejectedValue(new WclError(401, "bad")) });
-    const res = await app.request("/api/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId: "id", clientSecret: "sec" }),
-    });
-    expect(res.status).toBe(401);
-  });
-});
+    expect(post.status).toBe(200);
+    const { shareId } = await post.json();
+    expect(typeof shareId).toBe("string");
 
-describe("GET /api/report/:id", () => {
-  it("returns normalized data and caches it", async () => {
-    const fetchRawReport = vi.fn().mockResolvedValue(raw);
-    const app = makeApp({ fetchRawReport });
-    const r1 = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
-      headers: { Authorization: "Bearer tok" },
-    });
-    expect(r1.status).toBe(200);
-    const body1 = await r1.json();
-    expect(body1.data.zoneName).toBe("Karazhan");
-    expect(body1.cachedAt).toBeTypeOf("number");
+    const get = await app.request(`/api/share/${shareId}`);
+    expect(get.status).toBe(200);
+    expect((await get.json()).reportId).toBe("abc");
+  });
 
-    // second request: no auth header at all -> served from cache
-    const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
-    expect(r2.status).toBe(200);
-    expect(fetchRawReport).toHaveBeenCalledTimes(1);
+  it("GET unknown shareId returns 404", async () => {
+    const app = createApp(createMemoryShareStore());
+    expect((await app.request("/api/share/missing")).status).toBe(404);
   });
-  it("returns 401 with needsKey on cache miss without token", async () => {
-    const res = await makeApp().request("/api/report/a1B2c3D4e5F6g7H8");
-    expect(res.status).toBe(401);
-    expect((await res.json()).needsKey).toBe(true);
+
+  it("stored payload carries no credential fields (strips clientId/clientSecret/accessToken at publish boundary)", async () => {
+    // Fixture intentionally carries credential-like fields to prove the strip is real.
+    // If stripCredentials() is removed from the POST handler this test must fail.
+    const withCreds = {
+      reportId: "abc",
+      title: "T5",
+      players: [],
+      clientId: "my-client-id",
+      clientSecret: "super-secret",
+      accessToken: "tok_12345",
+    } as unknown as ReportData;
+
+    const app = createApp(createMemoryShareStore());
+    const post = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(withCreds),
+    });
+    expect(post.status).toBe(200);
+    const { shareId } = await post.json();
+
+    const body = await (await app.request(`/api/share/${shareId}`)).text();
+
+    // (a) Credential fields must NOT be present in the served snapshot
+    expect(body).not.toMatch(/clientId|clientSecret|accessToken/);
+
+    // (b) Legitimate field reportId IS still present (strip removed only creds)
+    expect(JSON.parse(body).reportId).toBe("abc");
   });
-  it("rejects malformed report ids", async () => {
-    const res = await makeApp().request("/api/report/short", {
-      headers: { Authorization: "Bearer tok" },
+
+  it("POST /api/share returns 400 when body is missing a valid reportId", async () => {
+    const app = createApp(createMemoryShareStore());
+
+    // Missing reportId entirely
+    const r1 = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "x" }),
+    });
+    expect(r1.status).toBe(400);
+
+    // reportId present but not a string
+    const r2 = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reportId: 42 }),
+    });
+    expect(r2.status).toBe(400);
+  });
+
+  it("POST /api/share returns 400 for malformed JSON body", async () => {
+    const app = createApp(createMemoryShareStore());
+    const res = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "not-valid-json{{{",
     });
     expect(res.status).toBe(400);
-  });
-  it("DELETE evicts the cache (manual refresh) when auth header is present", async () => {
-    const fetchRawReport = vi.fn().mockResolvedValue(raw);
-    const app = makeApp({ fetchRawReport });
-    const auth = { headers: { Authorization: "Bearer tok" } };
-    await app.request("/api/report/a1B2c3D4e5F6g7H8", auth);
-    await app.request("/api/report/a1B2c3D4e5F6g7H8", { ...auth, method: "DELETE" });
-    await app.request("/api/report/a1B2c3D4e5F6g7H8", auth);
-    expect(fetchRawReport).toHaveBeenCalledTimes(2);
-  });
-  it("DELETE without Authorization returns 401 and cache entry survives", async () => {
-    const fetchRawReport = vi.fn().mockResolvedValue(raw);
-    const app = makeApp({ fetchRawReport });
-    const auth = { headers: { Authorization: "Bearer tok" } };
-    // seed the cache
-    await app.request("/api/report/a1B2c3D4e5F6g7H8", auth);
-    // attempt keyless eviction
-    const del = await app.request("/api/report/a1B2c3D4e5F6g7H8", { method: "DELETE" });
-    expect(del.status).toBe(401);
-    expect((await del.json()).error).toMatch(/Authorization/i);
-    // cache entry still alive: keyless GET returns 200 without hitting WCL
-    const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
-    expect(r2.status).toBe(200);
-    expect(fetchRawReport).toHaveBeenCalledTimes(1);
-  });
-  it("stamps the schema version and reports stale: false on a fresh fetch", async () => {
-    const app = makeApp();
-    const r1 = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
-      headers: { Authorization: "Bearer tok" },
-    });
-    const body1 = await r1.json();
-    expect(body1.data.schemaVersion).toBe(SCHEMA_VERSION);
-    expect(body1.stale).toBe(false);
-    // a cache hit under the current version is likewise not stale
-    const body2 = await (await app.request("/api/report/a1B2c3D4e5F6g7H8")).json();
-    expect(body2.stale).toBe(false);
-  });
-  it("GET cachedAt matches the stored entry timestamp", async () => {
-    const app = makeApp();
-    const r1 = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
-      headers: { Authorization: "Bearer tok" },
-    });
-    const body1 = await r1.json();
-    // Second (cached) request must return the same cachedAt
-    const r2 = await app.request("/api/report/a1B2c3D4e5F6g7H8");
-    const body2 = await r2.json();
-    expect(body1.cachedAt).toBe(body2.cachedAt);
-  });
-});
-
-describe("GET /api/report/:id — gear", () => {
-  const rawWithBoss: RawReport = {
-    ...raw,
-    fights: [
-      { id: 1, name: "Trash", encounterID: 0, kill: null, startTime: 0, endTime: 1 },
-      { id: 2, name: "Attumen the Huntsman", encounterID: 652, kill: true, startTime: 2, endTime: 3 },
-    ],
-  };
-  const combatants: RawCombatantInfo[] = [
-    { sourceID: 7, fight: 2, gear: [{ id: 24266, slot: 0, gems: [{ id: 31867 }] }] },
-  ];
-
-  it("fetches combatant info for boss fights and resolves item meta", async () => {
-    const fetchCombatantInfo = vi.fn().mockResolvedValue(combatants);
-    const fetchItemMeta = vi.fn().mockResolvedValue({ "24266": { name: "Spellstrike Hood", quality: 4 } });
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchCombatantInfo, fetchItemMeta,
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.gear).toHaveLength(1);
-    expect(body.data.itemMeta["24266"].name).toBe("Spellstrike Hood");
-    expect(fetchCombatantInfo).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [2]); // boss fights only
-    // item ids AND gem ids requested:
-    expect(fetchItemMeta.mock.calls[0]![0]).toEqual(expect.arrayContaining([24266, 31867]));
-  });
-  it("fetches event data for all fights (trash included) but tables only for bosses", async () => {
-    const fetchAllCasts = vi.fn().mockResolvedValue([]);
-    const fetchDamageTaken = vi.fn().mockResolvedValue([]);
-    const fetchTable = vi.fn().mockResolvedValue([]);
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchAllCasts, fetchDamageTaken, fetchTable,
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    // event queries cover trash (1) + boss (2) so the TRASH card has data
-    expect(fetchAllCasts).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [1, 2]);
-    expect(fetchDamageTaken).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", [1, 2]);
-    // summary tables stay boss-only (no parse/combatantInfo data on trash)
-    expect(fetchTable).toHaveBeenCalledWith("a1B2c3D4e5F6g7H8", "tok", "DamageDone", [2]);
-  });
-  it("serves the report even when combatant info fails", async () => {
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchCombatantInfo: vi.fn().mockRejectedValue(new WclError(502, "boom")),
-      fetchItemMeta: vi.fn(),
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    expect((await res.json()).data.gear).toEqual([]);
-  });
-});
-
-describe("GET /api/report/:id — buff intervals and drum events", () => {
-  const rawWithBoss: RawReport = {
-    ...raw,
-    fights: [
-      { id: 2, name: "Attumen the Huntsman", encounterID: 652, kill: true, startTime: 0, endTime: 100_000 },
-    ],
-  };
-
-  it("includes intervals and drum events built from the event fetchers", async () => {
-    const fetchBuffEvents = vi.fn().mockResolvedValue([
-      // consumable buff (flask of pure death 28540): apply + remove
-      { timestamp: 10_000, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 28540, fight: 2 },
-      { timestamp: 50_000, type: "removebuff", sourceID: 7, targetID: 7, abilityGameID: 28540, fight: 2 },
-      // drum buff application (Drums of Battle 35476)
-      { timestamp: 20_000, type: "applybuff", sourceID: 7, targetID: 9, abilityGameID: 35476, fight: 2 },
-    ]);
-    const fetchCastEvents = vi.fn().mockResolvedValue([
-      { timestamp: 19_900, type: "cast", sourceID: 7, abilityGameID: 35476, fight: 2 },
-    ]);
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchBuffEvents, fetchCastEvents,
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.buffs).toContainEqual(
-      { fightId: 2, targetId: 7, spellId: 28540, startTime: 10_000, endTime: 50_000 });
-    expect(body.data.drumCasts).toEqual([
-      { fightId: 2, sourceId: 7, spellId: 35476, timestamp: 19_900 }]);
-    expect(body.data.drumApplications).toEqual([
-      { fightId: 2, sourceId: 7, targetId: 9, spellId: 35476, timestamp: 20_000 }]);
-    // events were requested with non-empty tracked ability id lists
-    expect(fetchBuffEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
-    expect(fetchCastEvents.mock.calls[0]![2].length).toBeGreaterThan(0);
-    // suboptimal-only buffs (not in consumableBuffs) must be tracked too,
-    // or suboptimal detection is dead in production (final-review finding)
-    const tracked = fetchBuffEvents.mock.calls[0]![2] as number[];
-    expect(tracked).toContain(3166); // Elixir of Wisdom — suboptimal list only
-  });
-
-  it("fetches haste and battle-shout buffs for RPB metrics", async () => {
-    const fetchBuffEvents = vi.fn().mockResolvedValue([]);
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchBuffEvents,
-    });
-    await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    // fetchBuffEvents(code, accessToken, abilityIds) — abilityIds is arg index 2
-    const ids = fetchBuffEvents.mock.calls[0]![2] as number[];
-    expect(ids).toContain(2825); // Bloodlust (spell-haste correction)
-    expect(ids).toContain(2048); // Battle Shout (Battle Shout uptime)
-  });
-
-  it("serves the report with empty buffs when event fetching fails (best-effort)", async () => {
-    const fetchItemMeta = vi.fn().mockResolvedValue({ "24266": { name: "Spellstrike Hood", quality: 4 } });
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue(rawWithBoss),
-      fetchCombatantInfo: vi.fn().mockResolvedValue([
-        { sourceID: 7, fight: 2, gear: [{ id: 24266, slot: 0 }] },
-      ]),
-      fetchItemMeta,
-      fetchBuffEvents: vi.fn().mockRejectedValue(new WclError(502, "boom")),
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer tok" } });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.buffs).toEqual([]);
-    expect(body.data.drumCasts).toEqual([]);
-    expect(body.data.drumApplications).toEqual([]);
-    // independent fetches are individually best-effort: gear that was
-    // successfully fetched survives a buff-event failure
-    expect(body.data.gear).toHaveLength(1);
-    expect(body.data.itemMeta["24266"]?.name).toBe("Spellstrike Hood");
-  });
-});
-
-describe("GET /api/report/:id — enemy debuffs + absorbs (M5b)", () => {
-  it("includes enemyDebuffs and absorbs in the normalized report", async () => {
-    const app = createApp(testDeps);
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", { headers: { Authorization: "Bearer t" } });
-    const body = await res.json();
-    expect(body.data.enemyDebuffs).toBeDefined();
-    expect(body.data.absorbs).toBeDefined();
-  });
-});
-
-describe("GET /api/report/:id — rankings", () => {
-  it("includes rankings in the normalized report", async () => {
-    const app = makeApp({
-      fetchRawReport: vi.fn().mockResolvedValue({
-        title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
-        fights: [{ id: 7, name: "Attumen the Huntsman", encounterID: 16151, kill: true, startTime: 0, endTime: 1000, friendlyPlayers: [1] }],
-        masterData: { actors: [{ id: 1, name: "Dpsone", subType: "Mage" }], npcs: [] },
-      } satisfies RawReport),
-      fetchRankings: vi.fn().mockResolvedValue([{
-        encounter: { id: 16151, name: "Attumen the Huntsman" },
-        fightID: 7,
-        roles: {
-          tanks: { characters: [] },
-          healers: { characters: [] },
-          dps: { characters: [{ name: "Dpsone", class: "Mage", rankPercent: 95, bracketPercent: 88 }] },
-        },
-      }]),
-    });
-    const res = await app.request("/api/report/a1B2c3D4e5F6g7H8", {
-      headers: { Authorization: "Bearer tok" },
-    });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.rankings[0].dps[0].name).toBe("Dpsone");
-  });
-
-  it("yields rankings: [] (not undefined) for a freshly-fetched boss-less report", async () => {
-    // The default raw report has no boss fights → rankings is never fetched, but
-    // a fresh fetch must still produce [] ("no ranked kills"), not undefined
-    // (which is reserved for pre-feature caches → the refresh notice).
-    const res = await makeApp().request("/api/report/a1B2c3D4e5F6g7H8", {
-      headers: { Authorization: "Bearer tok" },
-    });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data.rankings).toEqual([]);
+    expect((await res.json()).error).toBe("Invalid JSON");
   });
 });

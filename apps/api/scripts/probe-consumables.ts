@@ -8,7 +8,7 @@
  * then scans which WCL event type (Buffs / Casts / Healing) carries the JC-neck
  * on-use absorb — so we stop guessing the right signal.
  */
-import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta } from "../src/wcl";
+import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta } from "../../web/src/lib/wcl/wcl";
 
 const API_URL = "https://classic.warcraftlogs.com/api/v2/client";
 const code = process.argv[2];

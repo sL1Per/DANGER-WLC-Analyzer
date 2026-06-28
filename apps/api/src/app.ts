@@ -1,255 +1,40 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { Context } from "hono";
-import { REPORT_ID_RE, isStaleSchema, type ItemMeta, type ReportData } from "@wcl/core";
-import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs, battleShoutBuffIds, extraWindfurySpellId, battleSquawkBuffId } from "@wcl/data";
-import { TtlCache } from "./cache";
-import { normalizeReport } from "./normalize";
-import {
-  WclError,
-  fetchRawReport as realFetchRawReport,
-  fetchToken as realFetchToken,
-  fetchCombatantInfo as realFetchCombatantInfo,
-  fetchItemMeta as realFetchItemMeta,
-  fetchBuffEvents as realFetchBuffEvents,
-  fetchCastEvents as realFetchCastEvents,
-  fetchDeaths as realFetchDeaths,
-  fetchInterrupts as realFetchInterrupts,
-  fetchDamageTaken as realFetchDamageTaken,
-  fetchDamageDone as realFetchDamageDone,
-  fetchHealingDone as realFetchHealingDone,
-  fetchAllCasts as realFetchAllCasts,
-  fetchTable as realFetchTable,
-  fetchEnemyDebuffs as realFetchEnemyDebuffs,
-  fetchAbsorbs as realFetchAbsorbs,
-  fetchRankings as realFetchRankings,
-  type RawBuffEvent,
-  type RawCastEvent,
-  type RawCombatantInfo,
-  type RawDeathEvent,
-  type RawInterruptEvent,
-  type RawDamageEvent,
-  type RawTableEntry,
-  type RawDebuffEvent,
-  type RawRankingEntry,
-} from "./wcl";
+import type { ReportData } from "@wcl/core";
+import { createMemoryShareStore, type ShareStore } from "./shareStore";
 
-const DRUM_BUFF_IDS = drumSpells.map((d) => d.buffId);
-const DRUM_CAST_IDS = [...new Set(drumSpells.map((d) => d.castId))];
-const TRACKED_BUFF_IDS = [...new Set([
-  ...consumableBuffs.map((b) => b.spellId),
-  ...DRUM_BUFF_IDS,
-  ...jcNecks.map((n) => n.buffId),
-  // suboptimal buffs aren't all in consumableBuffs (e.g. low-level int
-  // elixirs) — without fetching them, suboptimal detection can't see them
-  ...suboptimalConsumables.filter((s) => s.kind === "buff").map((s) => s.id),
-  ...hasteBuffs.map((h) => h.spellId),   // RPB activity spell-haste correction
-  ...battleShoutBuffIds,                 // RPB Battle Shout uptime
-])];
-
-export interface AppDeps {
-  fetchToken: typeof realFetchToken;
-  fetchRawReport: typeof realFetchRawReport;
-  fetchCombatantInfo: typeof realFetchCombatantInfo;
-  fetchItemMeta: typeof realFetchItemMeta;
-  fetchBuffEvents: typeof realFetchBuffEvents;
-  fetchCastEvents: typeof realFetchCastEvents;
-  fetchDeaths: typeof realFetchDeaths;
-  fetchInterrupts: typeof realFetchInterrupts;
-  fetchDamageTaken: typeof realFetchDamageTaken;
-  fetchDamageDone: typeof realFetchDamageDone;
-  fetchHealingDone: typeof realFetchHealingDone;
-  fetchAllCasts: typeof realFetchAllCasts;
-  fetchTable: typeof realFetchTable;
-  fetchEnemyDebuffs: typeof realFetchEnemyDebuffs;
-  fetchAbsorbs: typeof realFetchAbsorbs;
-  fetchRankings: typeof realFetchRankings;
-  cacheTtlMs: number;
+// Defensive strip at the publish boundary: a published snapshot is shared
+// key-free, so never persist credential-like fields even if a caller's
+// ReportData somehow carried them.
+function stripCredentials<T extends Record<string, unknown>>(data: T): T {
+  const { clientId, clientSecret, accessToken, ...rest } = data as Record<string, unknown>;
+  void clientId; void clientSecret; void accessToken;
+  return rest as T;
 }
 
-export function createApp(deps: AppDeps = {
-  fetchToken: realFetchToken,
-  fetchRawReport: realFetchRawReport,
-  fetchCombatantInfo: realFetchCombatantInfo,
-  fetchItemMeta: realFetchItemMeta,
-  fetchBuffEvents: realFetchBuffEvents,
-  fetchCastEvents: realFetchCastEvents,
-  fetchDeaths: realFetchDeaths,
-  fetchInterrupts: realFetchInterrupts,
-  fetchDamageTaken: realFetchDamageTaken,
-  fetchDamageDone: realFetchDamageDone,
-  fetchHealingDone: realFetchHealingDone,
-  fetchAllCasts: realFetchAllCasts,
-  fetchTable: realFetchTable,
-  fetchEnemyDebuffs: realFetchEnemyDebuffs,
-  fetchAbsorbs: realFetchAbsorbs,
-  fetchRankings: realFetchRankings,
-  cacheTtlMs: 24 * 60 * 60 * 1000,
-}) {
-  const cache = new TtlCache<ReportData>(deps.cacheTtlMs);
+// Tiny snapshot store: the only thing this backend holds. Snapshots are
+// key-free ReportData published deliberately by a user; viewing one needs no
+// WCL key. No live WCL fetching happens here anymore (that's browser-side).
+export function createApp(store: ShareStore = createMemoryShareStore()) {
   const app = new Hono();
   app.use("/api/*", cors());
 
-  app.post("/api/token", async (c) => {
-    const { clientId, clientSecret } = await c.req.json<{ clientId?: string; clientSecret?: string }>();
-    if (!clientId || !clientSecret) return c.json({ error: "clientId and clientSecret required" }, 400);
+  app.post("/api/share", async (c) => {
+    let data: ReportData;
     try {
-      return c.json(await deps.fetchToken(clientId, clientSecret));
-    } catch (e) {
-      return toErrorResponse(c, e);
+      data = await c.req.json<ReportData>();
+    } catch {
+      return c.json({ error: "Invalid JSON" }, 400);
     }
+    if (!data || typeof data.reportId !== "string") return c.json({ error: "Invalid report payload" }, 400);
+    return c.json({ shareId: await store.put(stripCredentials(data)) });
   });
 
-  app.get("/api/report/:id", async (c) => {
-    const id = c.req.param("id");
-    if (!REPORT_ID_RE.test(id)) return c.json({ error: "Malformed report id" }, 400);
-
-    const cached = cache.get(id);
-    if (cached) {
-      // Stale = cached under an older analyzer schema. We still serve it (no
-      // surprise WCL point spend) but flag it so the UI prompts a refresh.
-      const stale = isStaleSchema(cached.value.schemaVersion);
-      return c.json({ data: cached.value, cachedAt: cached.cachedAt, stale });
-    }
-
-    const token = c.req.header("Authorization")?.replace(/^Bearer /, "");
-    if (!token) {
-      return c.json({
-        needsKey: true,
-        error: "Report not cached yet. Load it once with WCL credentials (Settings page).",
-      }, 401);
-    }
-    try {
-      const rawReport = await deps.fetchRawReport(id, token);
-      const bossFightIds = rawReport.fights.filter((f) => f.encounterID !== 0).map((f) => f.id);
-      let combatants: RawCombatantInfo[] = [];
-      let itemMeta: Record<string, ItemMeta> = {};
-      let buffEvents: RawBuffEvent[] = [];
-      let castEvents: RawCastEvent[] = [];
-      let deaths: RawDeathEvent[] | undefined;
-      {
-        // gear and buff/cast events are best-effort: a failure must not take
-        // down the whole report, and must not discard what the OTHER fetches
-        // already returned. The four are independent, so run them in parallel
-        // (WCL limits points/hour, not concurrency). Gear/buffs are boss-only;
-        // drum casts and deaths count trash fights too, so fetched regardless.
-        const none = Promise.resolve([]);
-        const [combatantsR, buffR, castR, deathR] = await Promise.allSettled([
-          bossFightIds.length > 0 ? deps.fetchCombatantInfo(id, token, bossFightIds) : none,
-          bossFightIds.length > 0 ? deps.fetchBuffEvents(id, token, TRACKED_BUFF_IDS) : none,
-          deps.fetchCastEvents(id, token, DRUM_CAST_IDS),
-          deps.fetchDeaths(id, token),
-        ]);
-        if (combatantsR.status === "fulfilled") combatants = combatantsR.value as RawCombatantInfo[];
-        if (buffR.status === "fulfilled") buffEvents = buffR.value as RawBuffEvent[];
-        if (castR.status === "fulfilled") castEvents = castR.value;
-        if (deathR.status === "fulfilled") deaths = deathR.value as RawDeathEvent[];
-        const ids = new Set<number>();
-        for (const c of combatants) for (const g of c.gear ?? []) {
-          if (g.id !== 0) ids.add(g.id);
-          for (const gem of g.gems ?? []) ids.add(gem.id);
-        }
-        if (ids.size > 0) {
-          try {
-            itemMeta = await deps.fetchItemMeta([...ids], token);
-          } catch { /* names degrade to "item #id" in the UI */ }
-        }
-      }
-      let interrupts: RawInterruptEvent[] = [];
-      let damageTaken: RawDamageEvent[] = [];
-      let damageDone: RawDamageEvent[] = [];
-      let healingDone: RawDamageEvent[] = [];
-      let allCasts: RawCastEvent[] = [];
-      let damageDoneTable: RawTableEntry[] = [];
-      let healingTable: RawTableEntry[] = [];
-      let damageTakenTable: RawTableEntry[] = [];
-      let enemyDebuffs: RawDebuffEvent[] = [];
-      let absorbEvents: RawDamageEvent[] = [];
-      // Default []: a freshly-fetched report always has a defined rankings array
-      // (empty = "no ranked kills", e.g. a trash-only report we don't even query).
-      // `undefined` is reserved for pre-feature caches (the field is absent in
-      // their cached JSON) → the UI's "refresh to load rankings" notice.
-      let rankings: RawRankingEntry[] = [];
-      // Event-based queries cover trash fights too, so the TRASH card has data
-      // (consumable casts, damage, interrupts, absorbs, deaths, activity). Summary
-      // tables and parse rankings stay boss-only — combatantInfo/parse data only
-      // exists for encounters. Trash events cost extra WCL points; acceptable for
-      // the trash breakdown. A trash-only report still fetches its events.
-      const allFightIds = rawReport.fights.map((f) => f.id);
-      const hasBoss = bossFightIds.length > 0;
-      if (allFightIds.length > 0) {
-        const none = Promise.resolve([]);
-        const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR] = await Promise.allSettled([
-          deps.fetchInterrupts(id, token, allFightIds),
-          deps.fetchDamageTaken(id, token, allFightIds),
-          deps.fetchDamageDone(id, token, allFightIds),
-          deps.fetchAllCasts(id, token, allFightIds),
-          hasBoss ? deps.fetchTable(id, token, "DamageDone", bossFightIds) : none,
-          hasBoss ? deps.fetchTable(id, token, "Healing", bossFightIds) : none,
-          hasBoss ? deps.fetchTable(id, token, "DamageTaken", bossFightIds) : none,
-          deps.fetchEnemyDebuffs(id, token, allFightIds),
-          deps.fetchAbsorbs(id, token, allFightIds),
-          hasBoss ? deps.fetchRankings(id, token) : none,
-          deps.fetchHealingDone(id, token, allFightIds),
-        ]);
-        if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
-        if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
-        if (ddR.status === "fulfilled") damageDone = ddR.value as RawDamageEvent[];
-        if (castR.status === "fulfilled") allCasts = castR.value as RawCastEvent[];
-        if (ddtR.status === "fulfilled") damageDoneTable = ddtR.value as RawTableEntry[];
-        if (htR.status === "fulfilled") healingTable = htR.value as RawTableEntry[];
-        if (dttR.status === "fulfilled") damageTakenTable = dttR.value as RawTableEntry[];
-        if (edR.status === "fulfilled") enemyDebuffs = edR.value as RawDebuffEvent[];
-        if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
-        if (rankR.status === "fulfilled") rankings = rankR.value as RawRankingEntry[];
-        if (hdR.status === "fulfilled") healingDone = hdR.value as RawDamageEvent[];
-      }
-
-      const actorNames: Record<number, string> = {};
-      for (const a of rawReport.masterData?.actors ?? []) actorNames[a.id] = a.name;
-      for (const n of rawReport.masterData?.npcs ?? []) actorNames[n.id] = actorNames[n.id] ?? n.name ?? `NPC ${n.gameID}`;
-      const abilityMeta: Record<string, { name: string }> = {};
-      for (const a of rawReport.masterData?.abilities ?? []) abilityMeta[String(a.gameID)] = { name: a.name };
-      // pet actor id → owner player id, so pet damage/healing is credited to the owner
-      // (matching WCL's "Damage Done By Source", which merges pets into their owner).
-      const petOwners: Record<number, number> = {};
-      for (const p of rawReport.masterData?.pets ?? []) petOwners[p.id] = p.petOwner;
-      const data = normalizeReport(id, rawReport, combatants, itemMeta, {
-        buffEvents, castEvents, deaths,
-        trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
-        interrupts, damageTaken, damageDone, allCasts,
-        damageDoneTable, healingTable, damageTakenTable, actorNames,
-        enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta, petOwners,
-        extraWindfurySpellId, battleSquawkBuffId,
-      });
-      cache.set(id, data);
-      // Freshly normalized under the current SCHEMA_VERSION, so never stale.
-      return c.json({ data, cachedAt: cache.get(id)!.cachedAt, stale: false });
-    } catch (e) {
-      return toErrorResponse(c, e);
-    }
-  });
-
-  // Requiring a Bearer token prevents keyless callers from evicting the cache.
-  // We cannot validate the token's authenticity without storing credentials,
-  // but requiring the header is sufficient to keep casual/keyless eviction out (M1 goal).
-  app.delete("/api/report/:id", (c) => {
-    const token = c.req.header("Authorization")?.replace(/^Bearer /, "");
-    if (!token) return c.json({ error: "Authorization header required to evict cache." }, 401);
-    cache.delete(c.req.param("id"));
-    return c.json({ ok: true });
+  app.get("/api/share/:shareId", async (c) => {
+    const data = await store.get(c.req.param("shareId"));
+    if (!data) return c.json({ error: "Snapshot not found" }, 404);
+    return c.json(data);
   });
 
   return app;
-}
-
-function toErrorResponse(c: Context, e: unknown) {
-  if (e instanceof WclError) {
-    const friendly: Record<number, string> = {
-      401: "WCL rejected the credentials. Check your client ID and secret.",
-      429: "WCL rate limit reached. Wait for your hourly points to reset (see your WCL profile).",
-    };
-    return c.json({ error: friendly[e.status] ?? e.message }, e.status as 400);
-  }
-  return c.json({ error: "Unexpected server error" }, 500);
 }
