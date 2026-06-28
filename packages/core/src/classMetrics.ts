@@ -73,9 +73,9 @@ export function classMetrics(
 function mergedDurationMs(intervals: { startTime: number; endTime: number }[]): number {
   if (intervals.length === 0) return 0;
   const sorted = [...intervals].sort((a, b) => a.startTime - b.startTime);
-  let total = 0, curStart = sorted[0].startTime, curEnd = sorted[0].endTime;
+  let total = 0, curStart = sorted[0]!.startTime, curEnd = sorted[0]!.endTime;
   for (let i = 1; i < sorted.length; i++) {
-    const s = sorted[i];
+    const s = sorted[i]!;
     if (s.startTime > curEnd) { total += curEnd - curStart; curStart = s.startTime; curEnd = s.endTime; }
     else if (s.endTime > curEnd) curEnd = s.endTime;
   }

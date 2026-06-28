@@ -6,10 +6,10 @@ import { createMemoryShareStore, type ShareStore } from "./shareStore";
 // Defensive strip at the publish boundary: a published snapshot is shared
 // key-free, so never persist credential-like fields even if a caller's
 // ReportData somehow carried them.
-function stripCredentials<T extends Record<string, unknown>>(data: T): T {
-  const { clientId, clientSecret, accessToken, ...rest } = data as Record<string, unknown>;
+function stripCredentials(data: ReportData): ReportData {
+  const { clientId, clientSecret, accessToken, ...rest } = data as unknown as Record<string, unknown>;
   void clientId; void clientSecret; void accessToken;
-  return rest as T;
+  return rest as unknown as ReportData;
 }
 
 // Tiny snapshot store: the only thing this backend holds. Snapshots are

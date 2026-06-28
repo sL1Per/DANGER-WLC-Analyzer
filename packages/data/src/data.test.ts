@@ -73,7 +73,7 @@ describe("consumable reference data", () => {
       jcNecks.map((n) => n.itemId),
       suboptimalConsumables.map((s) => `${s.kind}|${s.id}`),
     ]) {
-      expect(new Set(ids).size).toBe(ids.length);
+      expect(new Set<unknown>(ids).size).toBe(ids.length);
     }
   });
   it("has a deduped whitelist of consumable weapon-enhancement enchant ids", () => {

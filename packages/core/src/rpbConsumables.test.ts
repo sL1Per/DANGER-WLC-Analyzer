@@ -77,7 +77,7 @@ describe("rpbConsumables", () => {
     const r = baseReport();
     const res = rpbConsumables(r, [hastePotion])!;
     expect(res.rows.map((x) => x.playerName)).toEqual(["Locky", "Magey"]);
-    expect(res.rows[1].className).toBe("Mage");
+    expect(res.rows[1]!.className).toBe("Mage");
   });
 
   it("reports buff-uptime rows as an application count + uptime fraction over scoped fights", () => {

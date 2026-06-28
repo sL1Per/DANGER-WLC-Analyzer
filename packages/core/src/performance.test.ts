@@ -25,9 +25,9 @@ describe("performanceSummary", () => {
       ["Playerone", 4250],
       ["Playertwo", 700],
     ]);
-    expect(s.damageBySource[0].perSecond).toBeCloseTo(42.5, 3);
-    expect(s.damageBySource[0].percent).toBeCloseTo(4250 / 4950, 5);
-    expect(s.damageBySource[0].className).toBe("Mage");
+    expect(s.damageBySource[0]!.perSecond).toBeCloseTo(42.5, 3);
+    expect(s.damageBySource[0]!.percent).toBeCloseTo(4250 / 4950, 5);
+    expect(s.damageBySource[0]!.className).toBe("Mage");
 
     // Healing done by source: Playertwo 5000, Playerone 1000
     expect(s.healingBySource.map((r) => [r.name, r.amount])).toEqual([
@@ -53,7 +53,7 @@ describe("performanceSummary", () => {
       [3],
     );
     const s = performanceSummary(scoped)!;
-    expect(s.damageTakenByAbility[0].name).toBe("Ability #13022");
+    expect(s.damageTakenByAbility[0]!.name).toBe("Ability #13022");
   });
 
   it("excludes self-inflicted and PvP damage from the source panel", () => {

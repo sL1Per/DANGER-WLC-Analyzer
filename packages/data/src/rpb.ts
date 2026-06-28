@@ -1,8 +1,7 @@
 // packages/data/src/rpb.ts
-import type { Role } from "@wcl/core";
+import type { RoleSignal } from "@wcl/core";
 
-/** A buff/cast id that strongly implies a role, used as a detection tiebreaker. */
-export interface RoleSignal { spellId: number; role: Role; name: string; }
+export type { RoleSignal };
 
 /** Classes whose DPS spec is spell-based → "caster"; every other DPS class
  *  defaults to "physical". Used by detectRole for the caster/physical split,

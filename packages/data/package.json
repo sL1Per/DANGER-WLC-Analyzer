@@ -5,8 +5,9 @@
   "exports": { ".": "./src/index.ts" },
   "scripts": {
     "extract": "python3 scripts/extract_xlsx.py",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": { "@wcl/core": "workspace:*" },
-  "devDependencies": { "vitest": "^3.0.0", "typescript": "^5.6.0" }
+  "devDependencies": { "vitest": "^3.0.0", "typescript": "~6.0.2" }
 }
