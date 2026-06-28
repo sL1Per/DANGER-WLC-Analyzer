@@ -3,7 +3,7 @@ import { createApp } from "./app";
 import { createMemoryShareStore } from "./shareStore";
 import type { ReportData } from "@wcl/core";
 
-const data = { reportId: "abc", title: "T5", players: [] } as unknown as ReportData;
+const data = { reportId: "abc", title: "T5", players: [], fights: [] } as unknown as ReportData;
 
 describe("share endpoints", () => {
   it("POST /api/share stores and returns a shareId; GET returns it back", async () => {
@@ -32,6 +32,7 @@ describe("share endpoints", () => {
       reportId: "abc",
       title: "T5",
       players: [],
+      fights: [],
       clientId: "my-client-id",
       clientSecret: "super-secret",
       accessToken: "tok_12345",
@@ -76,5 +77,24 @@ describe("share endpoints", () => {
     });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Invalid JSON");
+  });
+
+  it("POST /api/share returns 400 when the payload is not a report shape (no fights/players arrays)", async () => {
+    const app = createApp(createMemoryShareStore());
+    // reportId is a string but it's arbitrary JSON, not a report snapshot.
+    const res = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reportId: "x", junk: "arbitrary hosting attempt" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /api/share rejects bodies over the size limit with 413", async () => {
+    const app = createApp(createMemoryShareStore(), { maxBodyBytes: 1024 });
+    const big = { ...data, title: "x".repeat(4096) };
+    const res = await app.request("/api/share", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(big),
+    });
+    expect(res.status).toBe(413);
   });
 });
