@@ -1,81 +1,114 @@
 # WCL Raid Analyzer
 
-Web rebuild of the CLA/RPB Google Sheets for WoW Classic TBC raid analysis.
-See `CLAUDE.md` for the analysis of the original tools and
-`docs/superpowers/specs/` for the design.
+A web app for analyzing **World of Warcraft Classic (TBC)** raid logs from
+[WarcraftLogs](https://classic.warcraftlogs.com). It audits raid hygiene and
+per-player performance — gear, enchants, gems, consumables, drums, shadow
+resistance, role breakdowns, ability uptimes, and WCL parse rankings — and lets
+you publish a read-only snapshot to share with your guild.
 
-## Develop
+It's an independent, from-scratch rebuild of Shariva's **Combat Log Analytics
+(CLA)** and **Role Performance Breakdown (RPB)** Google Sheets (see
+[Credits](#credits)), reimagined as a fast single-page app instead of a
+spreadsheet generator.
 
-    pnpm install
-    pnpm dev        # API on :8787, web on :5173
-    pnpm test       # all packages
+> **Bring your own key.** Each user supplies their own WarcraftLogs API client.
+> All log fetching happens in your browser; no credentials ever touch a server.
 
-## Use
+## Features
 
-1. Create a free WCL v2 API client: https://classic.warcraftlogs.com/api/clients/
-2. Open http://localhost:5173/settings and paste client ID + secret
-   (stored in your browser only).
-3. Paste a TBC report URL on the home page.
+- **Gear** — equipped items per boss pull with enchant/gem/socket problems
+  flagged (missing/bad/suboptimal enchants, low-quality or missing gems,
+  wrong-purpose gear).
+- **Consumables** — per-player flask/elixir/food/scroll/weapon-enhancement
+  discipline on boss fights, JC-neck usage, and suboptimal-consumable callouts.
+- **Drums** — Leatherworking drum effectiveness, wasted "on Tinnitus" casts,
+  averages and a weighted score.
+- **Resistances** — Shadow Resistance breakdown (gear + enchants + buffs) for
+  the SR-relevant bosses.
+- **Role breakdown & Summary** — per-player metrics grouped by auto-detected role
+  (tank / healer / caster / physical): activity, deaths, interrupts, avoidable
+  damage, class-specific ability uptimes, and more.
+- **Rankings** — WCL parse-percentile grid (player × boss) in WCL's color scale.
+- **Lenses** — view any fight, all bosses, all trash, or drill into a single
+  player; everything is colour-coded red / yellow / green by severity.
+- **Share** — publish a credential-free snapshot to a `/s/<id>` link, optionally
+  posted to a Discord webhook.
 
-Reports load once with your credentials and are then served from the API's
-24h cache — guildmates can open the same /report/<id> link without any key.
+## Quick start
 
-## Layout
+Prerequisites: **Node 22+** and **pnpm 9**.
 
-- `packages/core` — pure analysis engine (no I/O)
-- `packages/data` — reference JSON extracted from the original xlsx files
-  (`pnpm --filter @wcl/data extract` to regenerate; requires the two xlsx
-  files in the repo root)
-- `apps/api` — Hono proxy: WCL OAuth, GraphQL fetch, report cache
-- `apps/web` — React SPA
+```sh
+pnpm install
+pnpm dev          # web on http://localhost:5173, snapshot API on :8787
+```
 
-### Gear analyses (M2)
+Then:
 
-The report page has tabs: summary, gear issues, gear listing. Gear is
-read from WCL combatantInfo (recorded at boss-pull only; some T6 fights miss
-it). Reports cached before M2 lack gear — hit "Refresh from WCL".
+1. Create a free WarcraftLogs **v2 API client** at
+   <https://classic.warcraftlogs.com/api/clients/> (any name; the redirect URL
+   is unused — `https://localhost` is fine).
+2. Open <http://localhost:5173/settings> and paste the client **ID** and
+   **secret**. They're stored in your browser's `localStorage` only.
+3. Paste a TBC report URL or id on the home page and analyze.
 
-### Consumables + drums (M3)
+### Scripts
 
-Two more tabs: **buff consumables** (per-player boss-fight uptimes for
-elixirs/flasks/food/scrolls, gear-based weapon-enhancement uptime, JC-neck
-usage, suboptimal-consumable callouts, and the original's total average) and
-**drums** (battle/war/restoration counts, wasted "on Tinnitus" casts = drums
-that buffed nobody, ⌀ buffs per drum, weighted score = total buffs applied,
-lesser-version flag). Reports cached before M3 need a "Refresh from WCL".
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Run web + snapshot API in parallel |
+| `pnpm test` | Run all test suites (484 tests) |
+| `pnpm typecheck` | Type-check every package (`tsc`) |
+| `pnpm build` | Build all packages |
 
-Caveat: the consumable/drum spell-id lists are hand-curated (the originals
-lived in the spreadsheet's Apps Script, which isn't in the xlsx exports) and
-were verified against Wowhead TBC — see `packages/data/src/consumables.ts`.
-Problem cells follow the project-wide color convention: red = big issue,
-yellow = intermediate, green = fine/small.
+## Project structure
 
-### Speedrun tools (M4)
+A pnpm monorepo:
 
-Three more tabs:
+| Package | Role |
+| --- | --- |
+| [`packages/core`](packages/core) | Pure analysis engine — `ReportData` in, results out. No I/O. |
+| [`packages/data`](packages/data) | Reference data (item sockets, shadow res, spell cast times, gem quality) + curated TBC spell-id tables. |
+| [`apps/web`](apps/web) | React 19 + Vite SPA. **All WarcraftLogs fetching, normalization, and caching happen here, in the browser.** |
+| [`apps/api`](apps/api) | Tiny Hono service — a credential-free snapshot store for sharing. Nothing else. |
 
-- **validate** — checks a speedrun log against per-zone trash/boss/starting-point
-  requirements (Sunwell is verified against the original; Mount Hyjal / Black
-  Temple / Zul'Aman are curated from community rules and badged "unverified" —
-  cross-check against WCL). Zone is auto-detected with a manual override.
-- **shadow resi** — per-player Shadow Resistance for Mother Shahraz / Kaz'rogal /
-  Azgalor (SR from gear + enchants + buffs, per-slot breakdown), analyzing the kill
-  or longest wipe. The total's coloring is advisory, not an official threshold.
-- **fight timeline** — side-by-side pull-timing comparison against a second report
-  (per-pull idle/start/duration/end + per-boss cumulative time difference).
+For the full design — data flow, the fetch/normalize/cache pipeline, the sharing
+model, conventions, and the security posture — see
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
-Like M3, the SR enchant/buff ids and the non-Sunwell speedrun rules are
-hand-curated (not in the xlsx) and Wowhead/community-sourced — see
-`packages/data/src/{validateRules,shadowResistance}.ts`. Reports cached before
-M4 need a "Refresh from WCL" for the validate tab.
+## How it works (in brief)
 
-To verify the WCL schema assumptions against the live API once:
+1. The browser exchanges your WCL client id/secret for an OAuth token and queries
+   the WarcraftLogs **v2 GraphQL API** directly (WCL allows CORS).
+2. The raw report is normalized into a versioned `ReportData` shape and cached
+   per-browser in IndexedDB.
+3. `@wcl/core` runs the analyses purely over that data; the React UI renders them.
+4. Publishing POSTs a credential-stripped snapshot to `apps/api`, which returns a
+   shareable `/s/<id>` link that needs no key to view.
 
-    WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/api probe <reportCode>
+## Tech stack
 
-## Known trade-offs (M1)
+TypeScript · React 19 · Vite · React Router · Hono · pnpm workspaces · Vitest ·
+WarcraftLogs v2 GraphQL API.
 
-- `DELETE /api/report/:id` (manual refresh) is unauthenticated — anyone can
-  evict a cached report, which only forces a re-fetch. Fine for guild scope;
-  revisit before any public deployment.
-- The in-memory cache empties on API restart.
+## Caveats
+
+Inherent to WCL data, surfaced in the UI where relevant:
+
+- Gear and consumables are only recorded at **boss pull** (`combatantInfo`); some
+  T6 fights miss it, and trash fights have none.
+- Melee activity % is approximate.
+- Many spell/enchant ids in `@wcl/data` are hand-curated and Wowhead-verified
+  (the originals lived in the spreadsheet's Apps Script, not the data export).
+
+## Credits
+
+The original **Combat Log Analytics** and **Role Performance Breakdown** Google
+Sheets (v1.6.0a) are the work of **Shariva** (Discord: <https://discord.gg/nGvt5zH>).
+This project is an independent reimplementation that reuses none of the original
+code; it was built by studying the tools' published inputs, outputs, and
+behavior. All WoW data and names are property of Blizzard Entertainment.
+
+## License
+
+[MIT](LICENSE).
