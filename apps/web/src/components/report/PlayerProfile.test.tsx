@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { reportFixture } from "@wcl/core";
-import { PlayerProfile } from "./PlayerProfile";
+import { PlayerProfile, wowheadItem } from "./PlayerProfile";
+
+describe("wowheadItem", () => {
+  it("always yields an https: URL, even for a hostile itemId from a shared snapshot", () => {
+    // Shared-snapshot ReportData is attacker-controlled JSON; a malicious itemId
+    // must never be able to produce a javascript:/data: href.
+    const hostile = "javascript:alert(document.cookie)" as unknown as number;
+    const url = wowheadItem(hostile);
+    expect(new URL(url).protocol).toBe("https:");
+    expect(url.startsWith("https://www.wowhead.com/tbc/item=")).toBe(true);
+  });
+});
 
 describe("PlayerProfile", () => {
   it("renders the player's name and the stat tiles", () => {

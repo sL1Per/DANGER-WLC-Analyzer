@@ -13,8 +13,13 @@ import { useIsPhone } from "../../lib/useMediaQuery";
 import { StatCard, StatCards } from "./StatCard";
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
-/** Wowhead TBC item tooltip URL for an item id. */
-const wowheadItem = (itemId: number) => `https://www.wowhead.com/tbc/item=${itemId}`;
+/** Wowhead TBC item tooltip URL for an item id. The hardcoded https:// scheme
+ *  prefix is what makes this XSS-safe: report data in shared snapshots is
+ *  attacker-controlled, but a hostile itemId can only ever land in the URL's
+ *  path, never become a javascript:/data: href. Keep the scheme literal — never
+ *  interpolate a report-derived value into the scheme/host, and never feed
+ *  report strings to dangerouslySetInnerHTML or a markdown renderer. */
+export const wowheadItem = (itemId: number) => `https://www.wowhead.com/tbc/item=${itemId}`;
 /** Heat → status-dot class (good/watch/bad). neutral falls back to watch. */
 const heatDot = (h: Heat) => (h === "neutral" ? "watch" : h);
 /** Highest-priority severity among an item's issues (major > moderate > minor). */
