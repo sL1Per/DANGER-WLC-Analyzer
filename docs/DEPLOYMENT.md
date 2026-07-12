@@ -86,7 +86,60 @@ A full raid report serializes to **tens of MB** — past Cloudflare KV's **25 Mi
 
 ## Caveat
 
-`POST /api/share` is an open, unauthenticated write (and, per the above, its contents are not server-validated beyond being gzip). On Workers, add Cloudflare's free rate-limiting rule (or a Turnstile check) so it can't be spammed.
+`POST /api/share` is an open, unauthenticated write (and, per the above, its contents are not server-validated beyond being gzip). Before sharing the app widely, rate-limit it (below) or add a Turnstile check so it can't be spammed.
+
+## Rate-limiting the share endpoint
+
+**Important:** Cloudflare's dashboard **WAF → Rate limiting rules** only apply to a **zone (a custom domain)** — they do **not** cover a `*.workers.dev` URL. Since the API runs on `danger-wlc-analyzer-api.slipviegas.workers.dev`, use the in-code **Workers Rate Limiting binding** instead (free, works on `workers.dev`).
+
+### Option A — Workers Rate Limiting binding (works on workers.dev)
+
+1. **Declare the binding** in `apps/api/wrangler.jsonc`. `namespace_id` is any unique integer string you pick; `period` must be `10` or `60` (seconds):
+
+   ```jsonc
+   "ratelimits": [
+     {
+       "name": "SHARE_RATE_LIMITER",
+       "namespace_id": "1001",
+       "simple": { "limit": 20, "period": 60 }
+     }
+   ]
+   ```
+
+   (20 publishes per minute per key — tune to taste.)
+
+2. **Add it to the Worker's `Env`** in `apps/api/src/worker.ts`:
+
+   ```ts
+   import type { RateLimit } from "@cloudflare/workers-types";
+
+   export interface Env {
+     SHARE_KV: KVNamespace;
+     WEB_ORIGIN?: string;
+     SHARE_RATE_LIMITER: RateLimit;
+   }
+   ```
+
+3. **Enforce it on `POST /api/share`** — pass the limiter into `createApp` and check it before storing. Key by client IP (`cf-connecting-ip`) so one abuser can't exhaust everyone:
+
+   ```ts
+   // in the POST handler, before store.put(...)
+   const ip = c.req.header("cf-connecting-ip") ?? "anon";
+   const { success } = await c.env.SHARE_RATE_LIMITER.limit({ key: `share:${ip}` });
+   if (!success) return c.json({ error: "Too many requests, slow down." }, 429);
+   ```
+
+   The limiter is per-Worker-instance/region (good enough for basic abuse control; not a global counter). Deploy as usual (`git push` → Workers Builds, or `pnpm --filter @wcl/api deploy`).
+
+### Option B — WAF rate-limiting rule (only if you add a custom domain)
+
+If you put the API behind a custom domain (Workers → your Worker → **Settings → Domains & Routes → Add custom domain**), the zone-level WAF applies and the free plan includes **one** rate-limiting rule:
+
+1. Dashboard → your domain → **Security → WAF → Rate limiting rules → Create rule**.
+2. **When incoming requests match:** `URI Path` `equals` `/api/share` **and** `Request Method` `equals` `POST`.
+3. **Rate:** e.g. `20` requests per `1 minute`, counting by **IP**.
+4. **Then:** `Block` for `1 minute` (or return a custom 429).
+5. Deploy the rule.
 
 ## Alternative
 
