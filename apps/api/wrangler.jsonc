@@ -3,11 +3,13 @@
   "name": "danger-wlc-api",
   "main": "src/worker.ts",
   "compatibility_date": "2026-07-12",
-  // Persistent snapshot store. Create the namespace once with
-  //   wrangler kv namespace create SHARE_KV
-  // then paste the returned id below (replace the placeholder).
+  // Persistent snapshot store. Create the namespace once, then paste its ID
+  // below (replace the placeholder). "binding" is the name worker.ts reads
+  // (env.SHARE_KV) — leave it as-is.
+  //   Dashboard: Storage & Databases -> KV -> Create a namespace -> copy the ID
+  //   CLI:       wrangler kv namespace create SHARE_KV
   "kv_namespaces": [
-    { "binding": "SHARE_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+    { "binding": "SHARE_KV", "id": "6d25862bf0dd4ea3bed831915060e1e9" }
   ],
   // Lock /api/* CORS to the deployed web app. Update to your web origin,
   // e.g. https://danger-wlc-analyzer.<your-subdomain>.workers.dev
