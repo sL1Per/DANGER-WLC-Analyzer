@@ -46,6 +46,36 @@ The web build needs the API's origin (`VITE_API_BASE`) and the API needs the web
 
 Rename the placeholder Worker names (`danger-wlc-api`, `danger-wlc-analyzer.example.workers.dev`) to your real subdomain before the first deploy.
 
+## Deploying from the Cloudflare dashboard (no local CLI)
+
+You can drive the whole thing from the browser via **Workers Builds** (Git-connected). Both Workers still deploy with `wrangler deploy`, so a few values live in the committed `wrangler.jsonc` files rather than the dashboard — those spots are called out below.
+
+**One-time: create the KV namespace (UI).**
+1. Dashboard → **Storage & Databases → KV → Create a namespace**. Name it `SHARE_KV`.
+2. Copy the namespace **ID** and paste it into `apps/api/wrangler.jsonc` (`kv_namespaces[0].id`), commit, and push. The binding *name* (`SHARE_KV`) stays in the config file — the dashboard only mints the ID.
+
+**Deploy the API Worker.**
+1. Dashboard → **Workers & Pages → Create → Workers → Import a repository**; authorize GitHub and pick this repo.
+2. **Build settings:**
+   - Build command: *(leave empty)* — Workers Builds installs deps automatically; `wrangler deploy` does the bundling.
+   - Deploy command: `npx wrangler deploy --config apps/api/wrangler.jsonc`
+   - Root directory: *(leave empty)* so pnpm resolves the workspace deps.
+3. KV binding and `WEB_ORIGIN` come from `apps/api/wrangler.jsonc`, **not** the dashboard's *Settings → Bindings/Variables* panel — a `wrangler deploy` overwrites those from the config file each time. Edit them in the file and push.
+4. **Save and Deploy.** Note the resulting `…workers.dev` URL — that's your `VITE_API_BASE`.
+
+**Deploy the web Worker.**
+1. Same flow: **Create → Workers → Import a repository → this repo** (a second Worker).
+2. **Build settings:**
+   - Build command: `pnpm --filter @wcl/web build`
+   - Deploy command: `npx wrangler deploy --config apps/web/wrangler.jsonc`
+   - Root directory: *(leave empty)*.
+3. **Settings → Build → Variables** (build-time, not runtime): add `VITE_API_BASE` = the API URL from the step above. This is baked into the bundle at build time, so changing it later needs a fresh deploy. *(This one genuinely lives in the dashboard — Vite consumes it before `wrangler` runs, so it is not a Worker binding.)*
+4. **Save and Deploy.** Note the web URL.
+
+**Close the CORS loop.** Put the web URL into `WEB_ORIGIN` in `apps/api/wrangler.jsonc`, commit, and push — the API Worker rebuilds and locks `/api/*` to that origin.
+
+> Dashboard vs. config, at a glance: **KV namespace** → created in UI, ID pasted into `wrangler.jsonc`. **KV binding + `WEB_ORIGIN`** → `apps/api/wrangler.jsonc`. **`VITE_API_BASE`** → dashboard build variable. **Build/deploy commands + repo connection** → dashboard.
+
 ## Caveat
 
 `POST /api/share` is an open, unauthenticated write. On Workers, add Cloudflare's free rate-limiting rule (or a Turnstile check) so it can't be spammed.
