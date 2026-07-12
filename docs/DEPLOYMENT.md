@@ -76,9 +76,17 @@ You can drive the whole thing from the browser via **Workers Builds** (Git-conne
 
 > Dashboard vs. config, at a glance: **KV namespace** → created in UI, ID pasted into `wrangler.jsonc`. **KV binding + `WEB_ORIGIN`** → `apps/api/wrangler.jsonc`. **`VITE_API_BASE`** → dashboard build variable. **Build/deploy commands + repo connection** → dashboard.
 
+## Snapshots are gzip-compressed (free-tier constraint)
+
+A full raid report serializes to **tens of MB** — past Cloudflare KV's **25 MiB** per-value ceiling — and a free-tier Worker gets only **~10 ms CPU**, far too little to decompress/parse it server-side. So:
+
+- The **browser** gzips the report before upload and decompresses shared snapshots on read (`apps/web/src/lib/share.ts`, ~10x on JSON).
+- The **API** is a pure pass-through: it checks the gzip magic bytes and stores/serves the opaque bytes (`Content-Type: application/gzip`). It does **not** parse the report.
+- Because the API can't inspect the payload, **shape validation and the credential-strip run client-side** before compression. The server keeps only the cheap gzip-magic check + the 24 MB body limit.
+
 ## Caveat
 
-`POST /api/share` is an open, unauthenticated write. On Workers, add Cloudflare's free rate-limiting rule (or a Turnstile check) so it can't be spammed.
+`POST /api/share` is an open, unauthenticated write (and, per the above, its contents are not server-validated beyond being gzip). On Workers, add Cloudflare's free rate-limiting rule (or a Turnstile check) so it can't be spammed.
 
 ## Alternative
 
