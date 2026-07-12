@@ -22,10 +22,13 @@ The only new code is a `createKvShareStore()` adapter implementing the existing 
 
 ## Steps
 
-1. **Web (Cloudflare Pages):** Connect the repo in the Pages dashboard.
+1. **Web (Cloudflare Workers static assets):** Connect the repo in the Workers dashboard.
    - Build command: `pnpm --filter @wcl/web build`
-   - Output dir: `apps/web/dist`
+   - Deploy command: `npx wrangler deploy --config apps/web/wrangler.jsonc`
+   - Root directory: leave empty (repo root) so pnpm resolves the `@wcl/core` / `@wcl/data` workspace deps.
    - Set the API base URL as a build env var.
+
+   The `--config apps/web/wrangler.jsonc` flag is required in a pnpm workspace: a bare `wrangler deploy` runs from the repo root, detects `pnpm-workspace.yaml`, and fails with *"detection logic has been run in the root of a workspace instead of targeting a specific project."* Pointing at the config file bypasses that auto-detection. The config also sets `not_found_handling: single-page-application`, so react-router routes like `/s/:shareId` survive a hard refresh (no `_redirects` file needed).
 2. **API (Cloudflare Workers):**
    - Add a `wrangler.toml` to `apps/api`.
    - Write the KV adapter (`createKvShareStore()`).

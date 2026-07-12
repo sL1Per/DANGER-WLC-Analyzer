@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "danger-wlc-analyzer",
+  "compatibility_date": "2026-07-12",
+  "assets": {
+    // Vite build output. Served as static files.
+    "directory": "./dist",
+    // Serve index.html for unknown paths so react-router routes
+    // like /s/:shareId work on hard refresh.
+    "not_found_handling": "single-page-application"
+  }
+}
