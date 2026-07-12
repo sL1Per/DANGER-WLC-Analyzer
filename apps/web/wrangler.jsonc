@@ -8,5 +8,6 @@
     // Serve index.html for unknown paths so react-router routes
     // like /s/:shareId work on hard refresh.
     "not_found_handling": "single-page-application"
-  }
+  },
+  "preview_urls": true
 }

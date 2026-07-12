@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "danger-wlc-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-07-12",
+  // Persistent snapshot store. Create the namespace once with
+  //   wrangler kv namespace create SHARE_KV
+  // then paste the returned id below (replace the placeholder).
+  "kv_namespaces": [
+    { "binding": "SHARE_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+  ],
+  // Lock /api/* CORS to the deployed web app. Update to your web origin,
+  // e.g. https://danger-wlc-analyzer.<your-subdomain>.workers.dev
+  "vars": {
+    "WEB_ORIGIN": "https://danger-wlc-analyzer.example.workers.dev"
+  }
+}

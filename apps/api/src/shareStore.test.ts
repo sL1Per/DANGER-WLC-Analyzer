@@ -1,8 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { createMemoryShareStore } from "./shareStore";
+import type { KVNamespace } from "@cloudflare/workers-types";
+import { createMemoryShareStore, createKvShareStore } from "./shareStore";
 import type { ReportData } from "@wcl/core";
 
 const data = { reportId: "abc", title: "T5" } as unknown as ReportData;
+
+// Minimal in-memory stand-in for the put/get(json) surface the adapter uses.
+function fakeKv() {
+  const map = new Map<string, string>();
+  const ttls: Record<string, number | undefined> = {};
+  const kv = {
+    put: async (k: string, v: string, opts?: { expirationTtl?: number }) => {
+      map.set(k, v);
+      ttls[k] = opts?.expirationTtl;
+    },
+    get: async (k: string, _type: "json") => {
+      const raw = map.get(k);
+      return raw === undefined ? null : JSON.parse(raw);
+    },
+  } as unknown as KVNamespace;
+  return { kv, ttls };
+}
 
 describe("createMemoryShareStore", () => {
   it("round-trips a snapshot under a generated id", async () => {
@@ -46,5 +64,26 @@ describe("createMemoryShareStore", () => {
     expect((await store.get(id))?.reportId).toBe("abc"); // within TTL
     t = 1200;
     expect(await store.get(id)).toBeNull(); // expired
+  });
+});
+
+describe("createKvShareStore", () => {
+  it("round-trips a snapshot under a generated id", async () => {
+    const { kv } = fakeKv();
+    const store = createKvShareStore(kv);
+    const id = await store.put(data);
+    expect(typeof id).toBe("string");
+    expect((await store.get(id))?.reportId).toBe("abc");
+  });
+
+  it("returns null for an unknown id", async () => {
+    const { kv } = fakeKv();
+    expect(await createKvShareStore(kv).get("nope")).toBeNull();
+  });
+
+  it("writes with an expirationTtl so KV evicts stale snapshots", async () => {
+    const { kv, ttls } = fakeKv();
+    const id = await createKvShareStore(kv, 123).put(data);
+    expect(ttls[id]).toBe(123);
   });
 });

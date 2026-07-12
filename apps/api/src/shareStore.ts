@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import type { KVNamespace } from "@cloudflare/workers-types";
 import type { ReportData } from "@wcl/core";
 
 // Storage seam for published, key-free report snapshots. The in-memory adapter
@@ -7,6 +7,12 @@ import type { ReportData } from "@wcl/core";
 export interface ShareStore {
   put(data: ReportData): Promise<string>;
   get(id: string): Promise<ReportData | null>;
+}
+
+// Web-standard UUID; available as a global in both Node 20+ and the Workers
+// runtime, so neither adapter needs node:crypto (and no nodejs_compat flag).
+function newShareId(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 }
 
 export interface MemoryShareStoreOptions {
@@ -29,7 +35,7 @@ export function createMemoryShareStore(opts: MemoryShareStoreOptions = {}): Shar
   const map = new Map<string, { data: ReportData; storedAt: number }>();
   return {
     async put(data) {
-      const id = randomUUID().replace(/-/g, "").slice(0, 12);
+      const id = newShareId();
       map.set(id, { data, storedAt: now() });
       while (map.size > maxEntries) map.delete(map.keys().next().value as string);
       return id;
@@ -40,6 +46,26 @@ export function createMemoryShareStore(opts: MemoryShareStoreOptions = {}): Shar
       if (now() - entry.storedAt > ttlMs) { map.delete(id); return null; }
       map.delete(id); map.set(id, entry); // refresh LRU recency
       return entry.data;
+    },
+  };
+}
+
+// 30 days — matches the memory store's default retention. Cloudflare KV's
+// minimum expirationTtl is 60s, well under this.
+const DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+// Cloudflare KV adapter for the Workers deploy. KV gives native TTL expiry and
+// automatic eviction, so the LRU/TTL bookkeeping the memory store carries is
+// gone — put/get is all that's left. Bind a namespace as SHARE_KV (wrangler).
+export function createKvShareStore(kv: KVNamespace, ttlSeconds = DEFAULT_TTL_SECONDS): ShareStore {
+  return {
+    async put(data) {
+      const id = newShareId();
+      await kv.put(id, JSON.stringify(data), { expirationTtl: ttlSeconds });
+      return id;
+    },
+    async get(id) {
+      return (await kv.get(id, "json")) as ReportData | null;
     },
   };
 }

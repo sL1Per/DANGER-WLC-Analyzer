@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "deploy": "wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -13,8 +14,10 @@
     "@wcl/core": "workspace:*"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
     "tsx": "^4.19.0",
     "typescript": "~6.0.2",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "wrangler": "^4.0.0"
   }
 }

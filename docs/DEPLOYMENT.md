@@ -26,15 +26,25 @@ The only new code is a `createKvShareStore()` adapter implementing the existing 
    - Build command: `pnpm --filter @wcl/web build`
    - Deploy command: `npx wrangler deploy --config apps/web/wrangler.jsonc`
    - Root directory: leave empty (repo root) so pnpm resolves the `@wcl/core` / `@wcl/data` workspace deps.
-   - Set the API base URL as a build env var.
+   - Env var: `VITE_API_BASE` = the API Worker's origin (e.g. `https://danger-wlc-api.<subdomain>.workers.dev`, no trailing slash). `share.ts` prefixes `/api/...` with it; leaving it unset keeps the relative path the dev Vite proxy uses.
 
    The `--config apps/web/wrangler.jsonc` flag is required in a pnpm workspace: a bare `wrangler deploy` runs from the repo root, detects `pnpm-workspace.yaml`, and fails with *"detection logic has been run in the root of a workspace instead of targeting a specific project."* Pointing at the config file bypasses that auto-detection. The config also sets `not_found_handling: single-page-application`, so react-router routes like `/s/:shareId` survive a hard refresh (no `_redirects` file needed).
-2. **API (Cloudflare Workers):**
-   - Add a `wrangler.toml` to `apps/api`.
-   - Write the KV adapter (`createKvShareStore()`).
-   - Bind a KV namespace.
-   - Deploy with `wrangler deploy`.
-3. **Lock CORS:** Set `WEB_ORIGIN` (the Pages URL) so `/api/*` is not `*` in prod — `app.ts` already wires `corsOrigin`.
+2. **API (Cloudflare Workers + KV):** already wired — `apps/api/src/worker.ts` (Workers entry) + `apps/api/wrangler.jsonc`. From `apps/api`:
+   - Create the KV namespace: `npx wrangler kv namespace create SHARE_KV`, then paste the returned `id` into `wrangler.jsonc` (`kv_namespaces[0].id`, replacing `REPLACE_WITH_KV_NAMESPACE_ID`).
+   - Set `vars.WEB_ORIGIN` in `wrangler.jsonc` to the deployed web origin (locks CORS; `app.ts` already wires `corsOrigin`).
+   - Deploy: `pnpm --filter @wcl/api deploy` (runs `wrangler deploy`).
+
+   `createKvShareStore()` in `shareStore.ts` uses KV's native `expirationTtl` (30 days) — no LRU/TTL bookkeeping. `worker.ts` reuses the same Hono `createApp`; only the store adapter and CORS origin differ from the Node entry.
+
+### First-time order (resolving the origin chicken-and-egg)
+
+The web build needs the API's origin (`VITE_API_BASE`) and the API needs the web's origin (`WEB_ORIGIN`), so deploy in this order:
+
+1. **Deploy the API first** to mint its URL — create the KV namespace, paste its `id` into `wrangler.jsonc`, then `pnpm --filter @wcl/api deploy`. Note the resulting `https://danger-wlc-api.<subdomain>.workers.dev`.
+2. **Deploy the web** with `VITE_API_BASE` set to that API URL. Note the resulting web URL.
+3. **Set `WEB_ORIGIN`** in `apps/api/wrangler.jsonc` to the web URL and **re-deploy the API** so `/api/*` CORS locks to it.
+
+Rename the placeholder Worker names (`danger-wlc-api`, `danger-wlc-analyzer.example.workers.dev`) to your real subdomain before the first deploy.
 
 ## Caveat
 
