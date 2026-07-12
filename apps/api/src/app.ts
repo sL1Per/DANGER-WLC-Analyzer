@@ -4,10 +4,16 @@ import { bodyLimit } from "hono/body-limit";
 import type { ReportData } from "@wcl/core";
 import { createMemoryShareStore, type ShareStore } from "./shareStore";
 
-const DEFAULT_MAX_BODY_BYTES = 512 * 1024;
+// A published snapshot is a full normalized report — its event arrays
+// (damage/casts/healing/absorbs across every player and pull) run to several MB
+// for a long raid. Cloudflare KV caps a single value at 25 MiB, which is the
+// real ceiling on what can be stored, so accept up to just under it. (The old
+// 512 KB cap rejected real reports with 413 Content Too Large.)
+const DEFAULT_MAX_BODY_BYTES = 24 * 1024 * 1024;
 
 export interface AppOptions {
-  /** Reject /api/share bodies larger than this (bytes). Defaults to 512 KB. */
+  /** Reject /api/share bodies larger than this (bytes). Defaults to 24 MB
+   *  (just under KV's 25 MiB per-value limit). */
   maxBodyBytes?: number;
   /** Restrict CORS to this exact web origin. Unset → "*" (dev only). */
   corsOrigin?: string;
