@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "danger-wlc-api",
+  "name": "danger-wlc-analyzer-api",
   "main": "src/worker.ts",
   "compatibility_date": "2026-07-12",
   // Persistent snapshot store. Create the namespace once, then paste its ID
