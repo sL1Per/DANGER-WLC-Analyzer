@@ -3,8 +3,10 @@ import { ApiError } from "./api";
 
 // Empty in dev → relative "/api/..." hits the Vite proxy. In production the API
 // is a separate Worker on its own origin, so set VITE_API_BASE at build time to
-// that origin (no trailing slash), e.g. https://danger-wlc-api.<sub>.workers.dev
-const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+// that origin, e.g. https://danger-wlc-api.<sub>.workers.dev. Trailing slashes
+// are stripped so `${API_BASE}/api/share` never becomes a route-breaking
+// "//api/share" (which misses the /api/* CORS handler → browser CORS error).
+const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/+$/, "");
 
 export async function publishSnapshot(data: ReportData): Promise<string> {
   const res = await fetch(`${API_BASE}/api/share`, {

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { publishSnapshot, fetchSnapshot, shareUrl } from "./share";
 import type { ReportData } from "@wcl/core";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const data = { reportId: "abc" } as unknown as ReportData;
 
 describe("share client", () => {
@@ -32,6 +32,16 @@ describe("share client", () => {
   it("fetchSnapshot throws on 404", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("nope", { status: 404 })));
     await expect(fetchSnapshot("missing")).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("strips a trailing slash from VITE_API_BASE so paths don't become //api/... (misses CORS)", async () => {
+    vi.stubEnv("VITE_API_BASE", "https://api.example.com/");
+    vi.resetModules(); // API_BASE is computed at module load — re-import to pick up the stubbed env
+    const { publishSnapshot: publish } = await import("./share");
+    const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ shareId: "x" }), { status: 200 }));
+    vi.stubGlobal("fetch", mock);
+    await publish(data);
+    expect(mock.mock.calls[0]![0]).toBe("https://api.example.com/api/share");
   });
 
   it("shareUrl builds an absolute /s/ link", () => {
