@@ -9,11 +9,11 @@
   //   Dashboard: Storage & Databases -> KV -> Create a namespace -> copy the ID
   //   CLI:       wrangler kv namespace create SHARE_KV
   "kv_namespaces": [
-    { "binding": "SHARE_KV", "id": "6d25862bf0dd4ea3bed831915060e1e9" }
+    { "binding": "SHARE_KV", "id": "<id>" }
   ],
   // Lock /api/* CORS to the deployed web app. Update to your web origin,
   // e.g. https://danger-wlc-analyzer.<your-subdomain>.workers.dev
   "vars": {
-    "WEB_ORIGIN": "https://danger-wlc-analyzer.slipviegas.workers.dev"
+    "WEB_ORIGIN": "https://<url>"
   }
 }
