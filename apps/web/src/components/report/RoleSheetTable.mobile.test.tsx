@@ -11,7 +11,9 @@ vi.mock("@wcl/core", async (orig) => {
     roleSheet: () => ([
       {
         playerId: 1, playerName: "Thrall", className: "Shaman",
-        battleShoutUptime: 0, hitStats: undefined, trinketUses: [], avoidableByAbility: [],
+        battleShoutUptime: 0, demoShoutUptime: 0, demoShoutCasts: 0,
+        exposeArmorUptime: 0, exposeArmorCasts: 0,
+        hitStats: undefined, trinketUses: [], avoidableByAbility: [],
         damageReflected: 0, damageToHostilePlayers: 0, friendlyFire: 0, deaths: 2,
         totalAvoidableDamageTaken: 5000, debuffsApplied: [],
       },

@@ -112,6 +112,28 @@ export function RoleSheetTable({
             className: "mono",
           }),
         },
+        {
+          label: "Demoralizing Shout uptime%",
+          cell: (r) => ({
+            content: r.demoShoutUptime > 0 ? `${Math.round(r.demoShoutUptime * 100)}%` : "—",
+            className: "mono",
+          }),
+        },
+        {
+          label: "Demoralizing Shout casts",
+          cell: (r) => ({ content: r.demoShoutCasts > 0 ? r.demoShoutCasts : "—", className: "mono" }),
+        },
+        {
+          label: "Expose Armor uptime%",
+          cell: (r) => ({
+            content: r.exposeArmorUptime > 0 ? `${Math.round(r.exposeArmorUptime * 100)}%` : "—",
+            className: "mono",
+          }),
+        },
+        {
+          label: "Expose Armor casts",
+          cell: (r) => ({ content: r.exposeArmorCasts > 0 ? r.exposeArmorCasts : "—", className: "mono" }),
+        },
         hitRow("Out: Crit", (hs) => hs.outgoing.crit),
         hitRow("Out: Dodge", (hs) => hs.outgoing.dodge),
         hitRow("Out: Miss", (hs) => hs.outgoing.miss),

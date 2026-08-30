@@ -225,6 +225,14 @@ export interface RoleSheetRow {
   totalAvoidableDamageTaken: number;
   /** fraction 0..1 of boss-fight time with Battle Shout on the player */
   battleShoutUptime: number;
+  /** fraction 0..1 of boss-fight time this player's Demoralizing Shout debuff was up */
+  demoShoutUptime: number;
+  /** Demoralizing Shout casts by this player (scoped fights) */
+  demoShoutCasts: number;
+  /** fraction 0..1 of boss-fight time this player's Expose Armor debuff was up */
+  exposeArmorUptime: number;
+  /** Expose Armor casts by this player (scoped fights) */
+  exposeArmorCasts: number;
 }
 
 /**
@@ -301,15 +309,26 @@ export function roleSheet(
       // Match by on-use id first, then by resolved name; count under the canonical
       // display name so e.g. "Lust for Battle" is reported as "Bloodlust Brooch".
       const trinketCounts = new Map<string, number>();
+      let demoShoutCasts = 0;
+      let exposeArmorCasts = 0;
       for (const c of report.playerCasts ?? []) {
         if (c.playerId !== r.playerId || !fightIds.has(c.fightId)) continue;
         const nm = meta[String(c.spellId)]?.name;
-        const canonical = trinketById.get(c.spellId) ?? (nm ? trinketByName.get(normName(nm)) : undefined);
+        const norm = nm ? normName(nm) : undefined;
+        if (norm === "demoralizing shout") demoShoutCasts++;
+        else if (norm === "expose armor") exposeArmorCasts++;
+        const canonical = trinketById.get(c.spellId) ?? (norm ? trinketByName.get(norm) : undefined);
         if (!canonical) continue;
         trinketCounts.set(canonical, (trinketCounts.get(canonical) ?? 0) + 1);
       }
 
       const myHits = hitsByPlayer.get(r.playerId);
+
+      // Demoralizing Shout / Expose Armor debuff uptimes are already computed
+      // per-player by rpb()'s classMetrics pass (enemy-debuff-uptime) — read them
+      // straight off classRows rather than recomputing the merged intervals.
+      const classUptime = (key: string) =>
+        r.classRows.find((c) => c.key === key)?.uptimePct ?? 0;
 
       return {
         playerId: r.playerId,
@@ -328,6 +347,10 @@ export function roleSheet(
         // total computed from the name-matched breakdown so the two agree
         totalAvoidableDamageTaken: [...dmgByName.values()].reduce((s, a) => s + a, 0),
         battleShoutUptime: r.battleShoutUptime,
+        demoShoutUptime: classUptime("demoralizing-shout"),
+        demoShoutCasts,
+        exposeArmorUptime: classUptime("expose-armor"),
+        exposeArmorCasts,
       };
     });
 }

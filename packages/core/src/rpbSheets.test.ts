@@ -381,6 +381,60 @@ describe("roleSheet", () => {
     expect(r.totalAvoidableDamageTaken).toBe(6000);
   });
 
+  it("surfaces Demoralizing Shout / Expose Armor uptime and cast counts per player", () => {
+    const report: ReportData = {
+      reportId: "test003",
+      title: "Demo Shout Test",
+      zoneName: "Black Temple",
+      startTime: 0,
+      endTime: 2000,
+      fights: [
+        { id: 1, name: "Supremus", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 1000 },
+      ],
+      players: [{ id: 7, name: "TankWar", class: "Warrior" }],
+      // aura 25780 = tank signal (roleCfg)
+      gear: [{ fightId: 1, playerId: 7, auras: [25780], items: [] }],
+      playerTotals: [
+        { playerId: 7, healingDone: 0, damageDone: 100_000, damageTaken: 200_000, magicDamageDone: 0 },
+      ],
+      playerCasts: [
+        { fightId: 1, playerId: 7, spellId: 25202, timestamp: 100 },
+        { fightId: 1, playerId: 7, spellId: 25202, timestamp: 600 },
+      ],
+      enemyDebuffs: [
+        // 200ms of Demoralizing Shout uptime on a 1000ms fight → 0.2
+        { fightId: 1, sourceId: 7, targetEnemyId: 901, spellId: 25202, startTime: 100, endTime: 300 },
+      ],
+      abilityMeta: { "25202": { name: "Demoralizing Shout" } },
+      itemMeta: {},
+    };
+    const rows = roleSheet(report, "tank", {
+      roles: roleCfg,
+      rpb: {
+        ...defaultRpbConfig(),
+        classAbilities: [
+          {
+            className: "Warrior",
+            key: "demoralizing-shout",
+            name: "Demoralizing Shout",
+            measure: "enemy-debuff-uptime",
+            spellIds: [1160, 6190, 11554, 11555, 11556, 25202],
+            verified: true,
+          },
+        ],
+      },
+      avoidableDebuffIds: [],
+      trinketRacials: [],
+      avoidableAbilityNames: [],
+    })!;
+    const r = rows.find((x) => x.playerId === 7)!;
+    expect(r.demoShoutCasts).toBe(2);
+    expect(r.demoShoutUptime).toBeCloseTo(0.2, 5);
+    // no Expose Armor activity → zeroed, not undefined
+    expect(r.exposeArmorCasts).toBe(0);
+    expect(r.exposeArmorUptime).toBe(0);
+  });
+
   it("matches on-use trinkets by spell id and reports the canonical item name", () => {
     // WCL labels Bloodlust Brooch's on-use cast as its buff "Lust for Battle"
     // (spell 35166), NOT the item name — so name-only matching misses it. The
