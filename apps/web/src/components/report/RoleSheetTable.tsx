@@ -148,7 +148,7 @@ export function RoleSheetTable({
         hitRow("In: Parry", (hs) => hs.incomingMelee.parry),
         hitRow("Crit Heals", (hs) => hs.critHeals),
         {
-          label: "# of extra Windfury Attacks",
+          label: "# of extra Windfury Weapon attacks",
           cell: (r) => ({ content: r.hitStats ? r.hitStats.extraWindfury : "—", className: "mono" }),
         },
       ],

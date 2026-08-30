@@ -88,7 +88,7 @@ describe("RoleSheetTable", () => {
 
     // Column headers for newly-added columns must be present
     expect(
-      screen.getByText("# of extra Windfury Attacks"),
+      screen.getByText("# of extra Windfury Weapon attacks"),
     ).toBeInTheDocument();
     expect(screen.getByText("Crit Heals")).toBeInTheDocument();
     expect(screen.getByText("In: Blocked")).toBeInTheDocument();
