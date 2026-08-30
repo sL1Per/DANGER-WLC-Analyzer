@@ -19,8 +19,11 @@
  *       Windfury Totem procs on non-shaman melee are counted too.
  *   6 — extra-Windfury-attack count now read from WCL `extraattacks` events
  *       (v5 still missed totem procs — their swings log as plain Melee).
+ *   7 — reverted v6: WCL's DamageDone stream carries no `extraattacks` events,
+ *       so v6 zeroed everyone. Back to matching "Windfury*" damage events
+ *       (shaman Windfury Weapon imbue only).
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

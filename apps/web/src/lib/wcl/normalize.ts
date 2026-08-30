@@ -104,7 +104,6 @@ function buildHitStatsByFight(
 
   // Outgoing: the player's own damage events, bucketed by hit-type.
   for (const d of events.damageDone ?? []) {
-    if (d.type !== "damage") continue; // skip interleaved `extraattacks` events
     if (!playerIds.has(d.sourceID) || !bossFightIds.has(d.fight)) continue;
     const o = ensure(d.sourceID, d.fight).outgoing;
     switch (d.hitType) {
@@ -142,18 +141,18 @@ function buildHitStatsByFight(
     else heal.hit++;
   }
 
-  // Extra Windfury attacks (per fight). WCL emits an `extraattacks` event for
-  // every proc that grants extra swings — a shaman's own Windfury Weapon imbue
-  // AND the Windfury Totem proc a non-shaman melee receives (whose resolved
-  // swings otherwise log as plain Melee, so there is no other signal for them).
-  // `extraAttacks` is the swing count. Filter to Windfury by the proc's resolved
-  // name so Sword Specialization / Hand of Justice procs don't count.
+  // Extra Windfury attacks (per fight): a shaman's Windfury Weapon imbue extra
+  // swings log as damage events named "Windfury Attack" (and Windfury Totem
+  // procs, where WCL names them, start "Windfury" too). Match on the resolved
+  // ability name — the proc id varies by rank/source. NOTE: Windfury Totem
+  // procs on non-shaman melee resolve as plain Melee swings and are not
+  // separately identifiable, so they are not captured here.
   const isWindfury = (id: number) =>
     (events.abilityMeta?.[String(id)]?.name ?? "").toLowerCase().startsWith("windfury");
   for (const d of events.damageDone ?? []) {
-    if (d.type !== "extraattacks" || !isWindfury(d.abilityGameID)) continue;
+    if (!isWindfury(d.abilityGameID)) continue;
     if (playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {
-      ensure(d.sourceID, d.fight).extraWindfury += d.extraAttacks ?? 1;
+      ensure(d.sourceID, d.fight).extraWindfury += 1;
     }
   }
 
@@ -220,7 +219,6 @@ function buildRpb(
     .map((c) => ({ fightId: c.fight, playerId: c.sourceID, spellId: c.abilityGameID, timestamp: c.timestamp }));
 
   const playerDamage: PlayerDamageEvent[] = (events.damageDone ?? [])
-    .filter((d) => d.type === "damage") // exclude interleaved `extraattacks` events
     .map((d) => ({ d, src: ownerOf(d.sourceID) }))
     .filter(({ d, src }) => playerIds.has(src) && fightIds.has(d.fight))
     .map(({ d, src }) => ({

@@ -207,9 +207,6 @@ export interface RawDamageEvent {
   hitType?: number;
   /** damage before mitigation (armor/resist/absorb) — the "raw" hit */
   unmitigatedAmount?: number;
-  /** on `type: "extraattacks"` events — number of extra swings granted (Windfury,
-   *  Sword Specialization, Hand of Justice, …). Not present on `damage` events. */
-  extraAttacks?: number;
 }
 
 /** All player casts (no ability filter) — paged. Used for activity cast-time sums. */
@@ -227,12 +224,9 @@ export async function fetchDamageTaken(code: string, accessToken: string, fightI
   return await fetchAllEvents(code, accessToken, "DamageTaken", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
 }
 
-/** Damage-done events by players (DamageDone dataType). Also keeps `extraattacks`
- *  events from the same stream — the only place WCL reports extra swings granted
- *  by Windfury Totem to non-shaman melee (their resolved swings log as plain
- *  Melee). Consumers must gate on `type`. */
+/** Damage-done events by players (DamageDone dataType). */
 export async function fetchDamageDone(code: string, accessToken: string, fightIds?: number[]): Promise<RawDamageEvent[]> {
-  return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage", "extraattacks"]), fightIds) as unknown as RawDamageEvent[];
+  return await fetchAllEvents(code, accessToken, "DamageDone", new Set(["damage"]), fightIds) as unknown as RawDamageEvent[];
 }
 
 /** Effective healing events by players. The WCL EventDataType enum has no
