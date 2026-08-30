@@ -12,6 +12,7 @@ describe("isTbcRaidZone", () => {
   it.each([
     "SSC / TK", "SSC/TK", "SSC /TK",
     "Gruul / Magtheridon", "Gruul/Magtheridon",
+    "BT / Hyjal", "BT/Hyjal", "Hyjal / BT",
   ])("accepts combined zone %s", (z) => expect(isTbcRaidZone(z)).toBe(true));
 
   it.each(["Molten Core", "Naxxramas", "Icecrown Citadel", ""])(
