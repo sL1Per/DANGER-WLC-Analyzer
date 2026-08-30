@@ -550,45 +550,34 @@ describe("normalize hitStatsByFight", () => {
     expect(data.hitStatsByFight).toBeUndefined();
   });
 
-  it("counts extra Windfury attacks and Battle Squawk buffs per fight", () => {
+  it("counts extra Windfury attacks per fight (matched by ability name)", () => {
     const raw = makeRaw(); // player 7, boss fight 1
     const data = normalizeReport("rep", raw, [], {}, {
-      extraWindfurySpellId: 33010,
-      battleSquawkBuffId: 23060,
+      abilityMeta: { "25504": { name: "Windfury Attack" } },
       damageDone: [
-        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 50, fight: 1 },
-        { timestamp: 2, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 60, fight: 1 },
-      ] as any,
-      buffEvents: [
-        { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
+        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 50, fight: 1 },
+        { timestamp: 2, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 60, fight: 1 },
       ] as any,
     });
     const h = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
     expect(h.extraWindfury).toBe(2);
-    expect(h.battleSquawk).toBe(1);
   });
 
-  it("does not count Windfury/Squawk events from trash fights", () => {
+  it("does not count Windfury attacks from trash fights", () => {
     // makeRaw() has only 1 boss fight (id=1, encounterID=1). Inject a second
-    // trash fight (id=2, encounterID=0) with Windfury/Squawk events on it —
-    // those must be excluded (no trash entry, boss entry counts only fight 1).
+    // trash fight (id=2, encounterID=0) with Windfury events on it — those must
+    // be excluded (no trash entry, boss entry counts only fight 1).
     const raw = makeRaw();
     raw.fights.push({ id: 2, name: "Trash", encounterID: 0, kill: null, startTime: 1001, endTime: 2000, friendlyPlayers: [7] });
     const data = normalizeReport("rep", raw, [], {}, {
-      extraWindfurySpellId: 33010,
-      battleSquawkBuffId: 23060,
+      abilityMeta: { "25504": { name: "Windfury Attack" } },
       damageDone: [
-        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 50, fight: 1 },
-        { timestamp: 1002, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 33010, amount: 60, fight: 2 },
-      ] as any,
-      buffEvents: [
-        { timestamp: 1, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 1 },
-        { timestamp: 1002, type: "applybuff", sourceID: 7, targetID: 7, abilityGameID: 23060, fight: 2 },
+        { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 50, fight: 1 },
+        { timestamp: 1002, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 60, fight: 2 },
       ] as any,
     });
     const boss = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
     expect(boss.extraWindfury).toBe(1);
-    expect(boss.battleSquawk).toBe(1);
     // no entry for the trash fight
     expect(data.hitStatsByFight!.some((x) => x.fightId === 2)).toBe(false);
   });

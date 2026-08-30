@@ -151,10 +151,6 @@ export function RoleSheetTable({
           label: "# of extra Windfury Attacks",
           cell: (r) => ({ content: r.hitStats ? r.hitStats.extraWindfury : "—", className: "mono" }),
         },
-        {
-          label: "# of Battle Squawk buffs on bosses",
-          cell: (r) => ({ content: r.hitStats ? r.hitStats.battleSquawk : "—", className: "mono" }),
-        },
       ],
     },
     {

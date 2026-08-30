@@ -74,12 +74,3 @@ export const trinketRacials: TrinketRacial[] = [
   // "Blessing of Life".
   { spellId: 38332, name: "Ribbon of Sacrifice", verified: true },
 ];
-
-/** Extra Windfury proc spell id (Enhancement Shaman Windfury Totem extra attack).
- *  This is the proc/extra-attack spell id WCL attributes, NOT the totem aura id.
- *  Verify against Task-1 report and wago.tools. */
-export const extraWindfurySpellId = 33010; // TODO verify
-
-/** Battle Squawk buff id (Cenarion War Hippogryph trinket / similar battle-squawk
- *  effect). Verify the correct TBC buff id against wago.tools. */
-export const battleSquawkBuffId = 23060; // TODO verify

@@ -67,7 +67,7 @@ describe("PlayerProfile", () => {
         playerId: player.id, fightId: 3,
         outgoing: { hit: 1, crit: 3, dodge: 0, miss: 0, parry: 0, resist: 0 },
         incomingMelee: { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 },
-        heal: { hit: 0, crit: 0 }, extraWindfury: 0, battleSquawk: 0,
+        heal: { hit: 0, crit: 0 }, extraWindfury: 0,
       }],
     };
     render(<PlayerProfile report={report} playerId={player.id} />);

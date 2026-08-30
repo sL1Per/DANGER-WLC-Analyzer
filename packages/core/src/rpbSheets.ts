@@ -176,7 +176,6 @@ export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
   const t = { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 };
   const h = { hit: 0, crit: 0 };
   let extraWindfury = 0;
-  let battleSquawk = 0;
   for (const f of perFight) {
     o.hit += f.outgoing.hit; o.crit += f.outgoing.crit; o.dodge += f.outgoing.dodge;
     o.miss += f.outgoing.miss; o.parry += f.outgoing.parry; o.resist += f.outgoing.resist;
@@ -185,7 +184,6 @@ export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
     t.miss += f.incomingMelee.miss; t.parry += f.incomingMelee.parry;
     h.hit += f.heal.hit; h.crit += f.heal.crit;
     extraWindfury += f.extraWindfury;
-    battleSquawk += f.battleSquawk;
   }
   const od = o.hit + o.crit + o.dodge + o.miss + o.parry + o.resist;
   const td = t.hit + t.crit + t.crushing + t.blocked + t.dodge + t.immune + t.miss + t.parry;
@@ -203,7 +201,6 @@ export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
     },
     critHeals: share(h.crit, hd),
     extraWindfury,
-    battleSquawk,
   };
 }
 

@@ -330,7 +330,6 @@ function makeReportWithHitStats(): ReportData {
         incomingMelee: { hit: 100, crit: 1, crushing: 0, blocked: 5, dodge: 10, immune: 0, miss: 3, parry: 8 },
         heal: { hit: 0, crit: 0 },
         extraWindfury: 0,
-        battleSquawk: 0,
       },
     ],
     enemyDebuffs: [

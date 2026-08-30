@@ -1,7 +1,7 @@
 import type { ItemMeta, ReportData } from "@wcl/core";
 import {
   consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs,
-  battleShoutBuffIds, extraWindfurySpellId, battleSquawkBuffId,
+  battleShoutBuffIds,
 } from "@wcl/data";
 import { normalizeReport } from "./normalize";
 import {
@@ -113,6 +113,5 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     interrupts, damageTaken, damageDone, allCasts,
     damageDoneTable, healingTable, damageTakenTable, actorNames,
     enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta, petOwners,
-    extraWindfurySpellId, battleSquawkBuffId,
   });
 }

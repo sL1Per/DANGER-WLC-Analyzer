@@ -12,8 +12,11 @@
  *   2 — added per-boss DPS/HPS parse value (RankingCharacter.parse).
  *   3 — fixed parse to read WCL's `amount` field (v2 report rankings) — v2
  *       cached it from the wrong field (`total`) and always got 0.
+ *   4 — extra-Windfury-attack count now matched by ability name ("Windfury
+ *       Attack") instead of an unverified curated id that never hit (always 0);
+ *       dropped the unused Battle Squawk tally.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
@@ -254,8 +257,6 @@ export interface PlayerHitStats {
   critHeals: HitStat;
   /** count of extra Windfury attacks granted (0 when not applicable) */
   extraWindfury: number;
-  /** count of Battle Squawk buffs received on bosses */
-  battleSquawk: number;
 }
 
 /** A use of a curated on-use trinket or racial (count of casts/applications). */
@@ -271,5 +272,4 @@ export interface PlayerFightHits {
   incomingMelee: { hit: number; crit: number; crushing: number; blocked: number; dodge: number; immune: number; miss: number; parry: number };
   heal: { hit: number; crit: number };
   extraWindfury: number;
-  battleSquawk: number;
 }

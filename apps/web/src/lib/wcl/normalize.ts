@@ -63,10 +63,6 @@ export interface NormalizeEventInputs {
   abilityMeta?: Record<string, { name: string }>;
   /** pet actor id → owner player id; pet damage/healing is credited to the owner */
   petOwners?: Record<number, number>;
-  /** Windfury extra-attack proc ability id (verified: false — confirm via wago.tools) */
-  extraWindfurySpellId?: number;
-  /** Battle Squawk buff id from Cenarion Dart trinket (verified: false — confirm via wago.tools) */
-  battleSquawkBuffId?: number;
 }
 
 /** WCL hit-type codes (stable across game versions; see WoWAnalyzer HIT_TYPES).
@@ -99,7 +95,7 @@ function buildHitStatsByFight(
         outgoing: { hit: 0, crit: 0, dodge: 0, miss: 0, parry: 0, resist: 0 },
         incomingMelee: { hit: 0, crit: 0, crushing: 0, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 },
         heal: { hit: 0, crit: 0 },
-        extraWindfury: 0, battleSquawk: 0,
+        extraWindfury: 0,
       };
       byKey.set(key, h);
     }
@@ -145,18 +141,14 @@ function buildHitStatsByFight(
     else heal.hit++;
   }
 
-  // Extra Windfury attacks and Battle Squawk buffs (per fight).
-  const wfId = events.extraWindfurySpellId;
-  if (wfId !== undefined) for (const d of events.damageDone ?? []) {
-    if (d.abilityGameID === wfId && playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {
+  // Extra Windfury attacks (per fight): the extra main-hand swings log as damage
+  // events named "Windfury Attack". The proc id varies by weapon rank / client,
+  // so match on the resolved ability name rather than a curated id.
+  const abilityName = (id: number) => events.abilityMeta?.[String(id)]?.name?.toLowerCase();
+  for (const d of events.damageDone ?? []) {
+    if (abilityName(d.abilityGameID) !== "windfury attack") continue;
+    if (playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {
       ensure(d.sourceID, d.fight).extraWindfury += 1;
-    }
-  }
-  const sqId = events.battleSquawkBuffId;
-  if (sqId !== undefined) for (const e of events.buffEvents ?? []) {
-    if (e.abilityGameID === sqId && (e.type === "applybuff" || e.type === "refreshbuff")
-      && playerIds.has(e.targetID) && bossFightIds.has(e.fight)) {
-      ensure(e.targetID, e.fight).battleSquawk += 1;
     }
   }
 

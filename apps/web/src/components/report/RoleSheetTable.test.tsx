@@ -27,7 +27,6 @@ const reportWithHitStats: ReportData = {
       incomingMelee: { hit: 97, crit: 0, crushing: 3, blocked: 0, dodge: 0, immune: 0, miss: 0, parry: 0 },
       heal: { hit: 80, crit: 20 },
       extraWindfury: 2,
-      battleSquawk: 1,
     },
   ],
 };
@@ -91,9 +90,6 @@ describe("RoleSheetTable", () => {
     expect(
       screen.getByText("# of extra Windfury Attacks"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("# of Battle Squawk buffs on bosses"),
-    ).toBeInTheDocument();
     expect(screen.getByText("Crit Heals")).toBeInTheDocument();
     expect(screen.getByText("In: Blocked")).toBeInTheDocument();
     expect(screen.getByText("In: Dodge")).toBeInTheDocument();
@@ -106,8 +102,5 @@ describe("RoleSheetTable", () => {
 
     // extraWindfury cell: integer 2
     expect(screen.getByText("2")).toBeInTheDocument();
-
-    // battleSquawk cell: integer 1
-    expect(screen.getByText("1")).toBeInTheDocument();
   });
 });
