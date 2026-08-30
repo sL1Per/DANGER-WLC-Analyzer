@@ -550,17 +550,21 @@ describe("normalize hitStatsByFight", () => {
     expect(data.hitStatsByFight).toBeUndefined();
   });
 
-  it("counts extra Windfury attacks per fight (matched by ability name)", () => {
+  it("counts extra Windfury attacks per fight — weapon imbue and totem procs", () => {
     const raw = makeRaw(); // player 7, boss fight 1
     const data = normalizeReport("rep", raw, [], {}, {
-      abilityMeta: { "25504": { name: "Windfury Attack" } },
+      abilityMeta: {
+        "25504": { name: "Windfury Attack" }, // shaman's own Windfury Weapon imbue
+        "25587": { name: "Windfury Totem" },  // totem proc granted to a non-shaman
+      },
       damageDone: [
         { timestamp: 1, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 50, fight: 1 },
-        { timestamp: 2, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25504, amount: 60, fight: 1 },
+        { timestamp: 2, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25587, amount: 60, fight: 1 },
+        { timestamp: 3, type: "damage", sourceID: 7, targetID: 9, abilityGameID: 25587, amount: 40, fight: 1 },
       ] as any,
     });
     const h = data.hitStatsByFight!.find((x) => x.playerId === 7 && x.fightId === 1)!;
-    expect(h.extraWindfury).toBe(2);
+    expect(h.extraWindfury).toBe(3);
   });
 
   it("does not count Windfury attacks from trash fights", () => {

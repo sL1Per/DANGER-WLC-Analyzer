@@ -141,12 +141,16 @@ function buildHitStatsByFight(
     else heal.hit++;
   }
 
-  // Extra Windfury attacks (per fight): the extra main-hand swings log as damage
-  // events named "Windfury Attack". The proc id varies by weapon rank / client,
-  // so match on the resolved ability name rather than a curated id.
-  const abilityName = (id: number) => events.abilityMeta?.[String(id)]?.name?.toLowerCase();
+  // Extra Windfury attacks (per fight): every extra main-hand swing logs as a
+  // damage event whose ability name starts with "Windfury" — a shaman's own
+  // Windfury Weapon imbue proc ("Windfury Attack") and the Windfury Totem proc a
+  // non-shaman melee receives ("Windfury Totem"). The proc id varies by rank and
+  // source, so match on the resolved name; nothing else named "Windfury" deals
+  // damage, so a prefix match is safe.
+  const isWindfuryAttack = (id: number) =>
+    (events.abilityMeta?.[String(id)]?.name ?? "").toLowerCase().startsWith("windfury");
   for (const d of events.damageDone ?? []) {
-    if (abilityName(d.abilityGameID) !== "windfury attack") continue;
+    if (!isWindfuryAttack(d.abilityGameID)) continue;
     if (playerIds.has(d.sourceID) && bossFightIds.has(d.fight)) {
       ensure(d.sourceID, d.fight).extraWindfury += 1;
     }
