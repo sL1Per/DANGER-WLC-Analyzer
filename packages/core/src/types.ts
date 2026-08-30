@@ -17,8 +17,10 @@
  *       dropped the unused Battle Squawk tally.
  *   5 — extra-Windfury-attack match widened to any "Windfury*" damage event, so
  *       Windfury Totem procs on non-shaman melee are counted too.
+ *   6 — extra-Windfury-attack count now read from WCL `extraattacks` events
+ *       (v5 still missed totem procs — their swings log as plain Melee).
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
