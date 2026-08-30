@@ -2,6 +2,7 @@ import type { ReportData, Role, PlayerHitStats, TrinketUse, PlayerFightHits } fr
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
 import { rpb, type RpbConfig } from "./rpb";
+import { mergedDurationMs } from "./classMetrics";
 
 /** Structural copy of @wcl/data's CatalogAbility (core stays pure — catalog injected). */
 export type CastCategory = "single" | "aoe" | "cooldown" | "heal";
@@ -251,9 +252,9 @@ export function roleSheet(
   if (!result) return null;
 
   // Exclude Kalecgos (portal mechanic breaks all numbers)
-  const fightIds = new Set(
-    report.fights.filter((f) => !isKalecgos(f.name)).map((f) => f.id),
-  );
+  const scopedFights = report.fights.filter((f) => !isKalecgos(f.name));
+  const fightIds = new Set(scopedFights.map((f) => f.id));
+  const durationMs = scopedFights.reduce((s, f) => s + (f.endTime - f.startTime), 0);
 
   // Group per-fight raw hit counts by player, restricted to the scoped fights —
   // this is what makes the sheet correct on a single boss pull.
@@ -298,10 +299,19 @@ export function roleSheet(
       // merged intervals (one per application window), so counting intervals =
       // counting applications — matches the sheet's count.
       const debuffByName = new Map<string, number>();
+      // Demoralizing Shout / Expose Armor uptime is matched by resolved WCL name
+      // (not curated id) — the debuff aura id differs from the cast id for Demo
+      // Shout, so an id match silently drops it.
+      const demoShoutIvals: { startTime: number; endTime: number }[] = [];
+      const exposeArmorIvals: { startTime: number; endTime: number }[] = [];
       for (const e of report.enemyDebuffs ?? []) {
         if (e.sourceId !== r.playerId || !fightIds.has(e.fightId)) continue;
         const nm = meta[String(e.spellId)]?.name;
-        if (!nm || !debuffNames.has(normName(nm))) continue;
+        if (!nm) continue;
+        const norm = normName(nm);
+        if (norm === "demoralizing shout") demoShoutIvals.push(e);
+        else if (norm === "expose armor") exposeArmorIvals.push(e);
+        if (!debuffNames.has(norm)) continue;
         debuffByName.set(nm, (debuffByName.get(nm) ?? 0) + 1);
       }
 
@@ -324,12 +334,6 @@ export function roleSheet(
 
       const myHits = hitsByPlayer.get(r.playerId);
 
-      // Demoralizing Shout / Expose Armor debuff uptimes are already computed
-      // per-player by rpb()'s classMetrics pass (enemy-debuff-uptime) — read them
-      // straight off classRows rather than recomputing the merged intervals.
-      const classUptime = (key: string) =>
-        r.classRows.find((c) => c.key === key)?.uptimePct ?? 0;
-
       return {
         playerId: r.playerId,
         playerName: r.playerName,
@@ -347,9 +351,9 @@ export function roleSheet(
         // total computed from the name-matched breakdown so the two agree
         totalAvoidableDamageTaken: [...dmgByName.values()].reduce((s, a) => s + a, 0),
         battleShoutUptime: r.battleShoutUptime,
-        demoShoutUptime: classUptime("demoralizing-shout"),
+        demoShoutUptime: durationMs > 0 ? mergedDurationMs(demoShoutIvals) / durationMs : 0,
         demoShoutCasts,
-        exposeArmorUptime: classUptime("expose-armor"),
+        exposeArmorUptime: durationMs > 0 ? mergedDurationMs(exposeArmorIvals) / durationMs : 0,
         exposeArmorCasts,
       };
     });

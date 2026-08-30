@@ -70,7 +70,7 @@ export function classMetrics(
 }
 
 /** total ms covered by a set of intervals, overlaps merged (union). */
-function mergedDurationMs(intervals: { startTime: number; endTime: number }[]): number {
+export function mergedDurationMs(intervals: { startTime: number; endTime: number }[]): number {
   if (intervals.length === 0) return 0;
   const sorted = [...intervals].sort((a, b) => a.startTime - b.startTime);
   let total = 0, curStart = sorted[0]!.startTime, curEnd = sorted[0]!.endTime;

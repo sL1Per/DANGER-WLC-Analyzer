@@ -402,27 +402,19 @@ describe("roleSheet", () => {
         { fightId: 1, playerId: 7, spellId: 25202, timestamp: 600 },
       ],
       enemyDebuffs: [
-        // 200ms of Demoralizing Shout uptime on a 1000ms fight → 0.2
-        { fightId: 1, sourceId: 7, targetEnemyId: 901, spellId: 25202, startTime: 100, endTime: 300 },
+        // debuff aura id (25203) differs from the cast id (25202); the match is
+        // by resolved WCL name. 200ms on a 1000ms fight → 0.2 uptime.
+        { fightId: 1, sourceId: 7, targetEnemyId: 901, spellId: 25203, startTime: 100, endTime: 300 },
       ],
-      abilityMeta: { "25202": { name: "Demoralizing Shout" } },
+      abilityMeta: {
+        "25202": { name: "Demoralizing Shout" },
+        "25203": { name: "Demoralizing Shout" },
+      },
       itemMeta: {},
     };
     const rows = roleSheet(report, "tank", {
       roles: roleCfg,
-      rpb: {
-        ...defaultRpbConfig(),
-        classAbilities: [
-          {
-            className: "Warrior",
-            key: "demoralizing-shout",
-            name: "Demoralizing Shout",
-            measure: "enemy-debuff-uptime",
-            spellIds: [1160, 6190, 11554, 11555, 11556, 25202],
-            verified: true,
-          },
-        ],
-      },
+      rpb: defaultRpbConfig(),
       avoidableDebuffIds: [],
       trinketRacials: [],
       avoidableAbilityNames: [],
