@@ -3,7 +3,7 @@ import { roleSignals, hasteBuffs, engineeringDamageIds } from "./rpb";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
 import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
-import { shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "./index";
+import { shadowResEnchants, shadowResGems, shadowResBuffs, SR_SOFT_TARGET } from "./index";
 import { classAbilities } from "./classAbilities";
 
 describe("reference data", () => {
@@ -100,15 +100,25 @@ describe("shadow resistance reference data", () => {
     for (const v of Object.values(shadowResEnchants)) expect(v).toBeGreaterThan(0);
     expect(shadowResEnchants["804"]).toBe(10); // Lesser Shadow Resistance (cloak)
     expect(shadowResEnchants["1441"]).toBe(15); // Greater Shadow Resistance (cloak)
+    expect(shadowResEnchants["3009"]).toBe(20); // Glyph of Shadow Warding (head)
+    expect(shadowResEnchants["2984"]).toBe(8);  // Shadow Armor Kit (chest/legs/hands/feet)
+    expect(shadowResEnchants["2664"]).toBe(7);  // Enchant Cloak - Major Resistance (all)
     // regression guard: combatantInfo reports enchantment ids, never the casting spell ids
     expect(shadowResEnchants["13522"]).toBeUndefined();
     expect(shadowResEnchants["27101"]).toBeUndefined();
     expect(shadowResEnchants["34006"]).toBeUndefined();
+    expect(shadowResEnchants["35458"]).toBeUndefined(); // Glyph of Shadow Warding spell id
+    expect(shadowResEnchants["35415"]).toBeUndefined(); // Shadow Armor Kit spell id
+  });
+  it("maps SR-bearing gems by item id", () => {
+    for (const v of Object.values(shadowResGems)) expect(v).toBeGreaterThan(0);
+    expect(shadowResGems["22459"]).toBe(4); // Void Sphere (+4 all resist)
   });
   it("maps SR buff auras by spell id (Shadow Protection / Resistance Aura)", () => {
     expect(Object.values(shadowResBuffs)).toContain(70);
     expect(shadowResBuffs["25433"]).toBe(70); // Shadow Protection (max rank)
     expect(shadowResBuffs["27151"]).toBe(70); // Shadow Resistance Aura (max rank)
+    expect(shadowResBuffs["42736"]).toBe(35); // Flask of Chromatic Wonder (all resist)
   });
   it("exposes an advisory soft target", () => {
     expect(SR_SOFT_TARGET).toBeGreaterThan(0);

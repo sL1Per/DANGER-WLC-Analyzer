@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { shadowResistance, LISTING_SLOTS, SLOT_NAMES, type SrBoss, type ReportData } from "@wcl/core";
-import { itemShadowRes, shadowResEnchants, shadowResBuffs, SR_SOFT_TARGET } from "@wcl/data";
+import { itemShadowRes, shadowResEnchants, shadowResGems, shadowResBuffs, SR_SOFT_TARGET } from "@wcl/data";
 import { useIsPhone } from "../lib/useMediaQuery";
 import { StatCard, StatCards } from "./report/StatCard";
 import { SeverityLegend } from "./SeverityLegend";
@@ -10,7 +10,8 @@ export function ShadowResView({ report }: { report: ReportData }) {
   const [boss, setBoss] = useState<SrBoss | undefined>(undefined);
   const result = useMemo(
     () => shadowResistance(report, {
-      itemShadowRes, enchantShadowRes: shadowResEnchants, buffShadowRes: shadowResBuffs, softTarget: SR_SOFT_TARGET,
+      itemShadowRes, enchantShadowRes: shadowResEnchants, gemShadowRes: shadowResGems,
+      buffShadowRes: shadowResBuffs, softTarget: SR_SOFT_TARGET,
     }, { boss }),
     [report, boss],
   );

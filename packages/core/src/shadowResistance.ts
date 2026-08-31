@@ -8,6 +8,8 @@ export type SrBoss = (typeof SR_BOSSES)[number];
 export interface ShadowResConfig {
   itemShadowRes: Record<string, number>;
   enchantShadowRes: Record<string, number>;
+  /** socketed gem itemId → Shadow Resistance granted (e.g. Void Sphere +4) */
+  gemShadowRes: Record<string, number>;
   buffShadowRes: Record<string, number>;
   /** advisory soft target for colouring total SR (not an official threshold) */
   softTarget: number;
@@ -63,11 +65,14 @@ export function shadowResistance(
     for (const item of snap.items) {
       const innate = cfg.itemShadowRes[String(item.itemId)] ?? 0;
       const ench = item.permanentEnchantId ? (cfg.enchantShadowRes[String(item.permanentEnchantId)] ?? 0) : 0;
-      if (innate === 0 && ench === 0) continue;
-      fromGear += innate + ench;
+      let gems = 0;
+      for (const gemId of item.gemIds ?? []) gems += cfg.gemShadowRes[String(gemId)] ?? 0;
+      if (innate === 0 && ench === 0 && gems === 0) continue;
+      fromGear += innate + ench + gems;
       const parts: string[] = [];
       if (innate > 0) parts.push(`${itemName(report, item.itemId)} (~${innate} SR)`);
       if (ench > 0) parts.push(`+${ench} SR`);
+      if (gems > 0) parts.push(`+${gems} SR (gem)`);
       slots[item.slot] = parts.join(" ");
     }
 

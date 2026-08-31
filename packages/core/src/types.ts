@@ -22,8 +22,10 @@
  *   7 — reverted v6: WCL's DamageDone stream carries no `extraattacks` events,
  *       so v6 zeroed everyone. Back to matching "Windfury*" damage events
  *       (shaman Windfury Weapon imbue only).
+ *   8 — Resistances tab now counts SR from socketed gems (Void Sphere) and from
+ *       head/hands/feet armour-kit & glyph enchants + all-resist enchants/flasks.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
