@@ -374,10 +374,14 @@ export async function fetchCastsTable(
 }
 
 // timeframe: Historical compares against rankings as they stood when the fight
-// happened. WCL's server default (omitting the arg) is Today's live bracket —
-// a report ages out of that as tiers reset / patches land, silently returning
-// `{"data":[]}` even when warcraftlogs.com's own report view (which always
-// uses Historical) shows real percentiles for the same kills.
+// happened, rather than WCL's server default (Today's live bracket, which a
+// report ages out of as tiers reset). This is the semantically correct choice
+// for a past-report viewer regardless, though it turned out NOT to be the
+// cause of a 2026-09-04 empty-rankings report — that was traced to the
+// browser session using a different registered WCL API client than the one
+// that successfully fetched rankings for the same report elsewhere. Keeping
+// this argument explicit rather than relying on an undocumented server
+// default.
 const RANKINGS_QUERY = `
 query Rankings($code: String!) {
   reportData {
