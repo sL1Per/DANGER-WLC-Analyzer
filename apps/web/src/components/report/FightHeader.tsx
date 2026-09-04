@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { rpb, consumables, gearIssues, type ReportData } from "@wcl/core";
-import { scopeReportToFight, ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
-import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
+import type { ReportData } from "@wcl/core";
+import { ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
 import { consumablesStatus } from "../../lib/playerRollups";
 import { heatClass, deathsHeat, type Heat } from "../../lib/heatmap";
+import { useFightAnalysis } from "../../lib/useFightAnalysis";
 
 /** Format a fight duration in milliseconds as m:ss. */
 function fmtDuration(ms: number): string {
@@ -28,25 +28,23 @@ export function FightHeader({ report, fightId }: { report: ReportData; fightId: 
       : fight
         ? fight.endTime - fight.startTime
         : 0;
-  const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
+  const { rpbRows, consRows, gearRows } = useFightAnalysis(report, fightId);
 
   const stats = useMemo(() => {
-    const result = rpb(scoped, buildRpbConfig());
-    const consRows = consumables(scoped, consumablesConfig)?.rows ?? [];
     const consByPlayer = new Map(consRows.map((c) => [c.playerId, c]));
 
     let gearFlags = 0;
-    for (const r of gearIssues(scoped, gearIssueConfig)) {
+    for (const r of gearRows) {
       gearFlags += r.issues.filter((i) => i.itemId !== 0).length;
     }
 
-    const rows = result?.rows ?? [];
+    const rows = rpbRows ?? [];
     const deaths = rows.reduce((s, r) => s + r.deaths, 0);
     const underConsumed = rows.filter(
       (r) => consumablesStatus(consByPlayer.get(r.playerId)) !== "full",
     ).length;
     return { deaths, underConsumed, gearFlags };
-  }, [scoped]);
+  }, [rpbRows, consRows, gearRows]);
 
   const heat = (h: Heat) => heatClass(h);
 

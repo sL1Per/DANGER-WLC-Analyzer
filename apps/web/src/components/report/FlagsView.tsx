@@ -1,20 +1,16 @@
 import { useMemo } from "react";
-import { rpb, consumables, gearIssues, type ReportData } from "@wcl/core";
-import { scopeReportToFight } from "../../lib/scopeReport";
-import { buildRpbConfig, consumablesConfig, gearIssueConfig } from "../../lib/analysisConfig";
+import type { ReportData } from "@wcl/core";
 import { buildFlags } from "../../lib/flags";
 import { classColorVar } from "../../lib/classColors";
+import { useFightAnalysis } from "../../lib/useFightAnalysis";
 
 export function FlagsView({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
-  const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
+  const { rpbRows, consRows, gearRows } = useFightAnalysis(report, fightId);
 
   const summary = useMemo(() => {
-    const rpbResult = rpb(scoped, buildRpbConfig());
-    if (rpbResult === null) return null;
-    const consRows = consumables(scoped, consumablesConfig)?.rows ?? [];
-    const gearRows = gearIssues(scoped, gearIssueConfig);
-    return buildFlags(rpbResult.rows, consRows, gearRows);
-  }, [scoped]);
+    if (rpbRows === null) return null;
+    return buildFlags(rpbRows, consRows, gearRows);
+  }, [rpbRows, consRows, gearRows]);
 
   if (summary === null) {
     return <p className="notice">This report was cached before RPB support — Refresh from WCL (requires credentials).</p>;
