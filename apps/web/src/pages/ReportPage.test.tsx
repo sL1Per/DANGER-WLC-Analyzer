@@ -88,8 +88,12 @@ describe("ReportPage — loader branches", () => {
 // was removed because ReportPage now passes shareActions={null}.
 
 describe("ReportPage — category / tab behaviour (via ReportView)", () => {
-  it("defaults to the Rankings category", () => {
+  it("defaults to the Flags category", () => {
     renderAt("/report/abc");
+    expect(screen.getByRole("heading", { name: /flags/i })).toBeInTheDocument();
+  });
+  it("shows the Rankings category when selected", () => {
+    renderAt("/report/abc?cat=summary");
     expect(screen.getByText(/Damage Dealers/i)).toBeInTheDocument();
   });
   it("switches category from the subnav", async () => {

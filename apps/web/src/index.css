@@ -1323,3 +1323,25 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   .report, .home, .settings { overflow-x: hidden; }
   .mono { overflow-wrap: anywhere; }
 }
+
+/* ---- flags view (M9 Forged) ---- */
+
+.flaglist { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.flagrow {
+  display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: start;
+  padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-left: 3px solid var(--danger); border-radius: 10px;
+}
+.flagrow--moderate { border-left-color: var(--warn); }
+.flagrow__who { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.flagrow__cc { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.flagrow__name { font-weight: 650; font-size: 14px; }
+.flagrow__role { font-size: 11px; color: var(--text-subtle); }
+.flagrow__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 550;
+  padding: 3px 9px; border-radius: var(--radius-pill);
+  background: var(--surface-sunken); color: var(--text-muted); border: 1px solid var(--border);
+}
+.fchip.major { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.fchip.moderate { background: var(--warn-bg); color: var(--warn); border-color: transparent; }

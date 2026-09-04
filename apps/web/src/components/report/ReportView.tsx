@@ -6,6 +6,7 @@ import { ReportHeader } from "../ReportHeader";
 import { ReportDrawer } from "./ReportDrawer";
 import { LensBar, type Lens } from "../LensBar";
 import { ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
+import { FlagsView } from "./FlagsView";
 import { SummaryRankings } from "./SummaryRankings";
 import { PerformanceView } from "./PerformanceView";
 import { RoleBreakdownView } from "./RoleBreakdownView";
@@ -19,6 +20,7 @@ import { ShadowResView } from "../ShadowResView";
 import { DensityToggle } from "../DensityToggle";
 
 const CATEGORIES = [
+  ["flags", "Flags"],
   ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
   ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
 ] as const;
@@ -56,7 +58,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
   const categories = CATEGORIES.filter(([key]) =>
     BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key)),
   );
-  const requestedCat = (params.get("cat") as Cat) ?? "summary";
+  const requestedCat = (params.get("cat") as Cat) ?? "flags";
   // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
   // fall back to the first visible tab so the body is never blank.
   const cat: Cat = categories.some(([key]) => key === requestedCat)
@@ -136,6 +138,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
           </nav>
           <div className="report-content">
             <EmptyToggle>
+              {cat === "flags" && <FlagsView report={report} fightId={fightId} onPlayer={goPlayer} />}
               {cat === "summary" && <SummaryRankings report={report} onPlayer={goPlayer} />}
               {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} onPlayer={goPlayer} />}
               {cat === "performance" && <PerformanceView report={report} fightId={fightId} onPlayer={goPlayer} />}
