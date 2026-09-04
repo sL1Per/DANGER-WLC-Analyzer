@@ -1,21 +1,20 @@
 :root {
-  /* surfaces */
-  --canvas: #eef1f5;
+  /* surfaces — warm, subtly-toned white (Forged, light) */
+  --canvas: #f5f3ef;
   --surface: #ffffff;
-  --surface-sunken: #f6f7f9;
-  --border: #e6e8ee;
-  --hairline: #eceef2;
+  --surface-sunken: #f1ede4;
+  --border: #e4ded2;
+  --hairline: #ece7dd;
 
   /* text */
-  --text: #14161c;
-  --text-muted: #5b6472;
-  --text-subtle: #8a93a3;
+  --text: #201c14;
+  --text-muted: #6b6355;
+  --text-subtle: #9a927f;
 
-  /* primary (indigo) */
-  --primary: #2f3ae0;
-  --primary-hover: #2530c4;
-  --primary-tint: #eaecfb;
-  /* text color on accent/primary fills (white in light mode; dark gold has its own) */
+  /* primary (bronze-gold — Forged's accent, tuned dark enough for AA text on white) */
+  --primary: #a8762a;
+  --primary-hover: #8f6321;
+  --primary-tint: color-mix(in srgb, var(--primary) 10%, transparent);
   --on-accent: #ffffff;
 
   /* semantic */
@@ -40,8 +39,8 @@
   --row-tint: rgba(0, 0, 0, 0.02);
 
   /* shape */
-  --radius-card: 16px;
-  --radius-control: 10px;
+  --radius-card: 12px;
+  --radius-control: 8px;
   --radius-pill: 999px;
   --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
   --shadow-sticky: 0 4px 16px rgba(16, 24, 40, 0.08);
@@ -61,39 +60,31 @@
 
 :root[data-theme="dark"] {
   /* surfaces */
-  --canvas: #0e1014;
-  --surface: #171a21;
-  --surface-sunken: #12151b;
-  --border: #272b34;
-  --hairline: #20242c;
+  --canvas: #0b0c0f;
+  --surface: #121319;
+  --surface-sunken: #171922;
+  --border: #23262f;
+  --hairline: #1b1d25;
 
   /* text */
-  --text: #e7e9ef;
-  --text-muted: #9aa3b2;
-  --text-subtle: #6c7689;
+  --text: #e9eaef;
+  --text-muted: #9aa0ac;
+  --text-subtle: #6f7480;
 
-  /* primary (indigo, brightened for dark surfaces) */
-  --primary: #6b73ff;
-  --primary-hover: #828aff;
-  --primary-tint: #1e2340;
+  /* primary (gold, demoted to accent — see index.css for how it's now used) */
+  --primary: #d4a84a;
+  --primary-hover: #e0b860;
+  --primary-tint: color-mix(in srgb, var(--primary) 13%, transparent);
 
   /* semantic */
-  --danger: #ff7a70;
-  --danger-bg: #38201d;
-  --danger-border: #5a2d27;
-  --warn: #e3bd57;
-  --warn-bg: #322a13;
-  --positive: #5fcf86;
-  --positive-bg: #14301e;
+  --danger: #ec7f7d;  --danger-bg: rgba(214, 90, 90, 0.15);  --danger-border: #5a2d27;
+  --warn: #e0b24f;    --warn-bg: rgba(214, 168, 60, 0.13);
+  --positive: #6fc993; --positive-bg: rgba(91, 191, 134, 0.12);
 
-  /* parse percentile bands (WCL 7-tier scale, brightened for dark surfaces) */
-  --parse-common: #9d9d9d;
-  --parse-uncommon: #1eff00;
-  --parse-rare: #3b9bff;
-  --parse-epic: #c77dff;
-  --parse-legendary: #ff8000;
-  --parse-astounding: #ff79c6;
-  --parse-artifact: #e5cc80;
+  /* parse-percentile scale */
+  --parse-common: #8b909d;   --parse-uncommon: #5bbf5b; --parse-rare: #4a9eff;
+  --parse-epic: #b06bf0;     --parse-legendary: #ff8a3d; --parse-astounding: #e87fb0;
+  --parse-artifact: #e6c87d;
 
   /* subtle row tint */
   --row-tint: rgba(255, 255, 255, 0.04);
@@ -102,41 +93,23 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sticky: 0 4px 16px rgba(0, 0, 0, 0.55);
 
-  /* raid aesthetic — canvas & panels (README) */
-  --canvas: #0c0d11;
-  --surface: #101218;
-  --surface-sunken: #13151c;
-  --border: #1c1f29;
-  --hairline: #181b23;
-
-  --text: #e8e9ee;
-  --text-muted: #9aa0ac;
-  --text-subtle: #6f7480;
-
-  /* gold accent (primary action) */
+  /* gold accent — flat solid, no gradient (index.css Task 3 relies on this) */
   --accent-gold: #d4a84a;
-  --accent-gold-grad: linear-gradient(150deg, #d4a84a, #a8842e);
-  --on-accent: #1a1206;
+  --accent-gold-grad: var(--accent-gold);
+  --on-accent: #17130a;
   --primary: #d4a84a;
-  --primary-hover: #e0b860;
-  --primary-tint: #211a0c;
-
-  /* severity heatmap (README) */
-  --danger: #f0908f;  --danger-bg: rgba(214, 90, 90, 0.16);  --danger-border: #5a2d27;
-  --warn: #e6bd56;    --warn-bg: rgba(214, 168, 60, 0.14);
-  --positive: #7fd6a0; --positive-bg: rgba(91, 191, 134, 0.13);
-
-  /* parse-percentile scale (README) */
-  --parse-common: #8b909d;   --parse-uncommon: #5bbf5b; --parse-rare: #4a9eff;
-  --parse-epic: #b06bf0;     --parse-legendary: #ff8a3d; --parse-astounding: #e87fb0;
-  --parse-artifact: #e6c87d;
 
   /* role accents */
   --role-tank: #d4a84a; --role-healer: #5bbf86; --role-caster: #9a86d6; --role-physical: #e0894a;
 
-  /* class colors lightened for the dark canvas (README) */
+  /* class colors lightened for the dark canvas */
   --cc-warrior: #c79c6e; --cc-paladin: #f58cba; --cc-hunter: #abd473;
   --cc-rogue: #fff569;  --cc-priest: #e6e7ec;  --cc-shaman: #3d8bef;
   --cc-mage: #69ccf0;   --cc-warlock: #9a86d6; --cc-druid: #ff7d0a;
   --cc-neutral: #9aa0ac;
+
+  /* radius (shared with light — repeated here only because the pre-Forged
+     file had a duplicate `:root` merge; keep them in sync) */
+  --radius-card: 12px;
+  --radius-control: 8px;
 }
