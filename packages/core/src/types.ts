@@ -24,8 +24,11 @@
  *       (shaman Windfury Weapon imbue only).
  *   8 — Resistances tab now counts SR from socketed gems (Void Sphere) and from
  *       head/hands/feet armour-kit & glyph enchants + all-resist enchants/flasks.
+ *   9 — RPB role sheet now tracks Windfury / Grace of Air totem twisting: the two
+ *       air-totem ally-buffs are fetched (by name) and their uptime on the shaman,
+ *       cast counts and a per-fight timeline are exposed (RoleSheetRow.twist).
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

@@ -169,6 +169,103 @@ function normName(name: string): string {
   return name.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase();
 }
 
+const WINDFURY_TOTEM = "windfury totem";
+const GRACE_OF_AIR_TOTEM = "grace of air totem";
+
+/**
+ * Windfury / Grace of Air totem twisting for one player. Returns undefined for
+ * non-Shamans and for Shamans that never dropped either air totem in the scoped
+ * fights. Uptime is the totem ally-buff measured ON the shaman themselves
+ * (matched by resolved WCL name, so rank/aura-id drift doesn't matter); the
+ * per-fight segments carry fight-relative buff windows and cast marks for the
+ * timeline strip.
+ */
+function computeTwist(
+  playerId: number,
+  className: string,
+  report: ReportData,
+  fightIds: Set<number>,
+  scopedFights: { id: number; name: string; startTime: number; endTime: number }[],
+  durationMs: number,
+  meta: Record<string, { name: string }>,
+): TwistTracking | undefined {
+  if (className !== "Shaman") return undefined;
+
+  const castsByFight = new Map<number, { windfury: number[]; grace: number[] }>();
+  const buffsByFight = new Map<
+    number,
+    { windfury: { startTime: number; endTime: number }[]; grace: { startTime: number; endTime: number }[] }
+  >();
+  const ensureCasts = (f: number) => {
+    let e = castsByFight.get(f);
+    if (!e) { e = { windfury: [], grace: [] }; castsByFight.set(f, e); }
+    return e;
+  };
+  const ensureBuffs = (f: number) => {
+    let e = buffsByFight.get(f);
+    if (!e) { e = { windfury: [], grace: [] }; buffsByFight.set(f, e); }
+    return e;
+  };
+
+  let windfuryCasts = 0;
+  let graceCasts = 0;
+  for (const c of report.playerCasts ?? []) {
+    if (c.playerId !== playerId || !fightIds.has(c.fightId)) continue;
+    const nm = meta[String(c.spellId)]?.name;
+    if (!nm) continue;
+    const norm = normName(nm);
+    if (norm === WINDFURY_TOTEM) { ensureCasts(c.fightId).windfury.push(c.timestamp); windfuryCasts++; }
+    else if (norm === GRACE_OF_AIR_TOTEM) { ensureCasts(c.fightId).grace.push(c.timestamp); graceCasts++; }
+  }
+  if (windfuryCasts === 0 && graceCasts === 0) return undefined;
+
+  const windfuryIvals: { startTime: number; endTime: number }[] = [];
+  const graceIvals: { startTime: number; endTime: number }[] = [];
+  for (const b of report.buffs ?? []) {
+    if (b.targetId !== playerId || !fightIds.has(b.fightId)) continue;
+    const nm = meta[String(b.spellId)]?.name;
+    if (!nm) continue;
+    const norm = normName(nm);
+    const iv = { startTime: b.startTime, endTime: b.endTime };
+    if (norm === WINDFURY_TOTEM) { windfuryIvals.push(iv); ensureBuffs(b.fightId).windfury.push(iv); }
+    else if (norm === GRACE_OF_AIR_TOTEM) { graceIvals.push(iv); ensureBuffs(b.fightId).grace.push(iv); }
+  }
+
+  const asc = (a: number, b: number) => a - b;
+  const relWindows = (
+    ivals: { startTime: number; endTime: number }[],
+    fightStart: number,
+  ) =>
+    ivals
+      .map((iv) => ({ start: iv.startTime - fightStart, end: iv.endTime - fightStart }))
+      .sort((a, b) => a.start - b.start);
+
+  const segments: TwistSegment[] = [];
+  for (const f of scopedFights) {
+    const casts = castsByFight.get(f.id);
+    const buffs = buffsByFight.get(f.id);
+    if (!casts && !buffs) continue;
+    const rel = (t: number) => t - f.startTime;
+    segments.push({
+      fightId: f.id,
+      fightName: f.name,
+      durationMs: f.endTime - f.startTime,
+      windfury: relWindows(buffs?.windfury ?? [], f.startTime),
+      grace: relWindows(buffs?.grace ?? [], f.startTime),
+      windfuryCastAt: (casts?.windfury ?? []).map(rel).sort(asc),
+      graceCastAt: (casts?.grace ?? []).map(rel).sort(asc),
+    });
+  }
+
+  return {
+    windfuryUptime: durationMs > 0 ? mergedDurationMs(windfuryIvals) / durationMs : 0,
+    graceUptime: durationMs > 0 ? mergedDurationMs(graceIvals) / durationMs : 0,
+    windfuryCasts,
+    graceCasts,
+    segments,
+  };
+}
+
 /** Sum a player's per-fight raw hit counts into the normalized {count, pct} shape.
  *  Percentages are recomputed from the summed counts, so any fight subset is exact. */
 export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
@@ -204,10 +301,40 @@ export function aggregateHits(perFight: PlayerFightHits[]): PlayerHitStats {
   };
 }
 
+/** One fight's worth of air-totem twist activity, all times fight-relative ms. */
+export interface TwistSegment {
+  fightId: number;
+  fightName: string;
+  /** fight length in ms — the timeline strip's full width */
+  durationMs: number;
+  /** windows the Windfury Totem buff was on the shaman */
+  windfury: { start: number; end: number }[];
+  /** windows the Grace of Air Totem buff was on the shaman */
+  grace: { start: number; end: number }[];
+  /** Windfury Totem cast timestamps (fight-relative) */
+  windfuryCastAt: number[];
+  /** Grace of Air Totem cast timestamps (fight-relative) */
+  graceCastAt: number[];
+}
+
+/** Windfury / Grace of Air totem twisting for one Shaman, over the scoped fights.
+ *  Uptime is the buff on the shaman themselves (fraction 0..1 of scoped-fight
+ *  time). Populated only for Shamans that dropped at least one air totem. */
+export interface TwistTracking {
+  windfuryUptime: number;
+  graceUptime: number;
+  windfuryCasts: number;
+  graceCasts: number;
+  segments: TwistSegment[];
+}
+
 export interface RoleSheetRow {
   playerId: number;
   playerName: string;
   className: string;
+  /** air-totem twisting (Shaman only); undefined for every other class and for
+   *  Shamans that never dropped Windfury / Grace of Air Totem in the scoped fights */
+  twist?: TwistTracking;
   /** aggregated hit-type stats over the scoped fights; undefined when no
    *  per-fight hit data exists for this player (pre-feature cache) */
   hitStats?: PlayerHitStats;
@@ -335,6 +462,7 @@ export function roleSheet(
         playerId: r.playerId,
         playerName: r.playerName,
         className: r.className,
+        twist: computeTwist(r.playerId, r.className, report, fightIds, scopedFights, durationMs, meta),
         hitStats: myHits && myHits.length > 0 ? aggregateHits(myHits) : undefined,
         trinketUses: [...trinketCounts].map(([name, count]) => ({ playerId: r.playerId, name, count })),
         avoidableByAbility: [...dmgByName]

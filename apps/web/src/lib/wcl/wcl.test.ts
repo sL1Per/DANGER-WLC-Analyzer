@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone, fetchHitTable, fetchCastsTable } from "./wcl";
+import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchBuffEventsByName, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone, fetchHitTable, fetchCastsTable } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -112,6 +112,38 @@ describe("fetchBuffEvents", () => {
     vi.stubGlobal("fetch", mock);
     const events = await fetchBuffEvents("a1B2c3D4e5F6g7H8", "tok", []);
     expect(events).toEqual([]);
+    expect(mock).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchBuffEventsByName", () => {
+  const page = (events: unknown[], next: number | null) =>
+    new Response(JSON.stringify({ data: { reportData: { report: { events: { data: events, nextPageTimestamp: next } } } } }), { status: 200 });
+
+  it("filters Buffs by ability name and keeps apply/remove/refresh across pages", async () => {
+    const e1 = { type: "applybuff", sourceID: 4, targetID: 4, abilityGameID: 8515, fight: 3, timestamp: 100 };
+    const e2 = { type: "removebuff", sourceID: 4, targetID: 4, abilityGameID: 8515, fight: 3, timestamp: 260 };
+    const e3 = { type: "refreshbuff", sourceID: 4, targetID: 7, abilityGameID: 42589, fight: 3, timestamp: 300 };
+    const junk = { type: "applybuffstack", sourceID: 4, targetID: 4, abilityGameID: 8515, fight: 3, timestamp: 150 };
+    const mock = vi.fn()
+      .mockResolvedValueOnce(page([e1, junk], 999))
+      .mockResolvedValueOnce(page([e2, e3], null));
+    vi.stubGlobal("fetch", mock);
+    const events = await fetchBuffEventsByName("a1B2c3D4e5F6g7H8", "tok", ["Windfury Totem", "Grace of Air Totem"]);
+    expect(events).toEqual([e1, e2, e3]);
+    const body1 = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    if (/dataType:\s*\$dataType/.test(body1.query)) {
+      expect(body1.variables.dataType).toBe("Buffs");
+    } else {
+      expect(body1.query).toContain("dataType: Buffs");
+    }
+    expect(body1.variables.filter).toContain('ability.name IN ("Windfury Totem", "Grace of Air Totem")');
+  });
+
+  it("returns [] without calling fetch when no names are given", async () => {
+    const mock = vi.fn();
+    vi.stubGlobal("fetch", mock);
+    expect(await fetchBuffEventsByName("a1B2c3D4e5F6g7H8", "tok", [])).toEqual([]);
     expect(mock).not.toHaveBeenCalled();
   });
 });

@@ -451,6 +451,127 @@ describe("roleSheet", () => {
     expect(r.trinketUses.find((t) => t.name === "Lust for Battle")).toBeUndefined();
   });
 
+  it("tracks Windfury / Grace of Air totem twisting for a Shaman: buff uptime, casts and a per-fight timeline", () => {
+    // fight window is report-relative [1000, 2000] (1000ms) — everything the
+    // timeline exposes must be fight-relative, so a non-zero fight start is used
+    // deliberately to lock that conversion.
+    const report: ReportData = {
+      reportId: "twist001",
+      title: "Twist Test",
+      zoneName: "Black Temple",
+      startTime: 0,
+      endTime: 3000,
+      fights: [
+        { id: 1, name: "Supremus", encounterId: 601, isBoss: true, kill: true, startTime: 1000, endTime: 2000 },
+      ],
+      players: [{ id: 4, name: "Blindberserk", class: "Shaman" }],
+      gear: [{ fightId: 1, playerId: 4, auras: [], items: [] }],
+      playerTotals: [
+        { playerId: 4, healingDone: 0, damageDone: 100_000, damageTaken: 5_000, magicDamageDone: 0 },
+      ],
+      playerCasts: [
+        // Windfury Totem casts (cast id 8512) at report-time 1100 / 1400 / 1700
+        { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1100 },
+        { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1400 },
+        { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1700 },
+        // Grace of Air Totem casts (cast id 8835) at report-time 1250 / 1550 / 1850
+        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1250 },
+        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1550 },
+        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1850 },
+      ],
+      buffs: [
+        // Windfury Totem ally-buff ON the shaman (aura id 9000 — differs from the
+        // cast id; the match is by resolved WCL name). merged = 160+160+300 = 620.
+        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1100, endTime: 1260 },
+        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1400, endTime: 1560 },
+        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1700, endTime: 2000 },
+        // Grace of Air Totem ally-buff ON the shaman (aura id 9001). merged = 160+160+150 = 470.
+        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1250, endTime: 1410 },
+        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1550, endTime: 1710 },
+        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1850, endTime: 2000 },
+      ],
+      abilityMeta: {
+        "8512": { name: "Windfury Totem" },
+        "8835": { name: "Grace of Air Totem" },
+        "9000": { name: "Windfury Totem" },
+        "9001": { name: "Grace of Air Totem" },
+      },
+      itemMeta: {},
+    };
+    const rows = roleSheet(report, "physical", {
+      roles: roleCfg,
+      rpb: defaultRpbConfig(),
+      avoidableDebuffIds: [],
+      trinketRacials: [],
+      avoidableAbilityNames: [],
+    })!;
+    const r = rows.find((x) => x.playerId === 4)!;
+    expect(r.twist).toBeDefined();
+    expect(r.twist!.windfuryUptime).toBeCloseTo(0.62, 5);
+    expect(r.twist!.graceUptime).toBeCloseTo(0.47, 5);
+    expect(r.twist!.windfuryCasts).toBe(3);
+    expect(r.twist!.graceCasts).toBe(3);
+    // one strip per fight the shaman twisted on; windows/marks are fight-relative
+    expect(r.twist!.segments).toHaveLength(1);
+    const seg = r.twist!.segments[0]!;
+    expect(seg.fightId).toBe(1);
+    expect(seg.fightName).toBe("Supremus");
+    expect(seg.durationMs).toBe(1000);
+    expect(seg.windfury).toEqual([
+      { start: 100, end: 260 },
+      { start: 400, end: 560 },
+      { start: 700, end: 1000 },
+    ]);
+    expect(seg.grace).toEqual([
+      { start: 250, end: 410 },
+      { start: 550, end: 710 },
+      { start: 850, end: 1000 },
+    ]);
+    expect(seg.windfuryCastAt).toEqual([100, 400, 700]);
+    expect(seg.graceCastAt).toEqual([250, 550, 850]);
+  });
+
+  it("leaves twist undefined for a non-Shaman and for a Shaman that never dropped an air totem", () => {
+    const base: ReportData = {
+      reportId: "twist002",
+      title: "No Twist Test",
+      zoneName: "Black Temple",
+      startTime: 0,
+      endTime: 2000,
+      fights: [
+        { id: 1, name: "Supremus", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 1000 },
+      ],
+      players: [
+        { id: 4, name: "IdleSham", class: "Shaman" },
+        { id: 5, name: "RageWar", class: "Warrior" },
+      ],
+      gear: [
+        { fightId: 1, playerId: 4, auras: [], items: [] },
+        { fightId: 1, playerId: 5, auras: [], items: [] },
+      ],
+      playerTotals: [
+        { playerId: 4, healingDone: 0, damageDone: 100_000, damageTaken: 5_000, magicDamageDone: 0 },
+        { playerId: 5, healingDone: 0, damageDone: 100_000, damageTaken: 5_000, magicDamageDone: 0 },
+      ],
+      playerCasts: [
+        // shaman casts something that is NOT an air totem
+        { fightId: 1, playerId: 4, spellId: 25530, timestamp: 100 },
+      ],
+      buffs: [],
+      abilityMeta: { "25530": { name: "Searing Totem" } },
+      itemMeta: {},
+    };
+    const rows = roleSheet(base, "physical", {
+      roles: roleCfg,
+      rpb: defaultRpbConfig(),
+      avoidableDebuffIds: [],
+      trinketRacials: [],
+      avoidableAbilityNames: [],
+    })!;
+    expect(rows.find((x) => x.playerId === 4)!.twist).toBeUndefined();
+    expect(rows.find((x) => x.playerId === 5)!.twist).toBeUndefined();
+  });
+
   it("returns null on a stale cache (no playerTotals)", () => {
     const report = { ...makeReportWithHitStats(), playerTotals: undefined } as ReportData;
     expect(

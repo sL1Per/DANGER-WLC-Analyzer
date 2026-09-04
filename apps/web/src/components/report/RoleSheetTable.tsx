@@ -6,6 +6,9 @@ import { heatClass, relativeHeat, deathsHeat } from "../../lib/heatmap";
 import { classColorVar } from "../../lib/classColors";
 import { useIsPhone } from "../../lib/useMediaQuery";
 import { StatCard, StatCards } from "./StatCard";
+import { TwistTimeline } from "./TwistTimeline";
+
+const fmtPct = (f: number) => `${Math.round(f * 100)}%`;
 
 const fmt = (count: number, pct: number) =>
   count === 0 ? "—" : `${count} (${Math.round(pct * 100)}%)`;
@@ -134,6 +137,22 @@ export function RoleSheetTable({
           label: "Expose Armor casts",
           cell: (r) => ({ content: r.exposeArmorCasts > 0 ? r.exposeArmorCasts : "—", className: "mono" }),
         },
+        {
+          label: "Windfury Totem uptime% (on shaman)",
+          cell: (r) => ({ content: r.twist ? fmtPct(r.twist.windfuryUptime) : "—", className: "mono" }),
+        },
+        {
+          label: "Grace of Air Totem uptime% (on shaman)",
+          cell: (r) => ({ content: r.twist ? fmtPct(r.twist.graceUptime) : "—", className: "mono" }),
+        },
+        {
+          label: "Windfury Totem casts",
+          cell: (r) => ({ content: r.twist && r.twist.windfuryCasts > 0 ? r.twist.windfuryCasts : "—", className: "mono" }),
+        },
+        {
+          label: "Grace of Air Totem casts",
+          cell: (r) => ({ content: r.twist && r.twist.graceCasts > 0 ? r.twist.graceCasts : "—", className: "mono" }),
+        },
         hitRow("Out: Crit", (hs) => hs.outgoing.crit),
         hitRow("Out: Dodge", (hs) => hs.outgoing.dodge),
         hitRow("Out: Miss", (hs) => hs.outgoing.miss),
@@ -200,24 +219,44 @@ export function RoleSheetTable({
     },
   ];
 
+  // Shamans that dropped an air totem in the scoped fights get a twist timeline
+  // below the sheet (one strip per fight).
+  const twisters = rows.filter((r) => r.twist);
+  const timelines = twisters.length > 0 && (
+    <div className="twist-timelines">
+      {twisters.map((r) => (
+        <TwistTimeline
+          key={r.playerId}
+          playerName={r.playerName}
+          windfuryUptime={r.twist!.windfuryUptime}
+          graceUptime={r.twist!.graceUptime}
+          segments={r.twist!.segments}
+        />
+      ))}
+    </div>
+  );
+
   if (isPhone) {
     return (
-      <StatCards>
-        {rows.map((r) => (
-          <StatCard
-            key={r.playerId}
-            title={r.playerName}
-            titleStyle={classColorVar(r.className)}
-            onTitleClick={() => onPlayer(r.playerName)}
-            rows={sections.flatMap((s) =>
-              s.rows.map((mr) => {
-                const c = mr.cell(r);
-                return { label: `${s.band} · ${mr.label}`, value: c.content, className: c.className };
-              }),
-            )}
-          />
-        ))}
-      </StatCards>
+      <>
+        <StatCards>
+          {rows.map((r) => (
+            <StatCard
+              key={r.playerId}
+              title={r.playerName}
+              titleStyle={classColorVar(r.className)}
+              onTitleClick={() => onPlayer(r.playerName)}
+              rows={sections.flatMap((s) =>
+                s.rows.map((mr) => {
+                  const c = mr.cell(r);
+                  return { label: `${s.band} · ${mr.label}`, value: c.content, className: c.className };
+                }),
+              )}
+            />
+          ))}
+        </StatCards>
+        {timelines}
+      </>
     );
   }
 
@@ -261,6 +300,7 @@ export function RoleSheetTable({
           ))}
         </tbody>
       </table>
+      {timelines}
     </div>
   );
 }

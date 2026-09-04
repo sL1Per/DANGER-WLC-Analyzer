@@ -586,6 +586,50 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 .rb-transposed td { text-align: right; }
 .rb-transposed .rb-band .band-header { background: var(--surface); font-weight: 700; text-align: left; }
 
+/* Windfury / Grace of Air totem twist timeline — one strip per fight, two lanes
+   (Windfury on top, Grace of Air below) with a tick at every totem drop. */
+.twist-timelines { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+.twist-timeline { margin: 0; }
+.twist-timeline figcaption {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.twist-timeline .twist-who { font-weight: 700; color: var(--text); }
+.twist-timeline .twist-key { font-weight: 600; }
+.twist-timeline .twist-wf { color: var(--parse-legendary); }
+.twist-timeline .twist-goa { color: var(--parse-rare); }
+.twist-strip {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.twist-strip .twist-fight {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.twist-svg {
+  width: 100%;
+  height: 34px;
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+.twist-svg .twist-lane-bg { fill: var(--border); }
+.twist-svg .twist-win-wf { fill: var(--parse-legendary); }
+.twist-svg .twist-win-goa { fill: var(--parse-rare); }
+.twist-svg .twist-mark { stroke: var(--text); stroke-width: 2; opacity: 0.55; }
+
+@media (max-width: 640px) {
+  .twist-strip { grid-template-columns: 1fr; gap: 2px; }
+}
+
 /* Casts class filter — pill toggles that show one class block or all of them.
    Shares the .pill-toggle look; the All button goes gold, class buttons tint
    to their class colour when active. */

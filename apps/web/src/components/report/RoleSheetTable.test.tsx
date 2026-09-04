@@ -76,6 +76,52 @@ describe("RoleSheetTable", () => {
     expect(onPlayer).toHaveBeenCalledWith("Playertwo");
   });
 
+  it("surfaces Windfury / Grace of Air twist rows and a per-fight timeline for a twisting Shaman", () => {
+    const twistReport: ReportData = {
+      ...reportFixture,
+      players: [...reportFixture.players, { id: 3, name: "Twistarn", class: "Shaman" }],
+      playerTotals: [
+        ...(reportFixture.playerTotals ?? []),
+        { playerId: 3, healingDone: 0, damageDone: 90_000, damageTaken: 3_000, magicDamageDone: 1_000 },
+      ],
+      playerCasts: [
+        ...(reportFixture.playerCasts ?? []),
+        { fightId: 3, playerId: 3, spellId: 8512, timestamp: 150_500 },
+        { fightId: 3, playerId: 3, spellId: 8835, timestamp: 151_500 },
+      ],
+      buffs: [
+        ...(reportFixture.buffs ?? []),
+        { fightId: 3, targetId: 3, spellId: 8515, startTime: 150_500, endTime: 200_500 }, // Windfury Totem, ~50%
+        { fightId: 3, targetId: 3, spellId: 42589, startTime: 200_500, endTime: 250_000 }, // Grace of Air Totem, ~49.5%
+      ],
+      abilityMeta: {
+        ...reportFixture.abilityMeta,
+        "8512": { name: "Windfury Totem" },
+        "8835": { name: "Grace of Air Totem" },
+        "8515": { name: "Windfury Totem" },
+        "42589": { name: "Grace of Air Totem" },
+      },
+      // Enhancement parse → detected as physical DPS (not the Shaman caster default)
+      rankings: (reportFixture.rankings ?? []).map((rk, i) =>
+        i === 0
+          ? { ...rk, dps: [...rk.dps, { name: "Twistarn", class: "Shaman", spec: "Enhancement", rankPercent: 80, bracketPercent: 75, parse: 900 }] }
+          : rk,
+      ),
+    };
+    // scope to the Hydross kill (fight 3) so uptime% denominator is that one fight
+    render(
+      <RoleSheetTable report={twistReport} fightId={3} role="physical" onPlayer={() => {}} />,
+    );
+    expect(screen.getByText("Windfury Totem uptime% (on shaman)")).toBeInTheDocument();
+    expect(screen.getByText("Grace of Air Totem uptime% (on shaman)")).toBeInTheDocument();
+    // "Twistarn" appears twice: the player column header and the timeline caption
+    expect(screen.getAllByText("Twistarn").length).toBeGreaterThanOrEqual(2);
+    // timeline caption carries the rounded uptime summary + a per-fight strip
+    expect(screen.getByText(/Windfury 50%/)).toBeInTheDocument();
+    expect(screen.getByText(/Grace of Air 50%/)).toBeInTheDocument();
+    expect(screen.getAllByText("Hydross the Unstable").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("renders all Stats & Misc columns including new ones when hitStats is present", () => {
     render(
       <RoleSheetTable
