@@ -33,6 +33,8 @@ const ROLES_EXPECTED_TO_INTERRUPT: ReadonlySet<Role> = new Set(["physical", "cas
 
 function consumableChips(row: ConsumableRow | undefined): FlagChip[] {
   if (!row) return [];
+  // No gear snapshot at all in scope (player benched/absent) — nothing to flag.
+  if (row.weaponEnhancement === null) return [];
   const chips: FlagChip[] = [];
 
   if (row.elixirOrFlask < FLASK_MAJOR_BELOW) chips.push({ text: "No flask", severity: "major" });
@@ -70,10 +72,19 @@ function rpbChips(row: RpbRow): FlagChip[] {
   return chips;
 }
 
-function gearChips(row: PlayerGearIssues | undefined): FlagChip[] {
-  if (!row || row.issues.length === 0) return [];
+/** Real gear issues only — excludes the synthetic `itemId === 0` "no item on
+ *  <slot>" entries gearIssues() emits for unfilled required slots, matching
+ *  every other consumer's filtering convention (FightHeader, PlayerProfile,
+ *  GearMatrix, GearListingView). */
+function realGearIssues(row: PlayerGearIssues | undefined): PlayerGearIssues["issues"] {
+  if (!row) return [];
+  return row.issues.filter((i) => i.itemId !== 0);
+}
+
+function gearChips(issues: PlayerGearIssues["issues"]): FlagChip[] {
+  if (issues.length === 0) return [];
   return [{
-    text: `${row.issues.length} gear flag${row.issues.length === 1 ? "" : "s"}`,
+    text: `${issues.length} gear flag${issues.length === 1 ? "" : "s"}`,
     severity: "moderate",
   }];
 }
@@ -95,14 +106,15 @@ export function buildFlags(
   const rows: PlayerFlags[] = [];
   for (const rpbRow of rpbRows) {
     const gearRow = gearByPlayer.get(rpbRow.playerId);
+    const gearIssuesFiltered = realGearIssues(gearRow);
     const chips = [
       ...rpbChips(rpbRow),
       ...consumableChips(consByPlayer.get(rpbRow.playerId)),
-      ...gearChips(gearRow),
+      ...gearChips(gearIssuesFiltered),
     ];
     if (chips.length === 0) continue;
 
-    const hasGearMajor = gearRow && gearRow.issues.some((i) => i.severity === "major");
+    const hasGearMajor = gearIssuesFiltered.some((i) => i.severity === "major");
     const severity: FlagSeverity =
       rpbRow.severity === "major" || hasGearMajor || chips.some((c) => c.severity === "major") ? "major" : "moderate";
 

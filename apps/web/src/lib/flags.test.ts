@@ -97,6 +97,25 @@ describe("buildFlags", () => {
     expect(result.rows[0].chips).toContainEqual({ text: "2 gear flags", severity: "moderate" });
   });
 
+  it("excludes synthetic itemId:0 'no item' entries from the gear chip count and major escalation", () => {
+    const gearRow = makeGearRow({ issues: [
+      { itemId: 111, itemName: "Vengeance Wrap", issue: "no enchant", severity: "moderate" },
+      { itemId: 0, itemName: "", issue: "no item on Chest", severity: "major" },
+    ] });
+    const result = buildFlags([makeRpbRow()], [makeConsRow()], [gearRow]);
+    expect(result.rows[0].chips).toContainEqual({ text: "1 gear flag", severity: "moderate" });
+    expect(result.rows[0].severity).toBe("moderate");
+  });
+
+  it("does not flag consumables for a player with no gear snapshot in scope (weaponEnhancement null)", () => {
+    const result = buildFlags(
+      [makeRpbRow()],
+      [makeConsRow({ elixirOrFlask: 0, food: 0, weaponEnhancement: null })],
+      [makeGearRow()],
+    );
+    expect(result.rows).toHaveLength(0);
+  });
+
   it("escalates a player to major severity when the RPB row itself is major", () => {
     const result = buildFlags([makeRpbRow({ severity: "major", deaths: 1 })], [makeConsRow()], [makeGearRow()]);
     expect(result.rows[0].severity).toBe("major");
