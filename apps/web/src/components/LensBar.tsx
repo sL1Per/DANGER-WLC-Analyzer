@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Fight, ReportData } from "@wcl/core";
-import { CLASS_ORDER, classColorVar, classSlug } from "../lib/classColors";
+import { classColorVar, CLASS_ORDER } from "../lib/classColors";
 import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 
 export type Lens = "fight" | "player";
@@ -29,14 +29,51 @@ interface LensBarProps {
   onFight: (id: number) => void;
   onPlayer: (id: number) => void;
   onQuery: (q: string) => void;
-  // Right-aligned slot in the toggle row (e.g. the Share-to-Discord button).
   actions?: ReactNode;
 }
 
 export function LensBar({ report, lens, fightId, playerId, query, onLens, onFight, onPlayer, onQuery, actions }: LensBarProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const bosses = bossFights(report);
+  const trash = trashFights(report);
+  const kills = bosses.filter((f) => f.kill).length;
   const players = [...report.players]
     .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => classRank(a.class) - classRank(b.class) || a.name.localeCompare(b.name));
+
+  const currentFightLabel =
+    fightId === ALL_FIGHTS ? "BOSSES" :
+    fightId === ALL_TRASH ? "TRASH" :
+    bosses.find((f) => f.id === fightId)?.name ?? trash.find((f) => f.id === fightId)?.name ?? "Select a fight";
+  const currentFightDot =
+    fightId === ALL_FIGHTS || fightId === ALL_TRASH ? "dot-all" :
+    bosses.find((f) => f.id === fightId)?.kill ? "dot-kill" : "dot-wipe";
+  const currentPlayerName = report.players.find((p) => p.id === playerId)?.name ?? "Select a raider";
+
+  function pickFight(id: number) {
+    onFight(id);
+    setOpen(false);
+  }
+  function pickPlayer(id: number) {
+    onPlayer(id);
+    setOpen(false);
+  }
 
   return (
     <div className="lens-bar">
@@ -48,82 +85,72 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
             ? "Reviewing one boss pull — everyone who was there."
             : "Reviewing one raider — everything they did, all night."}
         </span>
-        {actions && <span className="lens-toggle__actions">{actions}</span>}
       </div>
 
-      {lens === "fight" ? (
-        <div className="lens-strip">
-          {(() => {
-            const bosses = bossFights(report);
-            const totalSecs = Math.round(
-              bosses.reduce((s, f) => s + (f.endTime - f.startTime), 0) / 1000,
-            );
-            const kills = bosses.filter((f) => f.kill).length;
-            return (
-              <button
-                key="all"
-                className={`fight-chip fight-chip--all${fightId === ALL_FIGHTS ? " selected" : ""}`}
-                onClick={() => onFight(ALL_FIGHTS)}
-              >
-                <span className="fight-chip__name">BOSSES</span>
-                <span className="pill pill--all">{kills}/{bosses.length} kills</span>
-                <span className="mono fight-chip__meta">{totalSecs}s · {report.players.length} players</span>
-              </button>
-            );
-          })()}
-          {(() => {
-            const trash = trashFights(report);
-            if (trash.length === 0) return null;
-            const totalSecs = Math.round(
-              trash.reduce((s, f) => s + (f.endTime - f.startTime), 0) / 1000,
-            );
-            return (
-              <button
-                key="trash"
-                className={`fight-chip fight-chip--all${fightId === ALL_TRASH ? " selected" : ""}`}
-                onClick={() => onFight(ALL_TRASH)}
-              >
-                <span className="fight-chip__name">TRASH</span>
-                <span className="pill pill--all">{trash.length} pulls</span>
-                <span className="mono fight-chip__meta">{totalSecs}s · {report.players.length} players</span>
-              </button>
-            );
-          })()}
-          {bossFights(report).map((f) => (
-            <button
-              key={f.id}
-              className={`fight-chip${f.id === fightId ? " selected" : ""}`}
-              onClick={() => onFight(f.id)}
-            >
-              <span className="fight-chip__name">{f.name}</span>
-              <span className={`pill ${f.kill ? "pill--kill" : "pill--wipe"}`}>{f.kill ? "Kill" : "Wipe"}</span>
-              <span className="mono fight-chip__meta">{secs(f)} · {report.players.length} players</span>
+      <div className="lens-controls">
+        <div className="picker" ref={ref}>
+          {lens === "fight" ? (
+            <button type="button" className="picker__trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+              <span className={`picker__dot ${currentFightDot}`} aria-hidden />
+              <span className="picker__label">{currentFightLabel}</span>
+              <span className="picker__chevron" aria-hidden>▾</span>
             </button>
-          ))}
+          ) : (
+            <button type="button" className="picker__trigger" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((v) => !v)} style={classColorVar(report.players.find((p) => p.id === playerId)?.class ?? "")}>
+              <span className="picker__dot" style={{ background: "var(--class-color, var(--text-subtle))" }} aria-hidden />
+              <span className="picker__label">{currentPlayerName}</span>
+              <span className="picker__chevron" aria-hidden>▾</span>
+            </button>
+          )}
+
+          {open && lens === "fight" && (
+            <div className="picker__panel" role="listbox">
+              <div className="picker__list">
+                <button type="button" data-testid="picker-row" className={`picker__row${fightId === ALL_FIGHTS ? " active" : ""}`} onClick={() => pickFight(ALL_FIGHTS)}>
+                  <span className="picker__dot dot-all" aria-hidden />
+                  <span className="picker__row-name">BOSSES</span>
+                  <span className="picker__row-meta mono">{kills}/{bosses.length} kills</span>
+                </button>
+                {trash.length > 0 && (
+                  <button type="button" data-testid="picker-row" className={`picker__row${fightId === ALL_TRASH ? " active" : ""}`} onClick={() => pickFight(ALL_TRASH)}>
+                    <span className="picker__dot dot-all" aria-hidden />
+                    <span className="picker__row-name">TRASH</span>
+                    <span className="picker__row-meta mono">{trash.length} pulls</span>
+                  </button>
+                )}
+                {bosses.map((f) => (
+                  <button type="button" key={f.id} data-testid="picker-row" className={`picker__row${f.id === fightId ? " active" : ""}`} onClick={() => pickFight(f.id)}>
+                    <span className={`picker__dot ${f.kill ? "dot-kill" : "dot-wipe"}`} aria-hidden />
+                    <span className="picker__row-name">{f.name}</span>
+                    <span className="picker__row-meta mono">{secs(f)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {open && lens === "player" && (
+            <div className="picker__panel" role="listbox">
+              <input
+                className="picker__search"
+                placeholder="Filter raiders…"
+                value={query}
+                onChange={(e) => onQuery(e.target.value)}
+                aria-label="Filter raiders"
+              />
+              <div className="picker__list">
+                {players.map((p) => (
+                  <button type="button" key={p.id} data-testid="picker-row" className={`picker__row${p.id === playerId ? " active" : ""}`} style={classColorVar(p.class)} onClick={() => pickPlayer(p.id)}>
+                    <span className="picker__dot" style={{ background: "var(--class-color, var(--text-subtle))" }} aria-hidden />
+                    <span className="picker__row-name" style={{ color: "var(--class-color, inherit)" }}>{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="lens-roster">
-          <input
-            className="roster-search"
-            placeholder="Filter raiders…"
-            value={query}
-            onChange={(e) => onQuery(e.target.value)}
-            aria-label="Filter raiders"
-          />
-          <div className="lens-strip">
-            {players.map((p) => (
-              <button
-                key={p.id}
-                className={`player-chip cc-${classSlug(p.class)}${p.id === playerId ? " selected" : ""}`}
-                style={classColorVar(p.class)}
-                onClick={() => onPlayer(p.id)}
-              >
-                <span className="player-chip__name">{p.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        {actions && <span className="lens-toggle__actions">{actions}</span>}
+      </div>
     </div>
   );
 }
