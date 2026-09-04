@@ -6,6 +6,7 @@ dist/
 .DS_Store
 .playwright-mcp/
 *.png
+!docs/screenshots/*.png
 .superpowers/
 docs/design_handoff_raid_analyzer/
 docs/superpowers/

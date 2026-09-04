@@ -3,8 +3,8 @@
 A web app for analyzing **World of Warcraft Classic (TBC)** raid logs from
 [WarcraftLogs](https://classic.warcraftlogs.com). It audits raid hygiene and
 per-player performance — gear, enchants, gems, consumables, drums, shadow
-resistance, role breakdowns, ability uptimes, and WCL parse rankings — and lets
-you publish a read-only snapshot to share with your guild.
+resistance, role breakdowns, ability uptimes, totem twisting, and WCL parse
+rankings — and lets you publish a read-only snapshot to share with your guild.
 
 It's an independent, from-scratch rebuild of Shariva's **Combat Log Analytics
 (CLA)** and **Role Performance Breakdown (RPB)** Google Sheets (see
@@ -28,11 +28,26 @@ spreadsheet generator.
 - **Role breakdown & Summary** — per-player metrics grouped by auto-detected role
   (tank / healer / caster / physical): activity, deaths, interrupts, avoidable
   damage, class-specific ability uptimes, and more.
+- **Totem twisting** — for shamans, an air-totem slot timeline: which totem
+  (Windfury / Grace of Air) held the slot over each fight, with per-totem uptime.
 - **Rankings** — WCL parse-percentile grid (player × boss) in WCL's color scale.
 - **Lenses** — view any fight, all bosses, all trash, or drill into a single
   player; everything is colour-coded red / yellow / green by severity.
 - **Share** — publish a credential-free snapshot to a `/s/<id>` link, optionally
   posted to a Discord webhook.
+
+## Screenshots
+
+| | |
+| --- | --- |
+| **Summary** — damage & healing by source, per player | **Gear audit** — enchant / gem / socket problems flagged per boss pull |
+| [![Summary](docs/screenshots/summary.png)](docs/screenshots/summary.png) | [![Gear audit](docs/screenshots/gear.png)](docs/screenshots/gear.png) |
+| **Role breakdown** — per-role metrics, ability uptimes, avoidable damage | **Consumables** — per-player flask / food / potion discipline |
+| [![Role breakdown](docs/screenshots/role-breakdown.png)](docs/screenshots/role-breakdown.png) | [![Consumables](docs/screenshots/consumables.png)](docs/screenshots/consumables.png) |
+
+**Totem twisting** — which totem held a shaman's air slot over a fight: Windfury (warm) vs Grace of Air (cool), with per-totem uptime
+
+[![Totem twisting](docs/screenshots/totem-twist.png)](docs/screenshots/totem-twist.png)
 
 ## Quick start
 
@@ -57,7 +72,7 @@ Then:
 | Command | What it does |
 | --- | --- |
 | `pnpm dev` | Run web + snapshot API in parallel |
-| `pnpm test` | Run all test suites (484 tests) |
+| `pnpm test` | Run all test suites (508 tests) |
 | `pnpm typecheck` | Type-check every package (`tsc`) |
 | `pnpm build` | Build all packages |
 
