@@ -24,11 +24,13 @@
  *       (shaman Windfury Weapon imbue only).
  *   8 — Resistances tab now counts SR from socketed gems (Void Sphere) and from
  *       head/hands/feet armour-kit & glyph enchants + all-resist enchants/flasks.
- *   9 — RPB role sheet now tracks Windfury / Grace of Air totem twisting: the two
- *       air-totem ally-buffs are fetched (by name) and their uptime on the shaman,
- *       cast counts and a per-fight timeline are exposed (RoleSheetRow.twist).
+ *   9 — RPB role sheet gained RoleSheetRow.twist (Windfury / Grace of Air totem
+ *       twisting). Superseded by v10's shape.
+ *  10 — twist metric reworked to the air-totem SLOT model (derived from totem
+ *       casts, no buff fetch): per-totem slot uptime, cast counts and a per-fight
+ *       slot-occupancy timeline (segments[].slots / windfuryPct / gracePct).
  */
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

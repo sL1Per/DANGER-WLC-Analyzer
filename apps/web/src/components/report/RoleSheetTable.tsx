@@ -138,11 +138,11 @@ export function RoleSheetTable({
           cell: (r) => ({ content: r.exposeArmorCasts > 0 ? r.exposeArmorCasts : "—", className: "mono" }),
         },
         {
-          label: "Windfury Totem uptime% (on shaman)",
+          label: "Windfury Totem uptime% (air slot)",
           cell: (r) => ({ content: r.twist ? fmtPct(r.twist.windfuryUptime) : "—", className: "mono" }),
         },
         {
-          label: "Grace of Air Totem uptime% (on shaman)",
+          label: "Grace of Air Totem uptime% (air slot)",
           cell: (r) => ({ content: r.twist ? fmtPct(r.twist.graceUptime) : "—", className: "mono" }),
         },
         {
@@ -219,9 +219,9 @@ export function RoleSheetTable({
     },
   ];
 
-  // Shamans that dropped an air totem in the scoped fights get a twist timeline
-  // below the sheet (one strip per fight).
-  const twisters = rows.filter((r) => r.twist);
+  // Shamans that actually twisted (used both air totems on some fight) get a
+  // slot-occupancy timeline below the sheet — one strip per twisted fight.
+  const twisters = rows.filter((r) => r.twist && r.twist.segments.length > 0);
   const timelines = twisters.length > 0 && (
     <div className="twist-timelines">
       {twisters.map((r) => (

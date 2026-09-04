@@ -451,10 +451,9 @@ describe("roleSheet", () => {
     expect(r.trinketUses.find((t) => t.name === "Lust for Battle")).toBeUndefined();
   });
 
-  it("tracks Windfury / Grace of Air totem twisting for a Shaman: buff uptime, casts and a per-fight timeline", () => {
-    // fight window is report-relative [1000, 2000] (1000ms) — everything the
-    // timeline exposes must be fight-relative, so a non-zero fight start is used
-    // deliberately to lock that conversion.
+  it("tracks totem twisting from the air-totem slot: which totem occupied the slot over time", () => {
+    // fight window is report-relative [1000, 2000] (1000ms). The air-totem slot
+    // holds one totem: each drop occupies it until the next air-totem drop.
     const report: ReportData = {
       reportId: "twist001",
       title: "Twist Test",
@@ -470,31 +469,14 @@ describe("roleSheet", () => {
         { playerId: 4, healingDone: 0, damageDone: 100_000, damageTaken: 5_000, magicDamageDone: 0 },
       ],
       playerCasts: [
-        // Windfury Totem casts (cast id 8512) at report-time 1100 / 1400 / 1700
+        // Windfury Totem (cast id 8512) @1100, Grace of Air (8835) @1400, Windfury @1700
         { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1100 },
-        { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1400 },
+        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1400 },
         { fightId: 1, playerId: 4, spellId: 8512, timestamp: 1700 },
-        // Grace of Air Totem casts (cast id 8835) at report-time 1250 / 1550 / 1850
-        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1250 },
-        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1550 },
-        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 1850 },
-      ],
-      buffs: [
-        // Windfury Totem ally-buff ON the shaman (aura id 9000 — differs from the
-        // cast id; the match is by resolved WCL name). merged = 160+160+300 = 620.
-        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1100, endTime: 1260 },
-        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1400, endTime: 1560 },
-        { fightId: 1, targetId: 4, spellId: 9000, startTime: 1700, endTime: 2000 },
-        // Grace of Air Totem ally-buff ON the shaman (aura id 9001). merged = 160+160+150 = 470.
-        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1250, endTime: 1410 },
-        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1550, endTime: 1710 },
-        { fightId: 1, targetId: 4, spellId: 9001, startTime: 1850, endTime: 2000 },
       ],
       abilityMeta: {
         "8512": { name: "Windfury Totem" },
         "8835": { name: "Grace of Air Totem" },
-        "9000": { name: "Windfury Totem" },
-        "9001": { name: "Grace of Air Totem" },
       },
       itemMeta: {},
     };
@@ -507,28 +489,69 @@ describe("roleSheet", () => {
     })!;
     const r = rows.find((x) => x.playerId === 4)!;
     expect(r.twist).toBeDefined();
-    expect(r.twist!.windfuryUptime).toBeCloseTo(0.62, 5);
-    expect(r.twist!.graceUptime).toBeCloseTo(0.47, 5);
-    expect(r.twist!.windfuryCasts).toBe(3);
-    expect(r.twist!.graceCasts).toBe(3);
-    // one strip per fight the shaman twisted on; windows/marks are fight-relative
+    // slot: WF 1100-1400 (300) + WF 1700-2000 (300) = 600 of 1000 → 0.6
+    expect(r.twist!.windfuryUptime).toBeCloseTo(0.6, 5);
+    // slot: Grace 1400-1700 (300) of 1000 → 0.3 (100ms before the first drop is empty)
+    expect(r.twist!.graceUptime).toBeCloseTo(0.3, 5);
+    expect(r.twist!.windfuryCasts).toBe(2);
+    expect(r.twist!.graceCasts).toBe(1);
+    // one strip for the fight, slot occupancy in fight-relative ms, time-ordered
     expect(r.twist!.segments).toHaveLength(1);
     const seg = r.twist!.segments[0]!;
     expect(seg.fightId).toBe(1);
     expect(seg.fightName).toBe("Supremus");
     expect(seg.durationMs).toBe(1000);
-    expect(seg.windfury).toEqual([
-      { start: 100, end: 260 },
-      { start: 400, end: 560 },
-      { start: 700, end: 1000 },
+    expect(seg.windfuryPct).toBeCloseTo(0.6, 5);
+    expect(seg.gracePct).toBeCloseTo(0.3, 5);
+    expect(seg.slots).toEqual([
+      { start: 100, end: 400, totem: "windfury" },
+      { start: 400, end: 700, totem: "grace" },
+      { start: 700, end: 1000, totem: "windfury" },
     ]);
-    expect(seg.grace).toEqual([
-      { start: 250, end: 410 },
-      { start: 550, end: 710 },
-      { start: 850, end: 1000 },
-    ]);
-    expect(seg.windfuryCastAt).toEqual([100, 400, 700]);
-    expect(seg.graceCastAt).toEqual([250, 550, 850]);
+  });
+
+  it("counts a parked totem toward uptime but only emits a timeline strip for fights that actually twisted", () => {
+    const report: ReportData = {
+      reportId: "twist003",
+      title: "Parked vs Twisted",
+      zoneName: "Black Temple",
+      startTime: 0,
+      endTime: 4000,
+      fights: [
+        // fight 1: real twist (both totems). fight 2: Grace parked all fight.
+        { id: 1, name: "Twist Fight", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 1000 },
+        { id: 2, name: "Park Fight", encounterId: 602, isBoss: true, kill: true, startTime: 2000, endTime: 3000 },
+      ],
+      players: [{ id: 4, name: "Sham", class: "Shaman" }],
+      gear: [{ fightId: 1, playerId: 4, auras: [], items: [] }],
+      playerTotals: [
+        { playerId: 4, healingDone: 0, damageDone: 100_000, damageTaken: 5_000, magicDamageDone: 0 },
+      ],
+      playerCasts: [
+        // fight 1: WF 0-500, Grace 500-1000
+        { fightId: 1, playerId: 4, spellId: 8512, timestamp: 0 },
+        { fightId: 1, playerId: 4, spellId: 8835, timestamp: 500 },
+        // fight 2: Grace at the pull, never swapped
+        { fightId: 2, playerId: 4, spellId: 8835, timestamp: 2000 },
+      ],
+      abilityMeta: { "8512": { name: "Windfury Totem" }, "8835": { name: "Grace of Air Totem" } },
+      itemMeta: {},
+    };
+    const rows = roleSheet(report, "physical", {
+      roles: roleCfg,
+      rpb: defaultRpbConfig(),
+      avoidableDebuffIds: [],
+      trinketRacials: [],
+      avoidableAbilityNames: [],
+    })!;
+    const r = rows.find((x) => x.playerId === 4)!;
+    expect(r.twist).toBeDefined();
+    // denominator = both fights (1000 + 1000). WF = 500 (fight 1 only) → 0.25.
+    expect(r.twist!.windfuryUptime).toBeCloseTo(0.25, 5);
+    // Grace = 500 (fight 1) + 1000 (fight 2 parked) = 1500 → 0.75.
+    expect(r.twist!.graceUptime).toBeCloseTo(0.75, 5);
+    // only the fight where both totems were used gets a strip
+    expect(r.twist!.segments.map((s) => s.fightName)).toEqual(["Twist Fight"]);
   });
 
   it("leaves twist undefined for a non-Shaman and for a Shaman that never dropped an air totem", () => {

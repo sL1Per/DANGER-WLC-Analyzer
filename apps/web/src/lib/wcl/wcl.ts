@@ -142,8 +142,9 @@ export interface RawCastEvent {
 
 async function fetchEvents(
   code: string, accessToken: string, dataType: string,
-  filter: string, keepTypes: Set<string>,
+  abilityIds: number[], keepTypes: Set<string>,
 ): Promise<Record<string, unknown>[]> {
+  const filter = `ability.id IN (${abilityIds.join(", ")})`;
   const out: Record<string, unknown>[] = [];
   let start = 0;
   for (;;) {
@@ -157,35 +158,20 @@ async function fetchEvents(
   return out;
 }
 
-const BUFF_EVENT_TYPES = new Set(["applybuff", "removebuff", "refreshbuff"]);
-
 export async function fetchBuffEvents(
   code: string, accessToken: string, abilityIds: number[],
 ): Promise<RawBuffEvent[]> {
   if (abilityIds.length === 0) return [];
-  return await fetchEvents(code, accessToken, "Buffs",
-    `ability.id IN (${abilityIds.join(", ")})`, BUFF_EVENT_TYPES) as unknown as RawBuffEvent[];
-}
-
-/** Buff apply/remove/refresh events filtered by ability NAME instead of id.
- *  Used for auras whose rank ids we don't want to enumerate — e.g. the Windfury
- *  Totem / Grace of Air Totem ally buffs, whose ids drift by rank/patch but whose
- *  WCL name is stable (and is what the analyzer matches on anyway). */
-export async function fetchBuffEventsByName(
-  code: string, accessToken: string, names: string[],
-): Promise<RawBuffEvent[]> {
-  if (names.length === 0) return [];
-  const list = names.map((n) => `"${n.replace(/"/g, '\\"')}"`).join(", ");
-  return await fetchEvents(code, accessToken, "Buffs",
-    `ability.name IN (${list})`, BUFF_EVENT_TYPES) as unknown as RawBuffEvent[];
+  return await fetchEvents(code, accessToken, "Buffs", abilityIds,
+    new Set(["applybuff", "removebuff", "refreshbuff"])) as unknown as RawBuffEvent[];
 }
 
 export async function fetchCastEvents(
   code: string, accessToken: string, abilityIds: number[],
 ): Promise<RawCastEvent[]> {
   if (abilityIds.length === 0) return [];
-  return await fetchEvents(code, accessToken, "Casts",
-    `ability.id IN (${abilityIds.join(", ")})`, new Set(["cast"])) as unknown as RawCastEvent[];
+  return await fetchEvents(code, accessToken, "Casts", abilityIds,
+    new Set(["cast"])) as unknown as RawCastEvent[];
 }
 
 export interface RawDeathEvent {

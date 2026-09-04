@@ -86,20 +86,15 @@ describe("RoleSheetTable", () => {
       ],
       playerCasts: [
         ...(reportFixture.playerCasts ?? []),
-        { fightId: 3, playerId: 3, spellId: 8512, timestamp: 150_500 },
-        { fightId: 3, playerId: 3, spellId: 8835, timestamp: 151_500 },
-      ],
-      buffs: [
-        ...(reportFixture.buffs ?? []),
-        { fightId: 3, targetId: 3, spellId: 8515, startTime: 150_500, endTime: 200_500 }, // Windfury Totem, ~50%
-        { fightId: 3, targetId: 3, spellId: 42589, startTime: 200_500, endTime: 250_000 }, // Grace of Air Totem, ~49.5%
+        // fight 3 is [150_000, 250_000]: Windfury holds the air slot for the
+        // first half, Grace of Air for the second → ~50% / ~50%.
+        { fightId: 3, playerId: 3, spellId: 8512, timestamp: 150_000 },
+        { fightId: 3, playerId: 3, spellId: 8835, timestamp: 200_000 },
       ],
       abilityMeta: {
         ...reportFixture.abilityMeta,
         "8512": { name: "Windfury Totem" },
         "8835": { name: "Grace of Air Totem" },
-        "8515": { name: "Windfury Totem" },
-        "42589": { name: "Grace of Air Totem" },
       },
       // Enhancement parse → detected as physical DPS (not the Shaman caster default)
       rankings: (reportFixture.rankings ?? []).map((rk, i) =>
@@ -112,11 +107,11 @@ describe("RoleSheetTable", () => {
     render(
       <RoleSheetTable report={twistReport} fightId={3} role="physical" onPlayer={() => {}} />,
     );
-    expect(screen.getByText("Windfury Totem uptime% (on shaman)")).toBeInTheDocument();
-    expect(screen.getByText("Grace of Air Totem uptime% (on shaman)")).toBeInTheDocument();
+    expect(screen.getByText("Windfury Totem uptime% (air slot)")).toBeInTheDocument();
+    expect(screen.getByText("Grace of Air Totem uptime% (air slot)")).toBeInTheDocument();
     // "Twistarn" appears twice: the player column header and the timeline caption
     expect(screen.getAllByText("Twistarn").length).toBeGreaterThanOrEqual(2);
-    // timeline caption carries the rounded uptime summary + a per-fight strip
+    // timeline caption carries the rounded aggregate + a per-fight strip
     expect(screen.getByText(/Windfury 50%/)).toBeInTheDocument();
     expect(screen.getByText(/Grace of Air 50%/)).toBeInTheDocument();
     expect(screen.getAllByText("Hydross the Unstable").length).toBeGreaterThanOrEqual(1);

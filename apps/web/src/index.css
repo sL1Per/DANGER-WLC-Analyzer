@@ -586,14 +586,14 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 .rb-transposed td { text-align: right; }
 .rb-transposed .rb-band .band-header { background: var(--surface); font-weight: 700; text-align: left; }
 
-/* Windfury / Grace of Air totem twist timeline — one strip per fight, two lanes
-   (Windfury on top, Grace of Air below) with a tick at every totem drop. */
-.twist-timelines { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+/* Air-totem twist timeline — one compact strip per fight showing which totem
+   (Windfury = warm, Grace of Air = cool) held the single air-totem slot. */
+.twist-timelines { margin-top: 18px; }
 .twist-timeline { margin: 0; }
 .twist-timeline figcaption {
   font-size: 0.82rem;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .twist-timeline .twist-who { font-weight: 700; color: var(--text); }
 .twist-timeline .twist-key { font-weight: 600; }
@@ -601,33 +601,39 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 .twist-timeline .twist-goa { color: var(--parse-rare); }
 .twist-strip {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 150px 1fr 88px;
   align-items: center;
   gap: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .twist-strip .twist-fight {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.twist-strip .twist-pct {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-align: right;
+  white-space: nowrap;
+}
 .twist-svg {
   width: 100%;
-  height: 34px;
+  height: 16px;
   display: block;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-sunken);
+  border-radius: 4px;
+  overflow: hidden;
 }
-.twist-svg .twist-lane-bg { fill: var(--border); }
-.twist-svg .twist-win-wf { fill: var(--parse-legendary); }
-.twist-svg .twist-win-goa { fill: var(--parse-rare); }
-.twist-svg .twist-mark { stroke: var(--text); stroke-width: 2; opacity: 0.55; }
+.twist-svg .twist-lane-bg { fill: var(--surface-sunken); }
+.twist-svg .twist-seg-wf { fill: var(--parse-legendary); }
+.twist-svg .twist-seg-goa { fill: var(--parse-rare); }
 
 @media (max-width: 640px) {
-  .twist-strip { grid-template-columns: 1fr; gap: 2px; }
+  .twist-strip { grid-template-columns: 1fr 88px; }
+  .twist-strip .twist-fight { grid-column: 1 / -1; }
 }
 
 /* Casts class filter — pill toggles that show one class block or all of them.

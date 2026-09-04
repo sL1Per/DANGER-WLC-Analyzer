@@ -1,12 +1,12 @@
 import type { ItemMeta, ReportData } from "@wcl/core";
 import {
   consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, hasteBuffs,
-  battleShoutBuffIds, airTotemTwistBuffNames,
+  battleShoutBuffIds,
 } from "@wcl/data";
 import { normalizeReport } from "./normalize";
 import {
-  fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchBuffEventsByName,
-  fetchCastEvents, fetchDeaths, fetchInterrupts, fetchDamageTaken, fetchDamageDone, fetchHealingDone,
+  fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents,
+  fetchDeaths, fetchInterrupts, fetchDamageTaken, fetchDamageDone, fetchHealingDone,
   fetchAllCasts, fetchTable, fetchEnemyDebuffs, fetchAbsorbs, fetchRankings,
   type RawBuffEvent, type RawCastEvent, type RawCombatantInfo, type RawDeathEvent,
   type RawInterruptEvent, type RawDamageEvent, type RawTableEntry, type RawDebuffEvent,
@@ -38,18 +38,14 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
   let deaths: RawDeathEvent[] | undefined;
   {
     const none = Promise.resolve([]);
-    const [combatantsR, buffR, twistBuffR, castR, deathR] = await Promise.allSettled([
+    const [combatantsR, buffR, castR, deathR] = await Promise.allSettled([
       bossFightIds.length > 0 ? fetchCombatantInfo(id, token, bossFightIds) : none,
       bossFightIds.length > 0 ? fetchBuffEvents(id, token, TRACKED_BUFF_IDS) : none,
-      bossFightIds.length > 0 ? fetchBuffEventsByName(id, token, airTotemTwistBuffNames) : none,
       fetchCastEvents(id, token, DRUM_CAST_IDS),
       fetchDeaths(id, token),
     ]);
     if (combatantsR.status === "fulfilled") combatants = combatantsR.value as RawCombatantInfo[];
     if (buffR.status === "fulfilled") buffEvents = buffR.value as RawBuffEvent[];
-    // Windfury / Grace of Air totem ally-buffs (fetched by name) join the tracked
-    // buff stream — buildBuffIntervals turns any apply/remove pair into intervals.
-    if (twistBuffR.status === "fulfilled") buffEvents = [...buffEvents, ...(twistBuffR.value as RawBuffEvent[])];
     if (castR.status === "fulfilled") castEvents = castR.value as RawCastEvent[];
     if (deathR.status === "fulfilled") deaths = deathR.value as RawDeathEvent[];
     const ids = new Set<number>();

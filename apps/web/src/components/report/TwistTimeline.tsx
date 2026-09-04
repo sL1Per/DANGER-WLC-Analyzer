@@ -1,15 +1,14 @@
 import type { TwistSegment } from "@wcl/core";
 
-/** viewBox width — buff windows and cast marks are scaled into [0, W]. */
+/** viewBox width — slot windows are scaled into [0, W]. */
 const W = 1000;
 const pct = (f: number) => `${Math.round(f * 100)}%`;
 
 /**
- * Windfury / Grace of Air totem twist timeline for one Shaman: one strip per
- * fight, two lanes (Windfury on top, Grace of Air below) showing when each totem
- * ally-buff was on the shaman, with a tick at every totem drop. All input times
- * are fight-relative ms; each strip is scaled to its own fight length so strips
- * of different fights line up visually.
+ * Air-totem twist timeline for one Shaman: one compact strip per fight showing
+ * which totem held the (single) air-totem slot over time — Windfury in warm,
+ * Grace of Air in cool. The per-fight split is printed on the right; the caption
+ * carries the report-wide aggregate.
  */
 export function TwistTimeline({
   playerName,
@@ -39,58 +38,29 @@ export function TwistTimeline({
             <span className="twist-fight">{s.fightName}</span>
             <svg
               className="twist-svg"
-              viewBox={`0 0 ${W} 40`}
+              viewBox={`0 0 ${W} 20`}
               preserveAspectRatio="none"
               role="img"
-              aria-label={`${s.fightName}: Windfury and Grace of Air totem coverage`}
+              aria-label={`${s.fightName}: air slot held Windfury ${pct(s.windfuryPct)}, Grace of Air ${pct(s.gracePct)}`}
             >
-              <rect className="twist-lane-bg" x={0} y={2} width={W} height={16} />
-              <rect className="twist-lane-bg" x={0} y={22} width={W} height={16} />
-              {s.windfury.map((w, i) => (
+              <rect className="twist-lane-bg" x={0} y={0} width={W} height={20} />
+              {s.slots.map((sl, i) => (
                 <rect
-                  key={`w${i}`}
-                  data-lane="windfury"
-                  className="twist-win twist-win-wf"
-                  x={x(w.start)}
-                  y={2}
-                  width={Math.max(x(w.end) - x(w.start), 0.5)}
-                  height={16}
-                />
-              ))}
-              {s.grace.map((w, i) => (
-                <rect
-                  key={`g${i}`}
-                  data-lane="grace"
-                  className="twist-win twist-win-goa"
-                  x={x(w.start)}
-                  y={22}
-                  width={Math.max(x(w.end) - x(w.start), 0.5)}
-                  height={16}
-                />
-              ))}
-              {s.windfuryCastAt.map((t, i) => (
-                <line
-                  key={`wc${i}`}
-                  data-mark="windfury"
-                  className="twist-mark twist-mark-wf"
-                  x1={x(t)}
-                  x2={x(t)}
-                  y1={0}
-                  y2={20}
-                />
-              ))}
-              {s.graceCastAt.map((t, i) => (
-                <line
-                  key={`gc${i}`}
-                  data-mark="grace"
-                  className="twist-mark twist-mark-goa"
-                  x1={x(t)}
-                  x2={x(t)}
-                  y1={20}
-                  y2={40}
+                  key={i}
+                  data-totem={sl.totem}
+                  className={sl.totem === "windfury" ? "twist-seg twist-seg-wf" : "twist-seg twist-seg-goa"}
+                  x={x(sl.start)}
+                  y={0}
+                  width={Math.max(x(sl.end) - x(sl.start), 0.5)}
+                  height={20}
                 />
               ))}
             </svg>
+            <span className="twist-pct">
+              <span className="twist-wf">{pct(s.windfuryPct)}</span>
+              {" / "}
+              <span className="twist-goa">{pct(s.gracePct)}</span>
+            </span>
           </div>
         );
       })}

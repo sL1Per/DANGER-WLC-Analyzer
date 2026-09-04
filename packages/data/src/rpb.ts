@@ -44,12 +44,6 @@ export const battleShoutBuffIds = [2048, 25289]; // top TBC Battle Shout ranks (
 /** Oil of Immolation proc damage spell id. */
 export const oilOfImmolationSpellId = 11350;
 
-/** Air-totem ally-buff names tracked for Windfury / Grace of Air totem twisting.
- *  Fetched by NAME (rank/patch ids drift); the analyzer also matches the buff
- *  intervals by these same names, so id drift can never silently break the
- *  uptime metric. Names must match WCL's ability labels exactly. */
-export const airTotemTwistBuffNames = ["Windfury Totem", "Grace of Air Totem"];
-
 /** Engineering damage ability ids (bombs/grenades/sappers). Starter set;
  *  extend during E2E. */
 export const engineeringDamageIds = [

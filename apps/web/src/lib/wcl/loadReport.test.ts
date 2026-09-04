@@ -10,7 +10,6 @@ vi.mock("./wcl", () => ({
   fetchCombatantInfo: vi.fn().mockResolvedValue([]),
   fetchItemMeta: vi.fn().mockResolvedValue({}),
   fetchBuffEvents: vi.fn().mockResolvedValue([]),
-  fetchBuffEventsByName: vi.fn().mockResolvedValue([]),
   fetchCastEvents: vi.fn().mockResolvedValue([]),
   fetchDeaths: vi.fn().mockResolvedValue([]),
   fetchInterrupts: vi.fn().mockResolvedValue([]),
@@ -33,35 +32,6 @@ describe("loadReport", () => {
     expect(data.reportId).toBe("a1B2c3D4e5F6g7H8");
     expect(data.title).toBe("T5 fun");
     expect(data.schemaVersion).toBe(SCHEMA_VERSION);
-  });
-
-  it("fetches the air-totem twist buffs by name and folds them into report.buffs", async () => {
-    const wcl = await import("./wcl");
-    vi.clearAllMocks();
-
-    (wcl.fetchRawReport as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      title: "BT", startTime: 0, endTime: 10_000, zone: { name: "Black Temple" },
-      fights: [{ id: 1, name: "Teron Gorefiend", encounterID: 602, kill: true,
-        startTime: 0, endTime: 5000, friendlyPlayers: [4] }],
-      masterData: {
-        actors: [{ id: 4, name: "Blindberserk", type: "Player", subType: "Shaman" }],
-        npcs: [],
-        abilities: [{ gameID: 8515, name: "Windfury Totem" }],
-      },
-    });
-    (wcl.fetchBuffEventsByName as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-      { type: "applybuff", sourceID: 4, targetID: 4, abilityGameID: 8515, fight: 1, timestamp: 1000 },
-      { type: "removebuff", sourceID: 4, targetID: 4, abilityGameID: 8515, fight: 1, timestamp: 1600 },
-    ]);
-
-    const data = await loadReport("a1B2c3D4e5F6g7H8", "tok");
-
-    const byNameCalls = (wcl.fetchBuffEventsByName as ReturnType<typeof vi.fn>).mock.calls;
-    expect(byNameCalls).toHaveLength(1);
-    expect(byNameCalls[0]![2]).toEqual(["Windfury Totem", "Grace of Air Totem"]);
-    expect(data.buffs).toContainEqual(
-      { fightId: 1, targetId: 4, spellId: 8515, startTime: 1000, endTime: 1600 },
-    );
   });
 
   it("propagates a WclError when the primary report fetch fails", async () => {
