@@ -16,6 +16,7 @@ import { ConsumablesView } from "../ConsumablesView";
 import { PlayerProfile } from "./PlayerProfile";
 import { EmptyToggle } from "./EmptyToggle";
 import { ShadowResView } from "../ShadowResView";
+import { DensityToggle } from "../DensityToggle";
 
 const CATEGORIES = [
   ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
@@ -122,7 +123,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
         onFight={(id) => patch({ fight: String(id) })}
         onPlayer={(id) => patch({ player: String(id) })}
         onQuery={(q) => patch({ q })}
-        actions={shareActions}
+        actions={<><DensityToggle />{shareActions}</>}
       />
 
       {lens === "fight" ? (

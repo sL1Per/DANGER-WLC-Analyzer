@@ -389,6 +389,15 @@ fieldset legend {
   color: var(--text-muted);
 }
 
+/* ---- density (M9 Forged) ---- */
+[data-density="compact"] table th,
+[data-density="compact"] table td { padding-top: 3px; padding-bottom: 3px; }
+[data-density="compact"] .rb-transposed th,
+[data-density="compact"] .rb-transposed td { padding-top: 3px; padding-bottom: 3px; }
+[data-density="compact"] .consumable-matrix th,
+[data-density="compact"] .consumable-matrix td { padding-top: 3px; padding-bottom: 3px; }
+[data-density="compact"] .stat-card__row { padding-top: 4px; padding-bottom: 4px; }
+
 /* ----------------------------------------------------------------- tables */
 
 table {
