@@ -110,4 +110,28 @@ describe("loadReport", () => {
     expect(hdCalls).toHaveLength(1);
     expect(hdCalls[0]![2]).toEqual(allFightIds);
   });
+
+  it("logs a rejected best-effort fetch instead of silently degrading to empty data", async () => {
+    const wcl = await import("./wcl");
+    vi.clearAllMocks();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    (wcl.fetchRawReport as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      title: "T5 fun", startTime: 1, endTime: 2, zone: { name: "Karazhan" },
+      fights: [{ id: 1, name: "Attumen the Huntsman", encounterID: 611, kill: true,
+        startTime: 0, endTime: 1000, friendlyPlayers: [] }],
+      masterData: { actors: [], npcs: [] },
+    });
+    (wcl.fetchRankings as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new wcl.WclError(500, "This report's rankings could not be computed"));
+
+    const data = await loadReport("a1B2c3D4e5F6g7H8", "tok");
+
+    expect(data.rankings).toEqual([]); // still degrades gracefully, not a thrown error
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("rankings"),
+      expect.objectContaining({ message: "This report's rankings could not be computed" }),
+    );
+    warnSpy.mockRestore();
+  });
 });

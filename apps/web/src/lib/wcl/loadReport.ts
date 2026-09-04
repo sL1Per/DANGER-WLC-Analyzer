@@ -24,6 +24,15 @@ const TRACKED_BUFF_IDS = [...new Set([
   ...battleShoutBuffIds,
 ])];
 
+/** Every fetch above is best-effort (Promise.allSettled) so one WCL error
+ *  degrades only that feature instead of failing the whole report load — but
+ *  a silently-swallowed rejection is indistinguishable from "WCL genuinely has
+ *  no data" (e.g. an empty rankings array). Log rejections so a degraded tab
+ *  is debuggable from the browser console instead of looking like real data. */
+function logIfRejected(label: string, r: PromiseSettledResult<unknown>): void {
+  if (r.status === "rejected") console.warn(`[loadReport] ${label} fetch failed, degrading gracefully:`, r.reason);
+}
+
 /** Fetch + normalize a full report in the browser using the caller's own WCL
  *  token. Ported from the old apps/api GET /api/report handler — same parallel
  *  best-effort fetch strategy, minus the HTTP/cache shell. */
@@ -48,6 +57,10 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     if (buffR.status === "fulfilled") buffEvents = buffR.value as RawBuffEvent[];
     if (castR.status === "fulfilled") castEvents = castR.value as RawCastEvent[];
     if (deathR.status === "fulfilled") deaths = deathR.value as RawDeathEvent[];
+    logIfRejected("combatantInfo", combatantsR);
+    logIfRejected("buffEvents", buffR);
+    logIfRejected("drumCastEvents", castR);
+    logIfRejected("deaths", deathR);
     const ids = new Set<number>();
     for (const c of combatants) for (const g of c.gear ?? []) {
       if (g.id !== 0) ids.add(g.id);
@@ -97,6 +110,17 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
     if (rankR.status === "fulfilled") rankings = rankR.value as RawRankingEntry[];
     if (hdR.status === "fulfilled") healingDone = hdR.value as RawDamageEvent[];
+    logIfRejected("interrupts", intR);
+    logIfRejected("damageTaken", dtR);
+    logIfRejected("damageDone", ddR);
+    logIfRejected("allCasts", castR);
+    logIfRejected("damageDoneTable", ddtR);
+    logIfRejected("healingTable", htR);
+    logIfRejected("damageTakenTable", dttR);
+    logIfRejected("enemyDebuffs", edR);
+    logIfRejected("absorbs", absR);
+    logIfRejected("rankings", rankR);
+    logIfRejected("healingDone", hdR);
   }
 
   const actorNames: Record<number, string> = {};
