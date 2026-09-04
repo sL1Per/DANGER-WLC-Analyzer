@@ -26,7 +26,7 @@ afterEach(() => {
 describe("PerformanceView mobile", () => {
   it("renders cards on phones", () => {
     mockMatchMedia(true);
-    const { container } = render(<PerformanceView report={report} fightId={0} onPlayer={() => {}} />);
+    const { container } = render(<PerformanceView report={report} fightId={0} />);
     expect(container.querySelector(".stat-cards")).toBeInTheDocument();
     expect(container.querySelector("table")).not.toBeInTheDocument();
     expect(screen.getByText("Thrall")).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe("PerformanceView mobile", () => {
 
   it("renders tables on desktop", () => {
     mockMatchMedia(false);
-    const { container } = render(<PerformanceView report={report} fightId={0} onPlayer={() => {}} />);
+    const { container } = render(<PerformanceView report={report} fightId={0} />);
     expect(container.querySelector("table")).toBeInTheDocument();
   });
 });

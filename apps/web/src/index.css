@@ -389,15 +389,6 @@ fieldset legend {
   color: var(--text-muted);
 }
 
-/* ---- density (M9 Forged) ---- */
-[data-density="compact"] table th,
-[data-density="compact"] table td { padding-top: 3px; padding-bottom: 3px; }
-[data-density="compact"] .rb-transposed th,
-[data-density="compact"] .rb-transposed td { padding-top: 3px; padding-bottom: 3px; }
-[data-density="compact"] .consumable-matrix th,
-[data-density="compact"] .consumable-matrix td { padding-top: 3px; padding-bottom: 3px; }
-[data-density="compact"] .stat-card__row { padding-top: 4px; padding-bottom: 4px; }
-
 /* ----------------------------------------------------------------- tables */
 
 table {
@@ -413,7 +404,7 @@ table {
 
 th, td {
   text-align: left;
-  padding: 6px 10px;
+  padding: 3px 10px;
   border-bottom: 1px solid var(--hairline);
   vertical-align: top;
 }
@@ -917,13 +908,10 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── lens bar ─────────────────────────────────────────────── */
 .lens-bar { background: var(--canvas); padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
-.lens-toggle { display: flex; align-items: center; gap: 12px; }
-.lens-toggle > button { padding: 7px 16px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; }
-.lens-toggle > button.active { background: var(--primary-tint); color: var(--primary); border-color: transparent; }
 .lens-hint { font-size: 12px; color: var(--text-subtle); }
 .lens-toggle__actions { margin-left: auto; display: flex; align-items: center; }
 
-/* ---- fight/player picker (M9 Forged) ---- */
+/* ---- fight picker (M9 Forged) ---- */
 .lens-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
 .picker { position: relative; }
 .picker__trigger {
@@ -945,10 +933,6 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-card); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
 }
-.picker__search {
-  margin: 10px; width: calc(100% - 20px); border: 1px solid var(--border);
-  border-radius: var(--radius-control); padding: 8px 10px; background: var(--surface-sunken); color: var(--text);
-}
 .picker__list { overflow-y: auto; padding: 6px; }
 .picker__row {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
@@ -959,8 +943,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .picker__row-name { font-size: 13px; font-weight: 550; flex: 1; }
 .picker__row-meta { font-size: 10.5px; color: var(--text-subtle); }
 
-/* shared pill toggle — same look as the Boss fights / Players details lens toggle,
-   reused by the role-breakdown mode toggle and the class selector */
+/* shared pill toggle — reused by the role-breakdown mode toggle and the class selector */
 .pill-toggle { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .pill-toggle button, .pill-toggle label {
   display: inline-flex; align-items: center; gap: 6px; margin: 0;
@@ -977,50 +960,15 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .pill-toggle__label { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-subtle); margin-right: 2px; }
 .role-breakdown-view > .pill-toggle { margin-bottom: 18px; }
 
-/* generic two/three-state segmented toggle (e.g. density) — same tint-based
-   active state as .pill-toggle/.lens-toggle */
-.toggle {
-  display: inline-flex; background: var(--surface-sunken); border: 1px solid var(--border);
-  border-radius: var(--radius-control); padding: 3px; gap: 2px;
-}
-.toggle button {
-  border: 0; background: transparent; color: var(--text-muted);
-  font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 6px;
-}
-.toggle button.active { background: var(--primary-tint); color: var(--primary); }
-
-.lens-strip { display: flex; flex-wrap: wrap; gap: 8px; }
-.fight-chip { min-width: 170px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }
-.fight-chip.selected { border-color: var(--accent-gold, var(--primary)); background: var(--primary-tint); }
-.fight-chip__name { font-weight: 600; }
-.fight-chip__meta { font-size: 11px; color: var(--text-muted); }
-.fight-chip:hover { color: var(--on-accent, #1a1206); }
-.fight-chip:hover .fight-chip__meta { color: rgba(26, 18, 6, 0.72); }
-/* selected chip keeps its tinted (not gold) background on hover → use normal readable text */
-.fight-chip.selected:hover { color: var(--text); }
-.fight-chip.selected:hover .fight-chip__meta { color: var(--text-muted); }
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 6px; }
 .pill--kill { color: var(--positive); background: var(--positive-bg); }
 .pill--wipe { color: var(--danger); background: var(--danger-bg); }
 .pill--all { color: var(--on-accent, #1a1206); background: var(--accent-gold, var(--primary)); font-weight: 600; }
-.fight-chip:hover .pill--kill { color: #fff; background: #1f7a3e; font-weight: 600; }
-.fight-chip:hover .pill--wipe { color: #fff; background: #b3261e; font-weight: 600; }
-.fight-chip--all { border-color: var(--accent-gold, var(--primary)); }
-.lens-roster { display: flex; flex-direction: column; gap: 10px; }
-.roster-search { max-width: 240px; }
-.player-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }
-.player-chip.selected { border-color: var(--class-color); background: var(--primary-tint); }
-.player-chip:hover { color: var(--on-accent, #1a1206); }
-.player-chip.selected:hover { color: var(--text); }
-.player-chip__name { color: var(--class-color); }
-.player-chip:hover .player-chip__name,
-.player-chip.selected:hover .player-chip__name { color: inherit; }
 
 /* ── summary rankings ─────────────────────────────────────── */
 .intro, .notice { color: var(--text-muted); font-size: 13px; margin: 0 0 14px; }
 .notice { color: var(--warn); }
-.player-link { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.player-link:hover { text-decoration: underline; background: none; color: inherit; }
+.player-link { color: inherit; font: inherit; }
 .rank-table th:first-child, .rank-table td:first-child { position: sticky; left: 0; background: var(--surface); }
 .rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); white-space: normal; overflow-wrap: anywhere; vertical-align: bottom; }
 /* Boss columns (3rd onward): cap width so long names wrap instead of forcing horizontal scroll. */
@@ -1049,8 +997,6 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── gear matrix ──────────────────────────────────────────── */
 .gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
-/* Buff consumables: don't underline the class-colored player links on hover. */
-.buff-consumables .player-link:hover { text-decoration: none; }
 /* Wrap the long header labels onto multiple lines so columns stay narrow and the
    table fits the viewport (the .scroll-x wrapper still scrolls if it can't), and
    give the two column kinds uniform widths so the layout reads evenly:
@@ -1094,40 +1040,6 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .modal-issue-list li.sev-major .modal-issue-badge { background: var(--danger-bg); color: var(--danger); }
 .modal-issue-list li.sev-moderate .modal-issue-badge { background: var(--warn-bg); color: var(--warn); }
 .modal-issue-list li.sev-minor .modal-issue-badge { background: var(--positive-bg); color: var(--positive); }
-
-/* ── player profile ───────────────────────────────────────── */
-.profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-.profile-avatar { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 14px; background: var(--surface-sunken); color: var(--class-color); border: 1px solid var(--class-color); box-shadow: 0 0 14px -4px var(--class-color); font-family: var(--font-display); font-size: 22px; }
-.profile-id h2 { font-family: var(--font-display); font-size: 27px; margin: 0; color: var(--class-color); }
-.profile-sub { font-size: 13px; color: var(--text-muted); }
-.profile-verdict { margin-left: auto; text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
-.profile-note { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-.profile-badge { display: inline-block; font-family: var(--font-sans); font-weight: 700; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; padding: 5px 12px; border-radius: 7px; }
-.profile-badge.sev-minor, .profile-badge.sev-ok { background: var(--positive-bg); color: var(--positive); }
-.profile-badge.sev-moderate { background: var(--warn-bg); color: var(--warn); }
-.profile-badge.sev-major { background: var(--danger-bg); color: var(--danger); }
-.profile-badge.sev-neutral { background: var(--surface-sunken); color: var(--text-subtle); }
-.profile-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 26px; }
-.profile-tile { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--text-subtle); border-radius: 12px; padding: 15px 16px; display: flex; flex-direction: column; gap: 4px; }
-.profile-tile.tile-good { border-left-color: var(--positive); } .profile-tile__value { color: var(--text); }
-.profile-tile.tile-watch { border-left-color: var(--warn); }
-.profile-tile.tile-bad { border-left-color: var(--danger); }
-.profile-tile__value { font-size: 23px; font-weight: 700; }
-.profile-tile__label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-subtle); }
-.profile-tile__sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
-.profile-body { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.profile-col { display: flex; flex-direction: column; gap: 18px; }
-.profile-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.profile-list li { display: flex; align-items: center; gap: 8px; }
-.slot-label { width: 90px; color: var(--text-subtle); font-size: 12px; }
-.profile-subhead { margin: 16px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-subtle); }
-.profile-gear li { align-items: baseline; }
-.profile-gear .gear-item { flex: 1 1 0; min-width: 0; color: inherit; text-decoration: none; }
-.profile-gear a.gear-item:hover { text-decoration: underline; }
-.profile-gear .gear-issue { flex: 1 1 0; min-width: 0; text-align: left; font-size: 12px; }
-.dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
-.dot.good { background: var(--positive); } .dot.watch { background: var(--warn); } .dot.bad { background: var(--danger); }
-@media (max-width: 880px) { .profile-body { grid-template-columns: 1fr; } }
 
 /* ── report body + category subnav ────────────────────────── */
 .report-body { padding: 22px 28px; }
@@ -1214,11 +1126,10 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
      classColorVar's --class-color); non-player titles fall back to --text */
   color: var(--class-color, var(--text));
 }
-.stat-card__title .player-link { font: inherit; color: inherit; }
 .stat-card__rows { margin: 0; padding: 4px 0; }
 .stat-card__row {
   display: flex; justify-content: space-between; gap: 14px;
-  padding: 7px 14px; align-items: baseline;
+  padding: 4px 14px; align-items: baseline;
 }
 .stat-card__row dt { color: var(--text-muted); font-size: 13px; flex: 0 0 auto; max-width: 50%; }
 .stat-card__row dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
@@ -1294,20 +1205,12 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 }
 
 @media (max-width: 640px) {
-  /* lens bar: keep toggles, scroll the chip strip horizontally */
+  /* lens bar */
   .lens-bar { padding: 12px 14px; }
-  .lens-strip {
-    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px; scrollbar-width: thin;
-  }
-  .fight-chip, .player-chip { flex: 0 0 auto; min-height: 44px; }
-  .lens-toggle { flex-wrap: wrap; }
-  .lens-toggle > button { min-height: 44px; }
   .lens-toggle__actions { margin-left: 0; width: 100%; }
   .lens-hint { width: 100%; }
-  .roster-search { width: 100%; min-height: 44px; }
 
-  /* fight/player picker: full-width trigger, viewport-fit panel */
+  /* fight picker: full-width trigger, viewport-fit panel */
   .lens-controls { flex-wrap: wrap; }
   .picker { width: 100%; }
   .picker__trigger { width: 100%; min-width: 0; min-height: 44px; }

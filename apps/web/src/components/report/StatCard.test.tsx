@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { StatCard, StatCards } from "./StatCard";
 
 describe("StatCard", () => {
@@ -16,13 +16,6 @@ describe("StatCard", () => {
     expect(screen.getByText("Thrall")).toBeInTheDocument();
     expect(screen.getByText("Head")).toBeInTheDocument();
     expect(screen.getByText("Helm of Doom").closest(".stat-card__row")).toHaveClass("sev-major");
-  });
-
-  it("renders a clickable title when onTitleClick is given", () => {
-    const onClick = vi.fn();
-    render(<StatCard title="Thrall" onTitleClick={onClick} rows={[]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Thrall" }));
-    expect(onClick).toHaveBeenCalled();
   });
 
   it("StatCards wraps children in a grid container", () => {

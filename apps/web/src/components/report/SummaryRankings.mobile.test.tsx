@@ -27,7 +27,7 @@ afterEach(() => {
 describe("SummaryRankings mobile", () => {
   it("renders cards on phones", () => {
     mockMatchMedia(true);
-    const { container } = render(<SummaryRankings report={report} onPlayer={() => {}} />);
+    const { container } = render(<SummaryRankings report={report} />);
     expect(container.querySelector(".stat-cards")).toBeInTheDocument();
     expect(container.querySelector("table")).not.toBeInTheDocument();
     expect(screen.getByText("Thrall")).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("SummaryRankings mobile", () => {
 
   it("renders a table on desktop", () => {
     mockMatchMedia(false);
-    const { container } = render(<SummaryRankings report={report} onPlayer={() => {}} />);
+    const { container } = render(<SummaryRankings report={report} />);
     expect(container.querySelector("table")).toBeInTheDocument();
   });
 });

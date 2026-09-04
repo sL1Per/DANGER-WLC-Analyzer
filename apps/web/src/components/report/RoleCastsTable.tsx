@@ -43,12 +43,10 @@ export function RoleCastsTable({
   report,
   fightId,
   role,
-  onPlayer,
 }: {
   report: ReportData;
   fightId: number;
   role: Role;
-  onPlayer: (name: string) => void;
 }) {
   const isPhone = useIsPhone();
 
@@ -140,7 +138,6 @@ export function RoleCastsTable({
                     key={player.playerId}
                     title={player.playerName}
                     titleStyle={classColorVar(block.className)}
-                    onTitleClick={() => onPlayer(player.playerName)}
                     rows={[
                       ...present.flatMap((cat) =>
                         (byCat.get(cat) ?? []).map((ability) => {
@@ -202,12 +199,9 @@ export function RoleCastsTable({
                         className="player-cell"
                         style={classColorVar(block.className)}
                       >
-                        <button
-                          className="player-link"
-                          onClick={() => onPlayer(player.playerName)}
-                        >
+                        <span className="player-link">
                           {player.playerName}
-                        </button>
+                        </span>
                       </th>
                     ))}
                   </tr>

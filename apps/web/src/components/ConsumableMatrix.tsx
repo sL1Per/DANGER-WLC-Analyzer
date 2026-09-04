@@ -20,11 +20,9 @@ const classRank = (c: string): number => {
 export function ConsumableMatrix({
   rows,
   catalog,
-  onPlayer,
 }: {
   rows: RpbConsumableRow[];
   catalog: { key: string; name: string; uptime?: boolean }[];
-  onPlayer?: (name: string) => void;
 }) {
   const isPhone = useIsPhone();
 
@@ -44,7 +42,6 @@ export function ConsumableMatrix({
             key={p.playerId}
             title={p.playerName}
             titleStyle={classColorVar(p.className)}
-            onTitleClick={onPlayer ? () => onPlayer(p.playerName) : undefined}
             rows={catalog
               .map((c) => {
                 const count = p.counts[c.key] ?? 0;
@@ -69,11 +66,7 @@ export function ConsumableMatrix({
             <th className="consumable-corner" scope="col">Consumable</th>
             {players.map((p) => (
               <th key={p.playerId} className="player-col" style={classColorVar(p.className)} scope="col">
-                {onPlayer ? (
-                  <button className="player-col__name player-link" onClick={() => onPlayer(p.playerName)}>{p.playerName}</button>
-                ) : (
-                  <span className="player-col__name">{p.playerName}</span>
-                )}
+                <span className="player-col__name">{p.playerName}</span>
               </th>
             ))}
           </tr>

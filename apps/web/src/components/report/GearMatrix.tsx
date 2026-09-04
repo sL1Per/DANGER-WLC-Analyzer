@@ -15,7 +15,7 @@ const SEVERITY_LABEL: Record<IssueSeverity, string> = { major: "Major", moderate
 
 type Selection = { player: string; slot: string; item: string; issues: GearIssue[] };
 
-export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
+export function GearMatrix({ report, fightId }: { report: ReportData; fightId: number }) {
   // Gear is a per-pull snapshot, so ALL falls back to the latest pull with gear.
   const isAll = fightId === ALL_FIGHTS;
   const { fight, rows } = useMemo(
@@ -70,7 +70,6 @@ export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; 
               key={r.playerId}
               title={r.playerName}
               titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
-              onTitleClick={() => onPlayer(r.playerName)}
               rows={PROFILE_GEAR_SLOTS.map((s) => {
                 const item = r.items[s];
                 const itemIssues = item ? issues.get(r.playerId)?.get(item.itemId) : undefined;
@@ -100,7 +99,7 @@ export function GearMatrix({ report, fightId, onPlayer }: { report: ReportData; 
           {sortedRows.map((r) => (
             <tr key={r.playerId}>
               <td className="player-cell" style={classColorVar(classOf.get(r.playerId) ?? "")}>
-                <button className="player-link" onClick={() => onPlayer(r.playerName)}>{r.playerName}</button>
+                <span className="player-link">{r.playerName}</span>
               </td>
               {PROFILE_GEAR_SLOTS.map((s) => {
                 const item = r.items[s];

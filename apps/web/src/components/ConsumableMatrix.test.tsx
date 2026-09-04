@@ -1,5 +1,5 @@
-import { describe, expect, it, afterEach, vi } from "vitest";
-import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";
+import { describe, expect, it, afterEach } from "vitest";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import type { RpbConsumableRow } from "@wcl/core";
 import { ConsumableMatrix } from "./ConsumableMatrix";
 
@@ -60,17 +60,10 @@ describe("ConsumableMatrix", () => {
     );
   });
 
-  it("renders player names as plain text when no onPlayer handler is given", () => {
+  it("renders player names as plain text, not a button", () => {
     render(<ConsumableMatrix rows={rows} catalog={catalog} />);
+    expect(screen.getByText("Magey")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Magey" })).not.toBeInTheDocument();
-  });
-
-  it("renders clickable player links and fires onPlayer when given a handler", () => {
-    const onPlayer = vi.fn();
-    render(<ConsumableMatrix rows={rows} catalog={catalog} onPlayer={onPlayer} />);
-    const link = screen.getByRole("button", { name: "Magey" });
-    fireEvent.click(link);
-    expect(onPlayer).toHaveBeenCalledWith("Magey");
   });
 
   it("renders buff-uptime rows as 'count (uptime%)'", () => {

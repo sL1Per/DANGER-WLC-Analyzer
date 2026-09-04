@@ -6,10 +6,8 @@ const TOKEN_KEY = "wcl.token";
 const LAST_REPORT_KEY = "wcl.lastReportId";
 const WEBHOOK_KEY = "wcl.discordWebhook";
 const THEME_KEY = "wcl.theme";
-const DENSITY_KEY = "wcl.density";
 
 export type Theme = "light" | "dark";
-export type Density = "comfortable" | "compact";
 
 // Discord webhook URL — stored only in this browser, like credentials. The
 // browser posts share links straight to Discord (it allows cross-origin
@@ -32,14 +30,6 @@ export function saveTheme(t: Theme): void {
 export function loadTheme(): Theme | null {
   const v = localStorage.getItem(THEME_KEY);
   return v === "light" || v === "dark" ? v : null;
-}
-
-export function saveDensity(d: Density): void {
-  localStorage.setItem(DENSITY_KEY, d);
-}
-export function loadDensity(): Density | null {
-  const v = localStorage.getItem(DENSITY_KEY);
-  return v === "comfortable" || v === "compact" ? v : null;
 }
 
 export function saveLastReportId(id: string): void {

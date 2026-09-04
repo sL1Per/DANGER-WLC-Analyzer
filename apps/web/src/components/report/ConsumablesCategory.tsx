@@ -4,7 +4,7 @@ import { rpbConsumableSpecs } from "../../lib/analysisConfig";
 import { scopeReportToFight } from "../../lib/scopeReport";
 import { ConsumableMatrix } from "../ConsumableMatrix";
 
-export function ConsumablesCategory({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
+export function ConsumablesCategory({ report, fightId }: { report: ReportData; fightId: number }) {
   const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
   const result = useMemo(() => rpbConsumables(scoped, rpbConsumableSpecs), [scoped]);
 
@@ -15,7 +15,7 @@ export function ConsumablesCategory({ report, fightId, onPlayer }: { report: Rep
   return (
     <div>
       <p className="intro">Consumable counts across the night. Each row is a relative heatmap — green = top user, red = nobody home. A blank row means nobody used it.</p>
-      <ConsumableMatrix rows={result.rows} catalog={catalog} onPlayer={onPlayer} />
+      <ConsumableMatrix rows={result.rows} catalog={catalog} />
     </div>
   );
 }

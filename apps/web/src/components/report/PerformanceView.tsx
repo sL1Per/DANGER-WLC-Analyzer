@@ -13,7 +13,7 @@ const mmss = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-export function PerformanceView({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
+export function PerformanceView({ report, fightId }: { report: ReportData; fightId: number }) {
   const summary = useMemo(() => performanceSummary(scopeReportToFight(report, fightId)), [report, fightId]);
 
   if (summary === null) {
@@ -22,10 +22,10 @@ export function PerformanceView({ report, fightId, onPlayer }: { report: ReportD
 
   return (
     <div className="perf-summary">
-      <SourcePanel title="Damage Done By Source" rateLabel="DPS" rows={summary.damageBySource} onPlayer={onPlayer} />
-      <SourcePanel title="Healing Done By Source" rateLabel="HPS" rows={summary.healingBySource} onPlayer={onPlayer} />
+      <SourcePanel title="Damage Done By Source" rateLabel="DPS" rows={summary.damageBySource} />
+      <SourcePanel title="Healing Done By Source" rateLabel="HPS" rows={summary.healingBySource} />
       <AbilityPanel title="Damage Taken By Ability" rateLabel="DTPS" rows={summary.damageTakenByAbility} />
-      <DeathsPanel rows={summary.deaths} onPlayer={onPlayer} />
+      <DeathsPanel rows={summary.deaths} />
     </div>
   );
 }
@@ -34,7 +34,7 @@ function maxAmount(rows: PerfRanked[]): number {
   return rows.reduce((m, r) => Math.max(m, r.amount), 0);
 }
 
-function SourcePanel({ title, rateLabel, rows, onPlayer }: { title: string; rateLabel: string; rows: PerfRanked[]; onPlayer: (name: string) => void }) {
+function SourcePanel({ title, rateLabel, rows }: { title: string; rateLabel: string; rows: PerfRanked[] }) {
   const isPhone = useIsPhone();
   const max = maxAmount(rows);
   if (isPhone) {
@@ -47,7 +47,6 @@ function SourcePanel({ title, rateLabel, rows, onPlayer }: { title: string; rate
               key={r.id}
               title={r.name}
               titleStyle={classColorVar(r.className ?? "")}
-              onTitleClick={() => onPlayer(r.name)}
               rows={[
                 { label: "%", value: pct(r.percent) },
                 { label: "Amount", value: amount(r.amount) },
@@ -69,7 +68,7 @@ function SourcePanel({ title, rateLabel, rows, onPlayer }: { title: string; rate
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className="player-cell" style={classColorVar(r.className ?? "")}>
-                  <button className="player-link" onClick={() => onPlayer(r.name)}>{r.name}</button>
+                  <span className="player-link">{r.name}</span>
                 </td>
                 <td className="mono">{pct(r.percent)}</td>
                 <td className="perf-amount">
@@ -134,7 +133,7 @@ function AbilityPanel({ title, rateLabel, rows }: { title: string; rateLabel: st
   );
 }
 
-function DeathsPanel({ rows, onPlayer }: { rows: PerfDeathRow[]; onPlayer: (name: string) => void }) {
+function DeathsPanel({ rows }: { rows: PerfDeathRow[] }) {
   const isPhone = useIsPhone();
   if (isPhone) {
     return (
@@ -148,7 +147,6 @@ function DeathsPanel({ rows, onPlayer }: { rows: PerfDeathRow[]; onPlayer: (name
                 key={`${r.playerId}-${i}`}
                 title={r.playerName}
                 titleStyle={classColorVar(r.className ?? "")}
-                onTitleClick={() => onPlayer(r.playerName)}
                 rows={[
                   { label: "Killing Blow", value: r.killingBlow },
                   { label: "Time", value: mmss(r.timeMs) },
@@ -171,7 +169,7 @@ function DeathsPanel({ rows, onPlayer }: { rows: PerfDeathRow[]; onPlayer: (name
               : rows.map((r, i) => (
                 <tr key={`${r.playerId}-${i}`}>
                   <td className="player-cell" style={classColorVar(r.className ?? "")}>
-                    <button className="player-link" onClick={() => onPlayer(r.playerName)}>{r.playerName}</button>
+                    <span className="player-link">{r.playerName}</span>
                   </td>
                   <td>{r.killingBlow}</td>
                   <td className="mono">{mmss(r.timeMs)}</td>

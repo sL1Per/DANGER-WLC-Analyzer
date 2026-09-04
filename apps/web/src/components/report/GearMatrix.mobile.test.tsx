@@ -22,7 +22,7 @@ afterEach(() => {
 describe("GearMatrix mobile", () => {
   it("renders stat cards (no table) on phones", () => {
     mockMatchMedia(true);
-    const { container } = render(<GearMatrix report={report} fightId={ALL_FIGHTS} onPlayer={() => {}} />);
+    const { container } = render(<GearMatrix report={report} fightId={ALL_FIGHTS} />);
     expect(container.querySelector(".stat-cards")).toBeInTheDocument();
     expect(container.querySelector("table")).not.toBeInTheDocument();
     expect(screen.getByText("Thrall")).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe("GearMatrix mobile", () => {
 
   it("renders a table (no cards) on desktop", () => {
     mockMatchMedia(false);
-    const { container } = render(<GearMatrix report={report} fightId={ALL_FIGHTS} onPlayer={() => {}} />);
+    const { container } = render(<GearMatrix report={report} fightId={ALL_FIGHTS} />);
     expect(container.querySelector("table")).toBeInTheDocument();
     expect(container.querySelector(".stat-cards")).not.toBeInTheDocument();
   });

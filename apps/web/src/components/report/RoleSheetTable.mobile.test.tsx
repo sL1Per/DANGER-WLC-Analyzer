@@ -30,7 +30,7 @@ afterEach(() => {
 describe("RoleSheetTable mobile", () => {
   it("renders one card per player on phones", () => {
     mockMatchMedia(true);
-    const { container } = render(<RoleSheetTable report={report} fightId={0} role="tank" onPlayer={() => {}} />);
+    const { container } = render(<RoleSheetTable report={report} fightId={0} role="tank" />);
     expect(container.querySelector(".stat-cards")).toBeInTheDocument();
     expect(container.querySelector("table")).not.toBeInTheDocument();
     expect(screen.getByText("Thrall")).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe("RoleSheetTable mobile", () => {
 
   it("renders a table on desktop", () => {
     mockMatchMedia(false);
-    const { container } = render(<RoleSheetTable report={report} fightId={0} role="tank" onPlayer={() => {}} />);
+    const { container } = render(<RoleSheetTable report={report} fightId={0} role="tank" />);
     expect(container.querySelector("table")).toBeInTheDocument();
   });
 });

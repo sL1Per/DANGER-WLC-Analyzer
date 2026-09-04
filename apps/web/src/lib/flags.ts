@@ -74,8 +74,8 @@ function rpbChips(row: RpbRow): FlagChip[] {
 
 /** Real gear issues only — excludes the synthetic `itemId === 0` "no item on
  *  <slot>" entries gearIssues() emits for unfilled required slots, matching
- *  every other consumer's filtering convention (FightHeader, PlayerProfile,
- *  GearMatrix, GearListingView). */
+ *  every other consumer's filtering convention (FightHeader, GearMatrix,
+ *  GearListingView). */
 function realGearIssues(row: PlayerGearIssues | undefined): PlayerGearIssues["issues"] {
   if (!row) return [];
   return row.issues.filter((i) => i.itemId !== 0);

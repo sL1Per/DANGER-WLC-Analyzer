@@ -150,9 +150,4 @@ describe("ReportPage — category / tab behaviour (via ReportView)", () => {
     renderAt("/report/abc?fight=-2");
     expect(screen.queryByRole("button", { name: /^Buff consumables$/i })).not.toBeInTheDocument();
   });
-  it("honors ?lens=player by showing the profile", () => {
-    const report = reportFixture;
-    renderAt(`/report/abc?lens=player&player=${report.players[0].id}`);
-    expect(screen.getByRole("heading", { name: new RegExp(report.players[0].name) })).toBeInTheDocument();
-  });
 });

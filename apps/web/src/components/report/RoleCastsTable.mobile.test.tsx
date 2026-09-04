@@ -26,7 +26,7 @@ afterEach(() => { delete (window as unknown as Record<string, unknown>).matchMed
 describe("RoleCastsTable mobile", () => {
   it("renders one card per player on phones", () => {
     mockMatchMedia(true);
-    const { container } = render(<RoleCastsTable report={report} fightId={0} role="caster" onPlayer={() => {}} />);
+    const { container } = render(<RoleCastsTable report={report} fightId={0} role="caster" />);
     expect(container.querySelector(".stat-cards")).toBeInTheDocument();
     expect(container.querySelector("table")).not.toBeInTheDocument();
     expect(screen.getByText("Thrall")).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("RoleCastsTable mobile", () => {
 
   it("renders a table on desktop", () => {
     mockMatchMedia(false);
-    const { container } = render(<RoleCastsTable report={report} fightId={0} role="caster" onPlayer={() => {}} />);
+    const { container } = render(<RoleCastsTable report={report} fightId={0} role="caster" />);
     expect(container.querySelector("table")).toBeInTheDocument();
   });
 });

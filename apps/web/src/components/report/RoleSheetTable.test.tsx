@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { RoleSheetTable } from "./RoleSheetTable";
 import { reportFixture } from "@wcl/core";
 import { ALL_FIGHTS } from "../../lib/scopeReport";
@@ -38,7 +38,6 @@ describe("RoleSheetTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Playerone is the Mage → caster role
@@ -55,25 +54,22 @@ describe("RoleSheetTable", () => {
         report={staleReport}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     expect(screen.getByText(/cached before RPB support/)).toBeInTheDocument();
   });
 
-  it("calls onPlayer when a player name button is clicked", async () => {
-    const onPlayer = vi.fn();
+  it("renders player names as plain text, not a link", () => {
     render(
       <RoleSheetTable
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="physical"
-        onPlayer={onPlayer}
       />,
     );
     // Playertwo (Warrior) is in the physical role
-    screen.getByText("Playertwo").click();
-    expect(onPlayer).toHaveBeenCalledWith("Playertwo");
+    expect(screen.getByText("Playertwo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Playertwo" })).not.toBeInTheDocument();
   });
 
   it("surfaces Windfury / Grace of Air twist rows and a per-fight timeline for a twisting Shaman", () => {
@@ -105,7 +101,7 @@ describe("RoleSheetTable", () => {
     };
     // scope to the Hydross kill (fight 3) so uptime% denominator is that one fight
     render(
-      <RoleSheetTable report={twistReport} fightId={3} role="physical" onPlayer={() => {}} />,
+      <RoleSheetTable report={twistReport} fightId={3} role="physical" />,
     );
     expect(screen.getByText("Windfury Totem uptime% (air slot)")).toBeInTheDocument();
     expect(screen.getByText("Grace of Air Totem uptime% (air slot)")).toBeInTheDocument();
@@ -123,7 +119,6 @@ describe("RoleSheetTable", () => {
         report={reportWithHitStats}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
 

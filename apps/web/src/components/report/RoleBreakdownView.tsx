@@ -24,11 +24,9 @@ const DEFAULT_ROLE: Role = "tank";
 export function RoleBreakdownView({
   report,
   fightId,
-  onPlayer,
 }: {
   report: ReportData;
   fightId: number;
-  onPlayer: (name: string) => void;
 }) {
   const [params, setParams] = useSearchParams();
 
@@ -92,14 +90,12 @@ export function RoleBreakdownView({
             report={report}
             fightId={fightId}
             role={role}
-            onPlayer={onPlayer}
           />
         ) : (
           <RoleSheetTable
             report={report}
             fightId={fightId}
             role={role}
-            onPlayer={onPlayer}
           />
         )}
       </div>

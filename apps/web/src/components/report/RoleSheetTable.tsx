@@ -23,12 +23,10 @@ export function RoleSheetTable({
   report,
   fightId,
   role,
-  onPlayer,
 }: {
   report: ReportData;
   fightId: number;
   role: Role;
-  onPlayer: (name: string) => void;
 }) {
   const isPhone = useIsPhone();
 
@@ -245,7 +243,6 @@ export function RoleSheetTable({
               key={r.playerId}
               title={r.playerName}
               titleStyle={classColorVar(r.className)}
-              onTitleClick={() => onPlayer(r.playerName)}
               rows={sections.flatMap((s) =>
                 s.rows.map((mr) => {
                   const c = mr.cell(r);
@@ -268,9 +265,9 @@ export function RoleSheetTable({
             <th className="rb-row-label" />
             {rows.map((r) => (
               <th key={r.playerId} className="player-cell" style={classColorVar(r.className)}>
-                <button className="player-link" onClick={() => onPlayer(r.playerName)}>
+                <span className="player-link">
                   {r.playerName}
-                </button>
+                </span>
               </th>
             ))}
           </tr>

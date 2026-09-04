@@ -11,8 +11,6 @@ import {
   saveTheme,
   loadRecentReports,
   addRecentReport,
-  saveDensity,
-  loadDensity,
 } from "./storage";
 
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
@@ -109,20 +107,5 @@ describe("recent reports storage", () => {
     localStorage.setItem("wcl.recentReports", "{bad json");
     expect(loadRecentReports()).toEqual([]);
     expect(localStorage.getItem("wcl.recentReports")).toBeNull();
-  });
-});
-
-describe("density", () => {
-  it("round-trips a saved density", () => {
-    saveDensity("compact");
-    expect(loadDensity()).toBe("compact");
-  });
-  it("returns null when nothing is stored", () => {
-    localStorage.clear();
-    expect(loadDensity()).toBeNull();
-  });
-  it("ignores a corrupt stored value", () => {
-    localStorage.setItem("wcl.density", "roomy");
-    expect(loadDensity()).toBeNull();
   });
 });

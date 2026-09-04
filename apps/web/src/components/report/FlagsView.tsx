@@ -4,7 +4,7 @@ import { buildFlags } from "../../lib/flags";
 import { classColorVar } from "../../lib/classColors";
 import { useFightAnalysis } from "../../lib/useFightAnalysis";
 
-export function FlagsView({ report, fightId, onPlayer }: { report: ReportData; fightId: number; onPlayer: (name: string) => void }) {
+export function FlagsView({ report, fightId }: { report: ReportData; fightId: number }) {
   const { rpbRows, consRows, gearRows } = useFightAnalysis(report, fightId);
 
   const summary = useMemo(() => {
@@ -29,9 +29,9 @@ export function FlagsView({ report, fightId, onPlayer }: { report: ReportData; f
               <div key={row.playerId} className={`flagrow flagrow--${row.severity}`} style={classColorVar(row.className)}>
                 <div className="flagrow__who">
                   <span className="flagrow__cc" style={{ background: "var(--class-color, var(--text-subtle))" }} />
-                  <button className="player-link flagrow__name" style={{ color: "var(--class-color, inherit)" }} onClick={() => onPlayer(row.playerName)}>
+                  <span className="player-link flagrow__name" style={{ color: "var(--class-color, inherit)" }}>
                     {row.playerName}
-                  </button>
+                  </span>
                   <span className="flagrow__role"> · {row.role}</span>
                 </div>
                 <div className="flagrow__chips">

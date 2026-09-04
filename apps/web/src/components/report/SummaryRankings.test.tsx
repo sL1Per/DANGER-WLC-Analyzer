@@ -1,25 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { reportFixture } from "@wcl/core";
 import { SummaryRankings } from "./SummaryRankings";
 
 describe("SummaryRankings", () => {
   it("renders an Avg column and role group headers", () => {
-    render(<SummaryRankings report={reportFixture} onPlayer={() => {}} />);
+    render(<SummaryRankings report={reportFixture} />);
     expect(screen.getAllByText("Avg").length).toBeGreaterThan(0);
     expect(screen.getByText(/Damage Dealers/i)).toBeInTheDocument();
   });
-  it("clicking a player name calls onPlayer", () => {
-    const onPlayer = vi.fn();
+  it("renders player names as plain text, not a link", () => {
     const report = reportFixture;
-    render(<SummaryRankings report={report} onPlayer={onPlayer} />);
+    render(<SummaryRankings report={report} />);
     const name = report.rankings![0].dps[0].name;
-    fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
-    expect(onPlayer).toHaveBeenCalledWith(name);
+    expect(screen.getByText(new RegExp(name))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: new RegExp(name) })).not.toBeInTheDocument();
   });
   it("shows the refresh notice when rankings are absent", () => {
     const report = { ...reportFixture, rankings: undefined };
-    render(<SummaryRankings report={report} onPlayer={() => {}} />);
+    render(<SummaryRankings report={report} />);
     expect(screen.getByText(/refresh from wcl/i)).toBeInTheDocument();
   });
 });

@@ -8,7 +8,7 @@ const ROLE_LABEL: Record<RankingsRole, string> = {
   dps: "Damage Dealers", healers: "Healers", tanks: "Tanks",
 };
 
-export function SummaryRankings({ report, onPlayer }: { report: ReportData; onPlayer: (name: string) => void }) {
+export function SummaryRankings({ report }: { report: ReportData }) {
   const isPhone = useIsPhone();
   if (report.rankings === undefined) {
     return <p className="notice">This report was cached before parse rankings — Refresh from WCL (requires credentials).</p>;
@@ -29,7 +29,6 @@ export function SummaryRankings({ report, onPlayer }: { report: ReportData; onPl
                   key={p.name}
                   title={p.name}
                   titleStyle={classColorVar(p.class)}
-                  onTitleClick={() => onPlayer(p.name)}
                   rows={[
                     { label: "Avg", value: Math.round(p.overall), className: parseClass(p.overall) },
                     ...grid.bosses.map((b) => {
@@ -58,7 +57,7 @@ export function SummaryRankings({ report, onPlayer }: { report: ReportData; onPl
                   {section.players.map((p) => (
                     <tr key={p.name}>
                       <td className="player-cell" style={classColorVar(p.class)}>
-                        <button className="player-link" onClick={() => onPlayer(p.name)}>{p.name}</button>
+                        <span className="player-link">{p.name}</span>
                       </td>
                       <td className={`mono ${parseClass(p.overall)}`}><strong>{Math.round(p.overall)}</strong></td>
                       {grid.bosses.map((b) => {

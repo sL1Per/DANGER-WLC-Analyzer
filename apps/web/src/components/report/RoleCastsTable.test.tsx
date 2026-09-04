@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { RoleCastsTable } from "./RoleCastsTable";
 import { reportFixture } from "@wcl/core";
 import { ALL_FIGHTS } from "../../lib/scopeReport";
@@ -34,7 +34,6 @@ describe("RoleCastsTable", () => {
         report={staleReport}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     expect(screen.getByText(/cached before RPB support/)).toBeInTheDocument();
@@ -46,7 +45,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Class block header (pluralized class name)
@@ -59,7 +57,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Playerone is the Mage → caster role
@@ -72,7 +69,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Arcane Blast is a well-known Mage ability in the catalog
@@ -87,7 +83,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Category band headers should be rendered; at minimum "Cooldowns"
@@ -100,18 +95,16 @@ describe("RoleCastsTable", () => {
     expect(found.length).toBeGreaterThan(0);
   });
 
-  it("calls onPlayer when a player name button is clicked", () => {
-    const onPlayer = vi.fn();
+  it("renders the player name as plain text, not a link", () => {
     render(
       <RoleCastsTable
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={onPlayer}
       />,
     );
-    screen.getByText("Playerone").click();
-    expect(onPlayer).toHaveBeenCalledWith("Playerone");
+    expect(screen.getByText("Playerone")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Playerone" })).not.toBeInTheDocument();
   });
 
   it("renders Warriors class section for physical role", () => {
@@ -120,7 +113,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="physical"
-        onPlayer={() => {}}
       />,
     );
     // Playertwo is a Warrior → physical role
@@ -134,7 +126,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Only Mages in caster role → no filter group
@@ -147,7 +138,6 @@ describe("RoleCastsTable", () => {
         report={twoClassReport}
         fightId={ALL_FIGHTS}
         role="physical"
-        onPlayer={() => {}}
       />,
     );
     const group = screen.getByRole("group", { name: /filter by class/i });
@@ -166,7 +156,6 @@ describe("RoleCastsTable", () => {
         report={twoClassReport}
         fightId={ALL_FIGHTS}
         role="physical"
-        onPlayer={() => {}}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Rogue" }));
@@ -184,7 +173,6 @@ describe("RoleCastsTable", () => {
         report={reportFixture}
         fightId={ALL_FIGHTS}
         role="caster"
-        onPlayer={() => {}}
       />,
     );
     // Verify the player name is present

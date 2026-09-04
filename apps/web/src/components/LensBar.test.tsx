@@ -8,9 +8,8 @@ import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 function setup(over: Partial<ComponentProps<typeof LensBar>> = {}) {
   const report = reportFixture;
   const props = {
-    report, lens: "fight" as const, fightId: report.fights.find((f) => f.isBoss)!.id,
-    playerId: report.players[0].id, query: "",
-    onLens: vi.fn(), onFight: vi.fn(), onPlayer: vi.fn(), onQuery: vi.fn(), ...over,
+    report, fightId: report.fights.find((f) => f.isBoss)!.id,
+    onFight: vi.fn(), ...over,
   };
   render(<LensBar {...props} />);
   return props;
@@ -21,12 +20,6 @@ function openPicker() {
 }
 
 describe("LensBar", () => {
-  it("toggles to the player lens", () => {
-    const p = setup();
-    fireEvent.click(screen.getByRole("button", { name: /players details/i }));
-    expect(p.onLens).toHaveBeenCalledWith("player");
-  });
-
   it("shows a BOSSES row first that selects all bosses combined", () => {
     const p = setup();
     openPicker();
@@ -61,17 +54,16 @@ describe("LensBar", () => {
     expect(screen.queryByText("TRASH")).not.toBeInTheDocument();
   });
 
-  it("renders the roster search in the player lens", () => {
-    setup({ lens: "player" });
-    openPicker();
-    expect(screen.getByPlaceholderText(/filter raiders/i)).toBeInTheDocument();
-  });
-
   it("closes the picker after selecting a fight", () => {
     const p = setup();
     openPicker();
     const boss = p.report.fights.find((f) => f.isBoss)!;
     fireEvent.click(within(screen.getByRole("listbox")).getAllByText(boss.name)[0]);
     expect(screen.queryAllByTestId("picker-row")).toHaveLength(0);
+  });
+
+  it("renders the actions slot", () => {
+    setup({ actions: <button>Publish</button> });
+    expect(screen.getByRole("button", { name: /publish/i })).toBeInTheDocument();
   });
 });

@@ -18,7 +18,7 @@ function UptimeCell({ value }: { value: number }) {
   return <td className={`col-num sev-${uptimeSeverity(value)}`}>{pct(value)}</td>;
 }
 
-export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPlayer?: (name: string) => void }) {
+export function ConsumablesView({ report }: { report: ReportData }) {
   const isPhone = useIsPhone();
   const result = useMemo(() => consumables(report, consumablesConfig), [report]);
   const classOf = useMemo(() => new Map(report.players.map((p) => [p.id, p.class])), [report.players]);
@@ -47,7 +47,6 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
               key={r.playerId}
               title={r.playerName}
               titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
-              onTitleClick={onPlayer ? () => onPlayer(r.playerName) : undefined}
               rows={[
                 { label: "Total avg (excl. Scrolls)", value: pct(r.totalAverage), className: sev(r.totalAverage) },
                 { label: "Elixir or Flask", value: pct(r.elixirOrFlask), className: sev(r.elixirOrFlask) },
@@ -93,9 +92,7 @@ export function ConsumablesView({ report, onPlayer }: { report: ReportData; onPl
             {rows.map((r) => (
               <tr key={r.playerId}>
                 <td className="player-cell" style={classColorVar(classOf.get(r.playerId) ?? "")}>
-                  {onPlayer
-                    ? <button className="player-link" onClick={() => onPlayer(r.playerName)}>{r.playerName}</button>
-                    : r.playerName}
+                  <span className="player-link">{r.playerName}</span>
                 </td>
                 <UptimeCell value={r.totalAverage} />
                 <UptimeCell value={r.elixirOrFlask} />

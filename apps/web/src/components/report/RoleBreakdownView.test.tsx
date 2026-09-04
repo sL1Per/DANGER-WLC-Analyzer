@@ -10,7 +10,7 @@ const ROLE_TABS = ["Tanks", "Healers", "Casters", "Melee/Ranged"];
 function renderAt(fightId: number, initialEntries: string[] = ["/"]) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
-      <RoleBreakdownView report={reportFixture} fightId={fightId} onPlayer={() => {}} />
+      <RoleBreakdownView report={reportFixture} fightId={fightId} />
     </MemoryRouter>,
   );
 }

@@ -10,19 +10,14 @@ export interface StatCardProps {
   title: ReactNode;
   titleStyle?: CSSProperties;
   titleClassName?: string;
-  onTitleClick?: () => void;
   rows: StatCardRow[];
 }
 
-export function StatCard({ title, titleStyle, titleClassName, onTitleClick, rows }: StatCardProps) {
+export function StatCard({ title, titleStyle, titleClassName, rows }: StatCardProps) {
   return (
     <div className="stat-card">
       <div className={`stat-card__title ${titleClassName ?? ""}`} style={titleStyle}>
-        {onTitleClick ? (
-          <button type="button" className="player-link" onClick={onTitleClick}>{title}</button>
-        ) : (
-          title
-        )}
+        {title}
       </div>
       <dl className="stat-card__rows">
         {rows.map((r, i) => (
