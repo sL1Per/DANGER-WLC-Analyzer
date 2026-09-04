@@ -940,6 +940,19 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .pill-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; pointer-events: none; }
 .pill-toggle__label { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-subtle); margin-right: 2px; }
 .role-breakdown-view > .pill-toggle { margin-bottom: 18px; }
+
+/* generic two/three-state segmented toggle (e.g. density) — same tint-based
+   active state as .pill-toggle/.lens-toggle */
+.toggle {
+  display: inline-flex; background: var(--surface-sunken); border: 1px solid var(--border);
+  border-radius: var(--radius-control); padding: 3px; gap: 2px;
+}
+.toggle button {
+  border: 0; background: transparent; color: var(--text-muted);
+  font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 6px;
+}
+.toggle button.active { background: var(--primary-tint); color: var(--primary); }
+
 .lens-strip { display: flex; flex-wrap: wrap; gap: 8px; }
 .fight-chip { min-width: 170px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-sunken); color: var(--text); cursor: pointer; }
 .fight-chip.selected { border-color: var(--accent-gold, var(--primary)); background: var(--primary-tint); }
