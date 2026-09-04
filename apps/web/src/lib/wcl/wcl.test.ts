@@ -360,4 +360,22 @@ describe("fetchRankings", () => {
     const { fetchRankings } = await import("./wcl");
     expect(await fetchRankings("abc", "tok")).toEqual([]);
   });
+
+  it("requests Historical timeframe rankings, not WCL's default Today bracket", async () => {
+    // WCL's `rankings` field defaults to comparing against TODAY's live
+    // ranking bracket when no `timeframe` is given — a report whose kill has
+    // aged out of the current bracket (a tier reset, a balance patch, simply
+    // time passing) then returns an empty `data: []` even though the site's
+    // own report view (Historical: percentile at the time of the kill) shows
+    // real percentiles for the same kill. Confirmed live 2026-09-04 against a
+    // report with 7 real boss kills that WCL's site ranked, but our
+    // (timeframe-less) query returned `{"data":[]}` for.
+    const mock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { reportData: { report: { rankings: { data: [] } } } } })),
+    );
+    const { fetchRankings } = await import("./wcl");
+    await fetchRankings("abc", "tok");
+    const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    expect(body.query).toContain("timeframe: Historical");
+  });
 });

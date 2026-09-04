@@ -373,11 +373,16 @@ export async function fetchCastsTable(
   return out;
 }
 
+// timeframe: Historical compares against rankings as they stood when the fight
+// happened. WCL's server default (omitting the arg) is Today's live bracket —
+// a report ages out of that as tiers reset / patches land, silently returning
+// `{"data":[]}` even when warcraftlogs.com's own report view (which always
+// uses Historical) shows real percentiles for the same kills.
 const RANKINGS_QUERY = `
 query Rankings($code: String!) {
   reportData {
     report(code: $code) {
-      rankings
+      rankings(timeframe: Historical)
     }
   }
 }`;
