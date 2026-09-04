@@ -5,11 +5,11 @@ import { ALL_FIGHTS, ALL_TRASH } from "../lib/scopeReport";
 
 export type Lens = "fight" | "player";
 
-export function bossFights(report: ReportData): Fight[] {
+function bossFights(report: ReportData): Fight[] {
   return report.fights.filter((f) => f.isBoss);
 }
 
-export function trashFights(report: ReportData): Fight[] {
+function trashFights(report: ReportData): Fight[] {
   return report.fights.filter((f) => !f.isBoss);
 }
 

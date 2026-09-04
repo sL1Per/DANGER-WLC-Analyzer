@@ -3,10 +3,18 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { reportFixture } from "@wcl/core";
 import { ReportPage } from "./ReportPage";
+import type { ApiError } from "../lib/api";
+
+type MockHookState = Partial<{
+  result: { data: typeof reportFixture; stale?: boolean } | null;
+  error: ApiError | null;
+  loading: boolean;
+  reload: ReturnType<typeof vi.fn>;
+}>;
 
 // Mutable so individual tests can simulate loading / error states without
 // needing a separate mock per test.
-let mockHookState: any = {};
+let mockHookState: MockHookState = {};
 
 vi.mock("../lib/useReport", () => ({
   useReport: () => mockHookState,
