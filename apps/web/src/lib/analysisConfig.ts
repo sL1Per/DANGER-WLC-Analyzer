@@ -1,6 +1,6 @@
 import type { RpbConfig, ConsumableConfig, DrumConfig, GearIssueConfig, RoleSheetConfig, RoleCastsConfig } from "@wcl/core";
 import {
-  spellCastTimes, roleSignals, casterClasses, physicalSpecs, casterSpecs, hasteBuffs,
+  spellCastTimes, roleSignals, casterClasses, physicalSpecs, casterSpecs, physicalSpecCastNames, hasteBuffs,
   engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
   classAbilities, avoidableAbilityIds,
   rpbConsumables as rpbConsumableSpecsData,
@@ -14,7 +14,7 @@ import {
  *  per-fight scoped runs share one source. */
 export function buildRpbConfig(): RpbConfig {
   return {
-    roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },
+    roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs, physicalSpecCastNames },
     activity: { castTimes: spellCastTimes, hasteBuffs, aoeWindowMs: 500 },
     engineeringDamageIds, oilOfImmolationSpellId, battleShoutBuffIds, absorbExcludedSpellIds,
     classAbilities, avoidableAbilityIds,
@@ -25,7 +25,7 @@ export const consumablesConfig: ConsumableConfig = {
   buffs: consumableBuffs,
   jcNecks,
   suboptimal: suboptimalConsumables,
-  roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs },
+  roles: { signals: roleSignals, casterClasses, physicalSpecs, casterSpecs, physicalSpecCastNames },
   weaponEnhancements: weaponEnhancementEnchantIds,
 };
 

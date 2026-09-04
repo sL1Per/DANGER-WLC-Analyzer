@@ -6,8 +6,11 @@ export type { RoleSignal };
 /** Classes whose DPS spec is spell-based → "caster"; every other DPS class
  *  defaults to "physical". Used by detectRole for the caster/physical split,
  *  since WCL summary tables expose no damage-school breakdown. Hybrid edge
- *  cases (enhancement shaman, balance vs feral druid) are handled by the manual
- *  per-character override. Druid defaults to physical (feral); Shaman to caster
+ *  cases (enhancement shaman, balance vs feral druid) are corrected via
+ *  physicalSpecs/casterSpecs (from a ranking spec) or physicalSpecCastNames
+ *  (a signature-ability fallback for reports with no ranked kill at all — there
+ *  is no manual per-character override anymore, it was retired with the old
+ *  RPB view). Druid defaults to physical (feral); Shaman to caster
  *  (elemental); Priest to caster (shadow); Paladin/Warrior/Rogue/Hunter physical. */
 export const casterClasses = ["Mage", "Warlock", "Priest", "Shaman"];
 
@@ -20,6 +23,13 @@ export const physicalSpecs = ["Enhancement"];
  *  physical — resolved from rankings spec by detectRole. Balance (boomkin) druid
  *  is the classic case (spell DPS on the otherwise feral-default Druid class). */
 export const casterSpecs = ["Balance"];
+
+/** Signature-ability names that flag a physical spec on a caster-default class
+ *  when there is no ranking spec at all to consult (a report with no ranked
+ *  kill — WCL only publishes rankings for kills). Stormstrike is a deep
+ *  Enhancement talent; casting it at all is a reliable melee-shaman signal.
+ *  Name-matched (not a curated spell id) — see detectRole. */
+export const physicalSpecCastNames = ["Stormstrike"];
 
 /** Auras/casts that disambiguate specs sharing a class (e.g. feral tank vs cat). */
 export const roleSignals: RoleSignal[] = [

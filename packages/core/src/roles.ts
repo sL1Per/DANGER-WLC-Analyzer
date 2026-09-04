@@ -11,6 +11,14 @@ export interface RoleConfig {
   /** WCL spec names that are caster DPS despite a physical class default
    *  (e.g. "Balance" druid). Resolved from rankings spec when available. */
   casterSpecs: string[];
+  /** Ability NAMES that, if this player ever cast them, indicate a physical
+   *  spec despite a caster class default (e.g. "Stormstrike" for Enhancement
+   *  shaman) — used ONLY when no ranking spec is available at all (a report
+   *  with no ranked kill has no `spec` field for anyone). Matched by resolved
+   *  ability name rather than a curated spell id, per this codebase's
+   *  established convention for TBC ability matching (curated ids have
+   *  repeatedly turned out wrong; see classMetrics/rpbSheets). */
+  physicalSpecCastNames: string[];
 }
 
 /** Thresholds (fractions of total output), tuned during E2E. */
@@ -27,6 +35,17 @@ function specOf(playerName: string, report: ReportData): string | undefined {
   return undefined;
 }
 
+/** True when this player has ever cast an ability resolving (via `abilityMeta`)
+ *  to one of `names`. Name-matched, not id-matched — see `physicalSpecCastNames`. */
+function hasCastNamed(playerId: number, report: ReportData, names: string[]): boolean {
+  if (names.length === 0) return false;
+  const wanted = new Set(names.map((n) => n.toLowerCase()));
+  const meta = report.abilityMeta ?? {};
+  return (report.playerCasts ?? []).some(
+    (c) => c.playerId === playerId && wanted.has((meta[String(c.spellId)]?.name ?? "").toLowerCase()),
+  );
+}
+
 /**
  * Auto-detect a player's role. Order: healer (healing share) → tank (a tank
  * aura/cast signal + a high damage-taken share) → caster/physical.
@@ -37,7 +56,11 @@ function specOf(playerName: string, report: ReportData): string | undefined {
  * caster). When the WCL rankings expose a spec, hybrid DPS specs that break the
  * class default — a physical spec on a caster class (enhancement shaman) or a
  * caster spec on a physical class (balance druid) — are corrected via
- * cfg.physicalSpecs / cfg.casterSpecs; otherwise the caller's manual override applies.
+ * cfg.physicalSpecs / cfg.casterSpecs. Rankings only exist for ranked (killed)
+ * fights, though — a report with no kill at all has no spec for anyone. For
+ * that case only, `cfg.physicalSpecCastNames` is a last-resort signal: a caster
+ * class player who has cast a physical-spec signature ability (e.g. Stormstrike)
+ * is corrected to physical even with zero ranking data.
  */
 export function detectRole(playerId: number, report: ReportData, cfg: RoleConfig): Role {
   const player = report.players.find((p) => p.id === playerId);
@@ -45,7 +68,9 @@ export function detectRole(playerId: number, report: ReportData, cfg: RoleConfig
   const byClass: Role =
     spec && cfg.physicalSpecs.includes(spec) ? "physical"
       : spec && cfg.casterSpecs.includes(spec) ? "caster"
-        : player && cfg.casterClasses.includes(player.class) ? "caster" : "physical";
+        : !spec && player && cfg.casterClasses.includes(player.class) && hasCastNamed(playerId, report, cfg.physicalSpecCastNames)
+          ? "physical"
+          : player && cfg.casterClasses.includes(player.class) ? "caster" : "physical";
 
   const totals = report.playerTotals?.find((t) => t.playerId === playerId);
   if (!totals) return byClass;

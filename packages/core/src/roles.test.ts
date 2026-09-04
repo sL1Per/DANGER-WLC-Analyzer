@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectRole, type RoleConfig } from "./roles";
-import type { PlayerTotals, ReportData, GearSnapshot, ReportRanking } from "./types";
+import type { PlayerTotals, ReportData, GearSnapshot, ReportRanking, PlayerCast } from "./types";
 
 const cfg: RoleConfig = {
   signals: [
@@ -10,6 +10,7 @@ const cfg: RoleConfig = {
   casterClasses: ["Mage", "Warlock", "Priest", "Shaman"],
   physicalSpecs: ["Enhancement"],
   casterSpecs: ["Balance"],
+  physicalSpecCastNames: ["Stormstrike"],
 };
 
 function report(
@@ -17,11 +18,14 @@ function report(
   className = "Druid",
   gear: GearSnapshot[] = [],
   rankings?: ReportRanking[],
+  casts?: PlayerCast[],
 ): ReportData {
   return {
     reportId: "x", title: "", zoneName: "Black Temple", startTime: 0, endTime: 1,
     fights: [], players: [{ id: totals.playerId, name: "P", class: className }],
     gear, itemMeta: {}, playerTotals: [totals], rankings,
+    playerCasts: casts,
+    abilityMeta: casts ? { "17364": { name: "Stormstrike" }, "403": { name: "Lightning Bolt" } } : undefined,
   };
 }
 
@@ -70,6 +74,27 @@ describe("detectRole", () => {
   it("keeps an Elemental shaman a caster (spec does not override)", () => {
     const t = { playerId: 1, healingDone: 0, damageDone: 1000, damageTaken: 50, magicDamageDone: 1000 };
     const r = report(t, "Shaman", [], ranking("P", "Shaman", "Elemental"));
+    expect(detectRole(1, r, cfg)).toBe("caster");
+  });
+
+  it("classifies a Shaman with a Stormstrike cast as physical when there is no ranking spec (unranked/wiped report)", () => {
+    const t = { playerId: 1, healingDone: 0, damageDone: 1000, damageTaken: 50, magicDamageDone: 200 };
+    const casts: PlayerCast[] = [{ fightId: 1, playerId: 1, spellId: 17364, timestamp: 0 }];
+    const r = report(t, "Shaman", [], undefined, casts);
+    expect(detectRole(1, r, cfg)).toBe("physical");
+  });
+
+  it("keeps a Shaman with no rankings and no Stormstrike cast a caster (elemental/resto default)", () => {
+    const t = { playerId: 1, healingDone: 0, damageDone: 1000, damageTaken: 50, magicDamageDone: 900 };
+    const casts: PlayerCast[] = [{ fightId: 1, playerId: 1, spellId: 403, timestamp: 0 }];
+    const r = report(t, "Shaman", [], undefined, casts);
+    expect(detectRole(1, r, cfg)).toBe("caster");
+  });
+
+  it("does not let a Stormstrike cast override an explicit non-physical ranking spec", () => {
+    const t = { playerId: 1, healingDone: 0, damageDone: 1000, damageTaken: 50, magicDamageDone: 900 };
+    const casts: PlayerCast[] = [{ fightId: 1, playerId: 1, spellId: 17364, timestamp: 0 }];
+    const r = report(t, "Shaman", [], ranking("P", "Shaman", "Elemental"), casts);
     expect(detectRole(1, r, cfg)).toBe("caster");
   });
 

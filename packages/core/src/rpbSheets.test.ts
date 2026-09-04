@@ -77,6 +77,7 @@ const roleCfg: RoleConfig = {
   casterClasses: ["Mage", "Warlock", "Shadow Priest", "Balance Druid"],
   physicalSpecs: [],
   casterSpecs: [],
+  physicalSpecCastNames: [],
 };
 
 describe("roleCasts", () => {

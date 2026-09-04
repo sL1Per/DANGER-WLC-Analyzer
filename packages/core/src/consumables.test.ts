@@ -17,7 +17,7 @@ const cfg: ConsumableConfig = {
     { kind: "buff", id: 28519, name: "Flask of Mighty Restoration" },
     { kind: "buff", id: 28490, name: "Elixir of Major Strength", stat: "strength" },
   ],
-  roles: { signals: [], casterClasses: ["Mage"], physicalSpecs: [], casterSpecs: [] },
+  roles: { signals: [], casterClasses: ["Mage"], physicalSpecs: [], casterSpecs: [], physicalSpecCastNames: [] },
   weaponEnhancements: [2678, 2955], // Superior Wizard Oil, Adamantite Weightstone (consumables)
 };
 
