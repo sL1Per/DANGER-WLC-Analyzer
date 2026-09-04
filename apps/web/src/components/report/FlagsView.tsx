@@ -36,7 +36,7 @@ export function FlagsView({ report, fightId, onPlayer }: { report: ReportData; f
                 </div>
                 <div className="flagrow__chips">
                   {row.chips.map((chip, i) => (
-                    <span key={i} className={`fchip ${chip.severity}`}>{chip.text}</span>
+                    <span key={i} className={`fchip sev-${chip.severity}`}>{chip.text}</span>
                   ))}
                 </div>
               </div>

@@ -11,10 +11,10 @@ export function DensityToggle() {
 
   return (
     <div className="toggle" role="group" aria-label="Table density">
-      <button type="button" className={density === "comfortable" ? "active" : ""} onClick={() => pick("comfortable")}>
+      <button type="button" className={density === "comfortable" ? "active" : ""} aria-pressed={density === "comfortable"} onClick={() => pick("comfortable")}>
         Comfortable
       </button>
-      <button type="button" className={density === "compact" ? "active" : ""} onClick={() => pick("compact")}>
+      <button type="button" className={density === "compact" ? "active" : ""} aria-pressed={density === "compact"} onClick={() => pick("compact")}>
         Compact
       </button>
     </div>

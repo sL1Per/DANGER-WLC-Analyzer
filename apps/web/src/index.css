@@ -321,9 +321,9 @@ button:hover {
 }
 
 .btn-outline:hover {
-  background: var(--accent-gold-grad, var(--primary));
-  border-color: var(--accent-gold, var(--primary));
-  color: var(--on-accent, #1a1206);
+  background: var(--primary-tint);
+  border-color: var(--primary);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -924,7 +924,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .lens-toggle__actions { margin-left: auto; display: flex; align-items: center; }
 
 /* ---- fight/player picker (M9 Forged) ---- */
-.lens-controls { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.lens-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
 .picker { position: relative; }
 .picker__trigger {
   display: flex; align-items: center; gap: 10px;
@@ -1307,6 +1307,12 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   .lens-hint { width: 100%; }
   .roster-search { width: 100%; min-height: 44px; }
 
+  /* fight/player picker: full-width trigger, viewport-fit panel */
+  .lens-controls { flex-wrap: wrap; }
+  .picker { width: 100%; }
+  .picker__trigger { width: 100%; min-width: 0; min-height: 44px; }
+  .picker__panel { width: 100%; max-width: calc(100vw - 28px); }
+
   /* report body breathing room */
   .report-body { padding: 16px 14px 40px; }
 
@@ -1343,5 +1349,5 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   padding: 3px 9px; border-radius: var(--radius-pill);
   background: var(--surface-sunken); color: var(--text-muted); border: 1px solid var(--border);
 }
-.fchip.major { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
-.fchip.moderate { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.fchip.sev-major { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.fchip.sev-moderate { background: var(--warn-bg); color: var(--warn); border-color: transparent; }

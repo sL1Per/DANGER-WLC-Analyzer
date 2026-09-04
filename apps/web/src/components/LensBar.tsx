@@ -106,20 +106,20 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
           {open && lens === "fight" && (
             <div className="picker__panel" role="listbox">
               <div className="picker__list">
-                <button type="button" data-testid="picker-row" className={`picker__row${fightId === ALL_FIGHTS ? " active" : ""}`} onClick={() => pickFight(ALL_FIGHTS)}>
+                <button type="button" role="option" aria-selected={fightId === ALL_FIGHTS} data-testid="picker-row" className={`picker__row${fightId === ALL_FIGHTS ? " active" : ""}`} onClick={() => pickFight(ALL_FIGHTS)}>
                   <span className="picker__dot dot-all" aria-hidden />
                   <span className="picker__row-name">BOSSES</span>
                   <span className="picker__row-meta mono">{kills}/{bosses.length} kills</span>
                 </button>
                 {trash.length > 0 && (
-                  <button type="button" data-testid="picker-row" className={`picker__row${fightId === ALL_TRASH ? " active" : ""}`} onClick={() => pickFight(ALL_TRASH)}>
+                  <button type="button" role="option" aria-selected={fightId === ALL_TRASH} data-testid="picker-row" className={`picker__row${fightId === ALL_TRASH ? " active" : ""}`} onClick={() => pickFight(ALL_TRASH)}>
                     <span className="picker__dot dot-all" aria-hidden />
                     <span className="picker__row-name">TRASH</span>
                     <span className="picker__row-meta mono">{trash.length} pulls</span>
                   </button>
                 )}
                 {bosses.map((f) => (
-                  <button type="button" key={f.id} data-testid="picker-row" className={`picker__row${f.id === fightId ? " active" : ""}`} onClick={() => pickFight(f.id)}>
+                  <button type="button" role="option" aria-selected={f.id === fightId} key={f.id} data-testid="picker-row" className={`picker__row${f.id === fightId ? " active" : ""}`} onClick={() => pickFight(f.id)}>
                     <span className={`picker__dot ${f.kill ? "dot-kill" : "dot-wipe"}`} aria-hidden />
                     <span className="picker__row-name">{f.name}</span>
                     <span className="picker__row-meta mono">{secs(f)}</span>
@@ -140,7 +140,7 @@ export function LensBar({ report, lens, fightId, playerId, query, onLens, onFigh
               />
               <div className="picker__list">
                 {players.map((p) => (
-                  <button type="button" key={p.id} data-testid="picker-row" className={`picker__row${p.id === playerId ? " active" : ""}`} style={classColorVar(p.class)} onClick={() => pickPlayer(p.id)}>
+                  <button type="button" role="option" aria-selected={p.id === playerId} key={p.id} data-testid="picker-row" className={`picker__row${p.id === playerId ? " active" : ""}`} style={classColorVar(p.class)} onClick={() => pickPlayer(p.id)}>
                     <span className="picker__dot" style={{ background: "var(--class-color, var(--text-subtle))" }} aria-hidden />
                     <span className="picker__row-name" style={{ color: "var(--class-color, inherit)" }}>{p.name}</span>
                   </button>
