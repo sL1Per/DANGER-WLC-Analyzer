@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { reportFixture } from "@wcl/core";
 import { ReportPage } from "./ReportPage";
-import type { ApiError } from "../lib/api";
+import { ApiError } from "../lib/api";
 
 type MockHookState = Partial<{
   result: { data: typeof reportFixture; stale?: boolean } | null;
@@ -60,7 +60,7 @@ describe("ReportPage — loader branches", () => {
   });
 
   it("shows an error alert when the report fails to load", () => {
-    mockHookState = { result: null, error: { message: "Request failed with status 500" }, loading: false, reload: vi.fn() };
+    mockHookState = { result: null, error: new ApiError(500, "Request failed with status 500"), loading: false, reload: vi.fn() };
     renderAt("/report/abc");
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText(/Request failed with status 500/i)).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("ReportPage — loader branches", () => {
   it("shows a link to /settings when error.needsKey is true", () => {
     mockHookState = {
       result: null,
-      error: { message: "API key required", needsKey: true },
+      error: new ApiError(401, "API key required", true),
       loading: false,
       reload: vi.fn(),
     };
@@ -80,7 +80,7 @@ describe("ReportPage — loader branches", () => {
   it("does not show the settings link when error.needsKey is false", () => {
     mockHookState = {
       result: null,
-      error: { message: "Network error", needsKey: false },
+      error: new ApiError(500, "Network error", false),
       loading: false,
       reload: vi.fn(),
     };
