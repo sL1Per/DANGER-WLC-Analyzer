@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loadCredentials, saveCredentials, loadWebhookUrl, saveWebhookUrl } from "../lib/storage";
 import { isValidWebhookUrl } from "../lib/discord";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -36,6 +37,12 @@ export function SettingsPage() {
       </header>
 
       <div className="settings-col">
+        <div className="card">
+          <h2>Appearance</h2>
+          <p>Choose how the app looks on this browser.</p>
+          <ThemeToggle />
+        </div>
+
         <form className="card" onSubmit={onSubmit}>
           <h2>WCL API credentials</h2>
           <p>Create a (free) v2 API client at{" "}
