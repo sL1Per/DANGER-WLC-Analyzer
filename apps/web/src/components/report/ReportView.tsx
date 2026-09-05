@@ -68,7 +68,10 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
     if (key === "timeline") return currentFight !== undefined;
     return BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key));
   });
-  const requestedCat = (params.get("cat") as Cat) ?? "flags";
+  // Default landing tab is Rankings; on cards where it's hidden (TRASH, an
+  // individual pull) the fallback below lands on Summary instead, since
+  // neither "flags"/Improvements nor anything else should greet a fresh visit.
+  const requestedCat = (params.get("cat") as Cat) ?? "summary";
   // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
   // fall back to the first visible tab so the body is never blank.
   const cat: Cat = categories.some(([key]) => key === requestedCat)
