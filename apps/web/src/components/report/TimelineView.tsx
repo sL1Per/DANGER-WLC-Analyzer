@@ -66,9 +66,11 @@ function fmtClock(ms: number, fightStart: number): string {
  *  category toggle) are what keep a high-volume pull like "damage dealt"
  *  browsable. ReportView only mounts this when one specific boss fight is
  *  selected, so `fightId` is always a real boss pull, never ALL/TRASH. Casts,
- *  deaths, interrupts and damage come from data the report already has;
- *  buffs/debuffs are fetched lazily, scoped to just this
- *  fight, the first time it's viewed. */
+ *  deaths, interrupts and damage come from data the report already has — that
+ *  works everywhere, including a read-only /s/:shareId view with no WCL key.
+ *  Buffs/debuffs need one more live fetch, scoped to just this fight, the
+ *  first time it's viewed; without a key (see `noLiveAccess`) those two
+ *  categories just come back empty instead of blocking the rest of the tab. */
 export function TimelineView({ report, fightId }: { report: ReportData; fightId: number }) {
   const fight = report.fights.find((f) => f.id === fightId);
   // Keyed on the report's identity too, so a "Refresh from WCL" (a new report
@@ -76,7 +78,12 @@ export function TimelineView({ report, fightId }: { report: ReportData; fightId:
   const cache = useRef<{ report: ReportData; entries: Map<number, TimelineEntry[]> }>({ report, entries: new Map() });
   if (cache.current.report !== report) cache.current = { report, entries: new Map() };
   const [entries, setEntries] = useState<TimelineEntry[] | null>(cache.current.entries.get(fightId) ?? null);
-  const [needsKey, setNeedsKey] = useState(false);
+  // True when there's no stored WCL token (e.g. a shared /s/:shareId viewer with
+  // no key of their own) — casts/deaths/interrupts/damage still render fully
+  // since they're already part of the report; only buffs/debuffs need a live
+  // fetch, so those two categories just come back empty instead of blocking
+  // the whole tab.
+  const [noLiveAccess, setNoLiveAccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Set<TimelineCategory>>(new Set(DEFAULT_ACTIVE));
   const [query, setQuery] = useState("");
@@ -91,12 +98,18 @@ export function TimelineView({ report, fightId }: { report: ReportData; fightId:
     }
     let cancelled = false;
     setEntries(null);
-    setNeedsKey(false);
+    setNoLiveAccess(false);
     setError(null);
     (async () => {
       const token = await ensureToken();
       if (!token) {
-        if (!cancelled) setNeedsKey(true);
+        // No live WCL access — still build the timeline from data the report
+        // already has (casts/deaths/interrupts/damage), just without buffs/debuffs.
+        if (cancelled) return;
+        const built = buildTimeline(report, fightId, [], []);
+        cache.current.entries.set(fightId, built);
+        setEntries(built);
+        setNoLiveAccess(true);
         return;
       }
       try {
@@ -124,9 +137,6 @@ export function TimelineView({ report, fightId }: { report: ReportData; fightId:
     setLimit(PAGE_SIZE);
   };
 
-  if (needsKey) {
-    return <p className="notice">Timeline needs your own WCL credentials to fetch this pull's events — add them in Settings.</p>;
-  }
   if (error) {
     return <p className="notice" role="alert">{error}</p>;
   }
@@ -140,6 +150,12 @@ export function TimelineView({ report, fightId }: { report: ReportData; fightId:
 
   return (
     <div className="timeline-view">
+      {noLiveAccess && (
+        <p className="notice">
+          Buffs and debuffs need your own WCL credentials to fetch — add them in Settings to see those too.
+          Casts, deaths, interrupts and damage below are unaffected.
+        </p>
+      )}
       <div className="timeline-controls">
         <div className="pill-toggle" role="group" aria-label="Timeline event filters">
           {CATEGORIES.map(({ key, label }) => (

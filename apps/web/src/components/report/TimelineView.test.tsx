@@ -29,10 +29,18 @@ beforeEach(() => {
 });
 
 describe("TimelineView", () => {
-  it("shows a needs-credentials notice when there's no stored WCL token", async () => {
+  it("degrades gracefully with no stored WCL token: casts/deaths/damage still render, buffs/debuffs don't fetch", async () => {
+    // The scenario this covers: a shared /s/:shareId viewer with no WCL key of
+    // their own — the tab must not block on that, since most of its content
+    // (casts/deaths/interrupts/damage) is already part of the published report.
     ensureToken.mockResolvedValue(null);
     render(<TimelineView report={reportFixture} fightId={FIGHT_ID} />);
-    await waitFor(() => expect(screen.getByText(/needs your own WCL credentials/i)).toBeInTheDocument());
+    await waitFor(() => expect(findRow(/Playerone casts Arcane Blast/)).toBeTruthy());
+
+    expect(findRow(/Playertwo dies to Frostbolt/)).toBeTruthy();
+    expect(screen.getByText(/Buffs and debuffs need your own WCL credentials/i)).toBeInTheDocument();
+    expect(fetchFriendlyBuffs).not.toHaveBeenCalled();
+    expect(fetchFriendlyDebuffs).not.toHaveBeenCalled();
   });
 
   it("merges cached casts/deaths with fetched buffs/debuffs into one chronological list", async () => {
