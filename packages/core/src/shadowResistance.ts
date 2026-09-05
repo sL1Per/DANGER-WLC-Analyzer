@@ -1,5 +1,4 @@
-import type { ReportData } from "./types";
-import { itemName } from "./itemName";
+import type { Fight, ReportData } from "./types";
 import type { IssueSeverity } from "./gearIssues";
 
 export const SR_BOSSES = ["Mother Shahraz", "Kaz'rogal", "Azgalor"] as const;
@@ -18,14 +17,12 @@ export interface ShadowResConfig {
 export interface ShadowResPlayer {
   playerId: number; name: string;
   total: number; fromGear: number; fromBuffs: number;
-  /** slot id → contribution text, e.g. "Pendant of Shadow's End (~30 SR) +15 SR" */
+  /** slot id → contribution text, e.g. "~30 SR" (innate) or "+24 SR" (enchant + gem, no innate) */
   slots: Record<number, string>;
   severity: IssueSeverity;
 }
 export interface ShadowResResult {
   boss: string; fightId: number; isKill: boolean;
-  /** SR bosses actually present in the report, for the view's selector */
-  availableBosses: SrBoss[];
   players: ShadowResPlayer[];
 }
 
@@ -37,22 +34,32 @@ function srSeverity(total: number, softTarget: number): IssueSeverity {
 
 /**
  * CLA `shadow resi`: per-player Shadow Resistance for Shahraz/Kaz'rogal/Azgalor.
- * Analyzes the kill, else the longest wipe of the chosen boss. SR-from-buffs is
- * read from combatantInfo pull auras (no extra event fetch). Returns null when
- * none of the three SR bosses are in the report.
+ *
+ * `opts.fightId`, when given, pins the analysis to that exact pull (the caller
+ * picked a specific SR-relevant fight via the report's own fight selector, so
+ * there's no ambiguity to resolve here — this view no longer has its own boss
+ * picker). Omitted (the combined BOSSES card, which isn't one specific pull),
+ * it falls back to the first SR boss present in the report (Shahraz, then
+ * Kaz'rogal, then Azgalor), analyzing its kill, else its longest wipe.
+ *
+ * SR-from-buffs is read from combatantInfo pull auras (no extra event fetch).
+ * Returns null when there's no matching SR-boss fight to analyze.
  */
 export function shadowResistance(
   report: ReportData,
   cfg: ShadowResConfig,
-  opts?: { boss?: SrBoss },
+  opts?: { fightId?: number },
 ): ShadowResResult | null {
-  const availableBosses = SR_BOSSES.filter((b) => report.fights.some((f) => f.isBoss && f.name === b));
-  const boss = opts?.boss && availableBosses.includes(opts.boss) ? opts.boss : availableBosses[0];
-  if (!boss) return null;
-
-  const bossFights = report.fights.filter((f) => f.isBoss && f.name === boss);
-  const kill = bossFights.find((f) => f.kill === true);
-  const fight = kill ?? bossFights.reduce((a, b) => (b.endTime - b.startTime > a.endTime - a.startTime ? b : a));
+  const fight: Fight | undefined = opts?.fightId !== undefined
+    ? report.fights.find((f) => f.id === opts.fightId && f.isBoss && (SR_BOSSES as readonly string[]).includes(f.name))
+    : (() => {
+        const boss = SR_BOSSES.find((b) => report.fights.some((f) => f.isBoss && f.name === b));
+        if (!boss) return undefined;
+        const bossFights = report.fights.filter((f) => f.isBoss && f.name === boss);
+        return bossFights.find((f) => f.kill === true)
+          ?? bossFights.reduce((a, b2) => (b2.endTime - b2.startTime > a.endTime - a.startTime ? b2 : a));
+      })();
+  if (!fight) return null;
 
   const playerById = new Map(report.players.map((p) => [p.id, p]));
   const players: ShadowResPlayer[] = [];
@@ -69,11 +76,9 @@ export function shadowResistance(
       for (const gemId of item.gemIds ?? []) gems += cfg.gemShadowRes[String(gemId)] ?? 0;
       if (innate === 0 && ench === 0 && gems === 0) continue;
       fromGear += innate + ench + gems;
-      const parts: string[] = [];
-      if (innate > 0) parts.push(`${itemName(report, item.itemId)} (~${innate} SR)`);
-      if (ench > 0) parts.push(`+${ench} SR`);
-      if (gems > 0) parts.push(`+${gems} SR (gem)`);
-      slots[item.slot] = parts.join(" ");
+      const total = innate + ench + gems;
+      // "~" when the total includes an approximate (curated) innate value, else it's an exact bonus.
+      slots[item.slot] = innate > 0 ? `~${total} SR` : `+${total} SR`;
     }
 
     // distinct auras only (dedup defensively in case a source repeats one); sum their SR
@@ -84,5 +89,5 @@ export function shadowResistance(
     players.push({ playerId: player.id, name: player.name, total, fromGear, fromBuffs, slots, severity: srSeverity(total, cfg.softTarget) });
   }
   players.sort((a, b) => a.name.localeCompare(b.name));
-  return { boss, fightId: fight.id, isKill: kill !== undefined, availableBosses, players };
+  return { boss: fight.name, fightId: fight.id, isKill: fight.kill === true, players };
 }

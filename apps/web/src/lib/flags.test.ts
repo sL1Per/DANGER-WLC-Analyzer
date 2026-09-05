@@ -22,7 +22,7 @@ function makeConsRow(over: Partial<ConsumableRow> = {}): ConsumableRow {
     playerId: 1, playerName: "Madnap",
     elixirOrFlask: 1, battleElixir: 0, battleElixirNames: [],
     guardianElixir: 0, guardianElixirNames: [], flask: 1, flaskNames: [],
-    food: 1, scrolls: "", scrollUptime: 0, weaponEnhancement: 1,
+    food: 1, foodNames: [], scrolls: "", scrollNames: [], scrollUptime: 0, weaponEnhancement: 1,
     jcNeck: { usedOnFights: 0, inactiveOnFights: 0, equipped: false },
     suboptimal: [], totalAverage: 1,
     ...over,
@@ -105,6 +105,11 @@ describe("buildFlags", () => {
     const result = buildFlags([makeRpbRow()], [makeConsRow()], [gearRow]);
     expect(result.rows[0].chips).toContainEqual({ text: "1 gear flag", severity: "moderate" });
     expect(result.rows[0].severity).toBe("moderate");
+  });
+
+  it("flags suboptimal consumables as moderate, naming them", () => {
+    const result = buildFlags([makeRpbRow()], [makeConsRow({ suboptimal: ["Elixir of Major Strength"] })], [makeGearRow()]);
+    expect(result.rows[0].chips).toContainEqual({ text: "Suboptimal: Elixir of Major Strength", severity: "moderate" });
   });
 
   it("does not flag consumables for a player with no gear snapshot in scope (weaponEnhancement null)", () => {

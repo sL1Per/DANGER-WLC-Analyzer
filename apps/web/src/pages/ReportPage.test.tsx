@@ -96,9 +96,9 @@ describe("ReportPage — loader branches", () => {
 // was removed because ReportPage now passes shareActions={null}.
 
 describe("ReportPage — category / tab behaviour (via ReportView)", () => {
-  it("defaults to the Flags category", () => {
+  it("defaults to the Improvements category", () => {
     renderAt("/report/abc");
-    expect(screen.getByRole("heading", { name: /flags/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /work in progress/i })).toBeInTheDocument();
   });
   it("shows the Rankings category when selected", () => {
     renderAt("/report/abc?cat=summary");
@@ -149,5 +149,39 @@ describe("ReportPage — category / tab behaviour (via ReportView)", () => {
     expect(screen.queryByRole("button", { name: /^Buff consumables$/i })).not.toBeInTheDocument();
     renderAt("/report/abc?fight=-2");
     expect(screen.queryByRole("button", { name: /^Buff consumables$/i })).not.toBeInTheDocument();
+  });
+  it("hides Resistances on an unrelated boss pull (the fixture has no SR boss at all)", () => {
+    // fight=3 is Hydross the Unstable — not an SR-relevant encounter, and the
+    // combined BOSSES card has no SR boss in this fixture either.
+    renderAt("/report/abc?fight=3");
+    expect(screen.queryByRole("button", { name: /^Resistances$/i })).not.toBeInTheDocument();
+    renderAt("/report/abc");
+    expect(screen.queryByRole("button", { name: /^Resistances$/i })).not.toBeInTheDocument();
+  });
+  describe("with an SR-relevant boss in the report", () => {
+    function loadSrFixture() {
+      const srFixture = structuredClone(reportFixture);
+      srFixture.fights.push({
+        id: 99, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: true,
+        startTime: 500_000, endTime: 560_000,
+      });
+      mockHookState = { result: { data: srFixture, stale: false }, error: null, loading: false, reload: vi.fn() };
+    }
+
+    it("shows Resistances on that exact pull", () => {
+      loadSrFixture();
+      renderAt("/report/abc?fight=99");
+      expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
+    });
+    it("shows Resistances on the combined BOSSES card", () => {
+      loadSrFixture();
+      renderAt("/report/abc");
+      expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
+    });
+    it("still hides Resistances on an unrelated pull, even though the report has Shahraz elsewhere", () => {
+      loadSrFixture();
+      renderAt("/report/abc?fight=3"); // Hydross the Unstable
+      expect(screen.queryByRole("button", { name: /^Resistances$/i })).not.toBeInTheDocument();
+    });
   });
 });

@@ -65,23 +65,23 @@ export function GearMatrix({ report, fightId }: { report: ReportData; fightId: n
       <>
         {isAll && <p className="notice">Gear is a snapshot per pull — showing {fight.name}.</p>}
         <StatCards>
-          {sortedRows.map((r) => (
-            <StatCard
-              key={r.playerId}
-              title={r.playerName}
-              titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
-              rows={PROFILE_GEAR_SLOTS.map((s) => {
-                const item = r.items[s];
-                const itemIssues = item ? issues.get(r.playerId)?.get(item.itemId) : undefined;
-                const worst = itemIssues?.reduce((a, b) => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? b : a));
-                return {
-                  label: SLOT_NAMES[s],
-                  value: item?.name ?? "—",
-                  className: worst ? `sev-${worst.severity}` : undefined,
-                };
-              })}
-            />
-          ))}
+          {sortedRows.map((r) => {
+            const flaggedRows = PROFILE_GEAR_SLOTS.flatMap((s) => {
+              const item = r.items[s];
+              const itemIssues = item ? issues.get(r.playerId)?.get(item.itemId) : undefined;
+              const worst = itemIssues?.reduce((a, b) => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? b : a));
+              if (!worst || !item) return [];
+              return [{ label: SLOT_NAMES[s], value: item.name, className: `sev-${worst.severity}` }];
+            });
+            return (
+              <StatCard
+                key={r.playerId}
+                title={r.playerName}
+                titleStyle={classColorVar(classOf.get(r.playerId) ?? "")}
+                rows={flaggedRows.length > 0 ? flaggedRows : [{ label: "Gear", value: "No issues" }]}
+              />
+            );
+          })}
         </StatCards>
       </>
     );
@@ -90,32 +90,40 @@ export function GearMatrix({ report, fightId }: { report: ReportData; fightId: n
   return (
     <>
       {isAll && <p className="notice">Gear is a snapshot per pull — showing {fight.name}.</p>}
-      <div className="scroll-x">
-      <table className="gear-matrix">
+      <div className="player-matrix-card scroll-x">
+      <table className="player-matrix">
         <thead>
-          <tr><th>Player</th>{PROFILE_GEAR_SLOTS.map((s) => <th key={s}>{SLOT_NAMES[s]}</th>)}</tr>
+          <tr>
+            <th className="matrix-corner" scope="col">Slot</th>
+            {sortedRows.map((r) => (
+              <th key={r.playerId} className="player-col" style={classColorVar(classOf.get(r.playerId) ?? "")} scope="col">
+                <span className="player-col__name">{r.playerName}</span>
+              </th>
+            ))}
+          </tr>
         </thead>
         <tbody>
-          {sortedRows.map((r) => (
-            <tr key={r.playerId}>
-              <td className="player-cell" style={classColorVar(classOf.get(r.playerId) ?? "")}>
-                <span className="player-link">{r.playerName}</span>
-              </td>
-              {PROFILE_GEAR_SLOTS.map((s) => {
+          {PROFILE_GEAR_SLOTS.map((s) => (
+            <tr key={s}>
+              <th scope="row" className="matrix-row-label">{SLOT_NAMES[s]}</th>
+              {sortedRows.map((r) => {
                 const item = r.items[s];
                 const itemIssues = item ? issues.get(r.playerId)?.get(item.itemId) : undefined;
                 const worst = itemIssues?.reduce((a, b) => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? b : a));
-                if (!worst || !item) {
-                  return <td key={s}>{item?.name ?? ""}</td>;
+                if (!item) {
+                  return <td key={r.playerId} />;
+                }
+                if (!worst) {
+                  return <td key={r.playerId}><span className="sr-only">{item.name}</span></td>;
                 }
                 return (
-                  <td key={s} className={`sev-${worst.severity}`}>
+                  <td key={r.playerId} className={`sev-${worst.severity}`}>
                     <button
-                      className="gear-issue-cell"
+                      className="cell-btn"
                       title="Click for issue details"
                       onClick={() => setSelected({ player: r.playerName, slot: SLOT_NAMES[s], item: item.name, issues: itemIssues! })}
                     >
-                      {item.name}
+                      <span className="sr-only">{item.name}</span>
                     </button>
                   </td>
                 );

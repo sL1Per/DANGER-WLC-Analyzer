@@ -107,9 +107,6 @@ describe("RoleSheetTable", () => {
     expect(screen.getByText("Grace of Air Totem uptime% (air slot)")).toBeInTheDocument();
     // "Twistarn" appears twice: the player column header and the timeline caption
     expect(screen.getAllByText("Twistarn").length).toBeGreaterThanOrEqual(2);
-    // timeline caption carries the rounded aggregate + a per-fight strip
-    expect(screen.getByText(/Windfury 50%/)).toBeInTheDocument();
-    expect(screen.getByText(/Grace of Air 50%/)).toBeInTheDocument();
     expect(screen.getAllByText("Hydross the Unstable").length).toBeGreaterThanOrEqual(1);
   });
 

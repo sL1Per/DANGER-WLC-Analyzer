@@ -1,3 +1,4 @@
+import { scopedRoster } from "./rpb";
 import type { ReportData } from "./types";
 
 /** Structural copy of @wcl/data's RpbConsumable (core stays pure — data injected). */
@@ -45,7 +46,7 @@ export function rpbConsumables(
   const scopedCasts = report.playerCasts.filter((c) => fightIds.has(c.fightId));
   const scopedBuffs = (report.buffs ?? []).filter((b) => fightIds.has(b.fightId));
 
-  const rows: RpbConsumableRow[] = report.players.map((player) => {
+  const rows: RpbConsumableRow[] = scopedRoster(report, fights).map((player) => {
     const myCasts = scopedCasts.filter((c) => c.playerId === player.id);
     const myBuffs = scopedBuffs.filter((b) => b.targetId === player.id);
     const counts: Record<string, number> = {};

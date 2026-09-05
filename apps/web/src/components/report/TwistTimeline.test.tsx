@@ -18,29 +18,23 @@ const seg = (over: Partial<TwistSegment> = {}): TwistSegment => ({
 });
 
 describe("TwistTimeline", () => {
-  it("renders a strip per fight with the fight name, the aggregate summary and a per-fight split", () => {
+  it("renders a strip per fight with the fight name and a per-fight split", () => {
     render(
       <TwistTimeline
         playerName="Blindberserk"
-        windfuryUptime={0.55}
-        graceUptime={0.42}
         segments={[seg(), seg({ fightId: 2, fightName: "Gurtogg Bloodboil", windfuryPct: 0.5, gracePct: 0.5 })]}
       />,
     );
+    expect(screen.getByText("Blindberserk")).toBeInTheDocument();
     expect(screen.getByText("Teron Gorefiend")).toBeInTheDocument();
     expect(screen.getByText("Gurtogg Bloodboil")).toBeInTheDocument();
-    // aggregate summary in the caption, rounded to whole percent
-    expect(screen.getByText(/Windfury 55%/)).toBeInTheDocument();
-    expect(screen.getByText(/Grace of Air 42%/)).toBeInTheDocument();
     // per-fight split for the first strip (Windfury / Grace of Air)
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getByText("40%")).toBeInTheDocument();
   });
 
   it("draws one slot rect per occupancy segment, scaled to the fight width", () => {
-    const { container } = render(
-      <TwistTimeline playerName="X" windfuryUptime={0.6} graceUptime={0.4} segments={[seg()]} />,
-    );
+    const { container } = render(<TwistTimeline playerName="X" segments={[seg()]} />);
     const wf = container.querySelectorAll('rect[data-totem="windfury"]');
     const goa = container.querySelectorAll('rect[data-totem="grace"]');
     expect(wf).toHaveLength(2);
@@ -51,9 +45,7 @@ describe("TwistTimeline", () => {
   });
 
   it("renders nothing when there are no segments", () => {
-    const { container } = render(
-      <TwistTimeline playerName="X" windfuryUptime={0} graceUptime={0} segments={[]} />,
-    );
+    const { container } = render(<TwistTimeline playerName="X" segments={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

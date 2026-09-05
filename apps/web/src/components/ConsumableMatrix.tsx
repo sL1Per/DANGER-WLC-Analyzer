@@ -59,11 +59,11 @@ export function ConsumableMatrix({
   }
 
   return (
-    <div className="consumable-card scroll-x">
-      <table className="consumable-matrix">
+    <div className="player-matrix-card scroll-x">
+      <table className="player-matrix">
         <thead>
           <tr>
-            <th className="consumable-corner" scope="col">Consumable</th>
+            <th className="matrix-corner" scope="col">Consumable</th>
             {players.map((p) => (
               <th key={p.playerId} className="player-col" style={classColorVar(p.className)} scope="col">
                 <span className="player-col__name">{p.playerName}</span>
@@ -81,7 +81,7 @@ export function ConsumableMatrix({
             const max = Math.max(...vals);
             return (
               <tr key={c.key}>
-                <th scope="row" className="consumable-label">{c.name}</th>
+                <th scope="row" className="matrix-row-label">{c.name}</th>
                 {players.map((p, i) => (
                   <td
                     key={p.playerId}

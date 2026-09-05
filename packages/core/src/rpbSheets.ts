@@ -1,7 +1,7 @@
 import type { ReportData, Role, PlayerHitStats, TrinketUse, PlayerFightHits } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
-import { rpb, type RpbConfig } from "./rpb";
+import { rpb, scopedRoster, type RpbConfig } from "./rpb";
 import { mergedDurationMs } from "./classMetrics";
 
 /** Structural copy of @wcl/data's CatalogAbility (core stays pure — catalog injected). */
@@ -76,12 +76,11 @@ export function roleCasts(
 ): ClassCastBlock[] | null {
   if (report.playerCasts === undefined) return null;
 
-  const fightIds = new Set(
-    report.fights.filter((f) => !isKalecgos(f.name)).map((f) => f.id),
-  );
+  const scopedFights = report.fights.filter((f) => !isKalecgos(f.name));
+  const fightIds = new Set(scopedFights.map((f) => f.id));
   const meta = report.abilityMeta ?? {};
 
-  const members = report.players.filter(
+  const members = scopedRoster(report, scopedFights).filter(
     (p) => detectRole(p.id, report, cfg.roles) === role,
   );
 

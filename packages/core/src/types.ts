@@ -29,8 +29,11 @@
  *  10 — twist metric reworked to the air-totem SLOT model (derived from totem
  *       casts, no buff fetch): per-totem slot uptime, cast counts and a per-fight
  *       slot-occupancy timeline (segments[].slots / windfuryPct / gracePct).
+ *  11 — Fight gained friendlyPlayers (WCL's per-pull roster); RPB/role-breakdown
+ *       tables now restrict their player columns to that pull's actual roster
+ *       instead of every player who ever appeared anywhere in the report.
  */
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
@@ -121,6 +124,11 @@ export interface Fight {
   kill?: boolean;
   startTime: number; // ms relative to report start
   endTime: number;
+  /** WCL's roster for this specific pull (player ids). Undefined/empty means WCL
+   *  gave us no participation info for this fight — callers that build a per-fight
+   *  roster from this should fall back to every report player rather than showing
+   *  an empty table (see rpb.ts's scopedRoster). */
+  friendlyPlayers?: number[];
 }
 
 export interface Player {

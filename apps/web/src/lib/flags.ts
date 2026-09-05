@@ -47,6 +47,10 @@ function consumableChips(row: ConsumableRow | undefined): FlagChip[] {
     chips.push({ text: "No weapon oil", severity: "major" });
   }
 
+  if (row.suboptimal.length > 0) {
+    chips.push({ text: `Suboptimal: ${row.suboptimal.join(", ")}`, severity: "moderate" });
+  }
+
   return chips;
 }
 

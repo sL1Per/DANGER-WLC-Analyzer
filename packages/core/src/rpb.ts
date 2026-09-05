@@ -1,4 +1,4 @@
-import type { ReportData, Role } from "./types";
+import type { Fight, Player, ReportData, Role } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
 import { activity, type ActivityConfig, type ActivityResult } from "./activity";
 import { classMetrics, type ClassAbilitySpec, type ClassAbilityResult } from "./classMetrics";
@@ -48,6 +48,19 @@ export interface RpbRow {
 /** Kalecgos breaks RPB numbers (portal mechanic) — excluded from all aggregation. */
 const isKalecgos = (name: string) => name.toLowerCase().includes("kalecgos");
 
+/**
+ * Players who actually raided the given fights, per WCL's per-pull
+ * `friendlyPlayers` roster — so a single-pull view doesn't list players who
+ * were on the bench for that attempt (or in the raid on a different pull
+ * entirely). Falls back to every report player when none of the fights carry
+ * roster info (pre-fix cache, or a report WCL gave no participation data for),
+ * matching the report-wide roster's own fallback in normalize.ts.
+ */
+export function scopedRoster(report: ReportData, fights: Fight[]): Player[] {
+  const ids = new Set(fights.flatMap((f) => f.friendlyPlayers ?? []));
+  return ids.size > 0 ? report.players.filter((p) => ids.has(p.id)) : report.players;
+}
+
 export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | null {
   if (report.playerTotals === undefined) return null;
 
@@ -67,7 +80,7 @@ export function rpb(report: ReportData, cfg: RpbConfig): { rows: RpbRow[] } | nu
   const absorbs = inScope(report.absorbs).filter((a) => !cfg.absorbExcludedSpellIds.includes(a.spellId));
 
   const rows: RpbRow[] = [];
-  for (const player of report.players) {
+  for (const player of scopedRoster(report, scopedFights)) {
     const id = player.id;
     const myDmgTaken = dmgTaken.filter((d) => d.targetPlayerId === id);
     const myDamage = (report.playerDamage ?? []).filter((d) => d.sourceId === id && fightIds.has(d.fightId));

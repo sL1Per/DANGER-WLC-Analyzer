@@ -7,7 +7,7 @@ import { ALL_FIGHTS } from "../../lib/scopeReport";
 describe("FlagsView", () => {
   it("renders without crashing against the fixture report", () => {
     render(<FlagsView report={reportFixture} fightId={ALL_FIGHTS} />);
-    expect(screen.getByRole("heading", { name: /flags/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /work in progress/i })).toBeInTheDocument();
   });
 
   it("shows a clean-raid message when nobody is flagged", () => {

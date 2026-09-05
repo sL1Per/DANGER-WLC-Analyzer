@@ -1,5 +1,6 @@
 import type { Fight, GearSnapshot, ReportData, Role } from "./types";
 import { detectRole, type RoleConfig } from "./roles";
+import { scopedRoster } from "./rpb";
 import type { IssueSeverity } from "./gearIssues";
 
 /** Primary stat a consumable provides, for spec-aware suboptimal detection. */
@@ -66,8 +67,12 @@ export interface ConsumableRow {
   /** distinct flask names the player had at any boss pull (insertion order); empty when none */
   flaskNames: string[];
   food: number;
+  /** distinct food buff names the player had at any boss pull (insertion order); empty when none */
+  foodNames: string[];
   /** e.g. "83% (Agi*,Prot)"; "" when no scrolls were used */
   scrolls: string;
+  /** distinct scroll names the player used at any boss pull (insertion order); empty when none */
+  scrollNames: string[];
   scrollUptime: number;
   /** fraction of boss-fight snapshots with a consumable weapon enhancement; null = no gear snapshots at all */
   weaponEnhancement: number | null;
@@ -117,9 +122,11 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
   const battleElixirNameById = nameByCategory("battleElixir");
   const guardianElixirNameById = nameByCategory("guardianElixir");
   const flaskNameById = nameByCategory("flask");
+  const foodNameById = nameByCategory("food");
+  const scrollNameById = nameByCategory("scroll");
 
   const rows: ConsumableRow[] = [];
-  for (const player of report.players) {
+  for (const player of scopedRoster(report, [...bossFights.values()])) {
     const snapshots = report.gear.filter((s) => s.playerId === player.id && bossFights.has(s.fightId));
     // pull-aura snapshots drive elixir/flask/food/scroll presence
     const auraSnapshots = snapshots.filter((s) => s.auras !== undefined);
@@ -147,7 +154,9 @@ export function consumables(report: ReportData, cfg: ConsumableConfig): { rows: 
       flask,
       flaskNames: distinctAuraNames(auraSnapshots, flaskNameById),
       food,
+      foodNames: distinctAuraNames(auraSnapshots, foodNameById),
       scrolls: formatScrolls(auraSnapshots, cfg, scrollUptime),
+      scrollNames: distinctAuraNames(auraSnapshots, scrollNameById),
       scrollUptime,
       weaponEnhancement,
       jcNeck: jcNeckUsage(snapshots, cfg, bossFights),

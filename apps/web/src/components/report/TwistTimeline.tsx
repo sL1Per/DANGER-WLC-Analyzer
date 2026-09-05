@@ -7,18 +7,13 @@ const pct = (f: number) => `${Math.round(f * 100)}%`;
 /**
  * Air-totem twist timeline for one Shaman: one compact strip per fight showing
  * which totem held the (single) air-totem slot over time — Windfury in warm,
- * Grace of Air in cool. The per-fight split is printed on the right; the caption
- * carries the report-wide aggregate.
+ * Grace of Air in cool. The per-fight split is printed on the right.
  */
 export function TwistTimeline({
   playerName,
-  windfuryUptime,
-  graceUptime,
   segments,
 }: {
   playerName: string;
-  windfuryUptime: number;
-  graceUptime: number;
   segments: TwistSegment[];
 }) {
   if (segments.length === 0) return null;
@@ -26,10 +21,7 @@ export function TwistTimeline({
   return (
     <figure className="twist-timeline">
       <figcaption>
-        <span className="twist-who">{playerName}</span> totem twist —{" "}
-        <span className="twist-key twist-wf">Windfury {pct(windfuryUptime)}</span>
-        {" · "}
-        <span className="twist-key twist-goa">Grace of Air {pct(graceUptime)}</span>
+        <span className="twist-who">{playerName}</span>
       </figcaption>
       {segments.map((s) => {
         const x = (t: number) => (s.durationMs > 0 ? (t / s.durationMs) * W : 0);

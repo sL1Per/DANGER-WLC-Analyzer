@@ -147,6 +147,26 @@ describe("roleCasts", () => {
     expect(pala.players[0]!.playerName).toBe("TankPala");
   });
 
+  it("excludes a player not on this pull's WCL roster, even if they'd otherwise qualify for the role", () => {
+    const report = makeReport();
+    report.fights[0]!.friendlyPlayers = [7]; // player 8 was benched for this pull
+    report.players.push({ id: 8, name: "BenchedPala", class: "Paladin" });
+    report.gear!.push({ fightId: 1, playerId: 8, auras: [25780], items: [] });
+    report.playerTotals!.push({ playerId: 8, healingDone: 0, damageDone: 100000, damageTaken: 200000, magicDamageDone: 0 });
+
+    const blocks = roleCasts(report, "tank", {
+      catalog: [
+        { className: "Paladin", key: "holy-shield", name: "Holy Shield", category: "cooldown", spellIds: [20925] },
+      ],
+      activity: activityCfg,
+      roles: roleCfg,
+      cooldownKeys: [],
+    })!;
+
+    const pala = blocks.find((b) => b.className === "Paladin")!;
+    expect(pala.players.map((p) => p.playerName)).toEqual(["TankPala"]);
+  });
+
   it("returns null on a stale cache (no playerCasts)", () => {
     const report: ReportData = { ...makeReport(), playerCasts: undefined };
     expect(

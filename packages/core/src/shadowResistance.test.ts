@@ -37,38 +37,57 @@ const KILL = { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, k
 
 describe("shadowResistance", () => {
   it("sums SR from gear (items + enchants) and from buffs on the kill fight", () => {
-    const r = shadowResistance(report([KILL]), cfg, { boss: "Mother Shahraz" })!;
+    const r = shadowResistance(report([KILL]), cfg)!;
     expect(r.boss).toBe("Mother Shahraz");
     expect(r.isKill).toBe(true);
     const p = r.players.find((x) => x.name === "Playertwo")!;
     expect(p.fromGear).toBe(85);  // 30 innate + 15 + 20 + 8 + 8 enchants + 4 gem
     expect(p.fromBuffs).toBe(70); // Shadow Protection
     expect(p.total).toBe(155);
-    expect(p.slots[1]).toMatch(/~30 SR/);   // neck innate
-    expect(p.slots[14]).toMatch(/\+15 SR/); // cloak enchant
+    expect(p.slots[1]).toBe("~30 SR");  // neck innate — no item name, just the value
+    expect(p.slots[14]).toBe("+15 SR"); // cloak enchant
     expect(p.severity).toBe("minor"); // 155 ≥ 100 soft target → ok/green
   });
 
   it("counts SR from head/hands/feet enchants and from socketed gems", () => {
-    const r = shadowResistance(report([KILL]), cfg, { boss: "Mother Shahraz" })!;
+    const r = shadowResistance(report([KILL]), cfg)!;
     const p = r.players.find((x) => x.name === "Playertwo")!;
-    expect(p.slots[0]).toMatch(/\+20 SR/);       // head enchant (Glyph of Shadow Warding)
-    expect(p.slots[7]).toMatch(/\+8 SR/);        // feet enchant (Shadow Armor Kit)
-    expect(p.slots[9]).toMatch(/\+8 SR/);        // hands enchant
-    expect(p.slots[9]).toMatch(/\+4 SR \(gem\)/); // hands socketed Void Sphere
+    expect(p.slots[0]).toBe("+20 SR"); // head enchant (Glyph of Shadow Warding)
+    expect(p.slots[7]).toBe("+8 SR");  // feet enchant (Shadow Armor Kit)
+    expect(p.slots[9]).toBe("+12 SR"); // hands: enchant (8) + socketed Void Sphere (4), combined
   });
   it("returns null when the report has none of the SR bosses", () => {
     const noBoss = report([{ id: 1, name: "Najentus", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 100 }]);
     expect(shadowResistance(noBoss, cfg)).toBeNull();
   });
-  it("analyzes the longest wipe when there is no kill", () => {
+  it("without a fightId, analyzes the longest wipe when there is no kill (the combined BOSSES card)", () => {
     // two Shahraz wipes; the gear snapshot is on fight 60 (the longer wipe)
     const r = shadowResistance(report([
       { id: 59, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 0, endTime: 30_000 },
       { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 100_000, endTime: 260_000 },
-    ]), cfg, { boss: "Mother Shahraz" })!;
+    ]), cfg)!;
     expect(r.isKill).toBe(false);
     expect(r.fightId).toBe(60); // longer wipe (160s vs 30s)
     expect(r.players.find((x) => x.name === "Playertwo")!.total).toBe(155);
+  });
+  it("a fightId pins the analysis to that exact pull, not the kill/longest-wipe default", () => {
+    // the shorter wipe (59) has no gear snapshot — requesting it explicitly
+    // must NOT fall back to fight 60's snapshot.
+    const r = shadowResistance(report([
+      { id: 59, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 0, endTime: 30_000 },
+      { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 100_000, endTime: 260_000 },
+    ]), cfg, { fightId: 59 })!;
+    expect(r.fightId).toBe(59);
+    expect(r.isKill).toBe(false);
+    expect(r.players).toEqual([]);
+  });
+  it("returns null for a fightId that isn't an SR-relevant boss fight", () => {
+    const r = report([
+      KILL,
+      { id: 1, name: "Trash", encounterId: 0, isBoss: false, startTime: 0, endTime: 100 },
+      { id: 2, name: "Najentus", encounterId: 601, isBoss: true, kill: true, startTime: 100, endTime: 200 },
+    ]);
+    expect(shadowResistance(r, cfg, { fightId: 1 })).toBeNull();
+    expect(shadowResistance(r, cfg, { fightId: 2 })).toBeNull();
   });
 });

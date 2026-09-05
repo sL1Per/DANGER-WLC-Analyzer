@@ -105,4 +105,13 @@ describe("rpbConsumables", () => {
     delete r.playerCasts;
     expect(rpbConsumables(r, [hastePotion])).toBeNull();
   });
+
+  it("excludes a player not on this scoped card's WCL roster, even though they raided elsewhere in the report", () => {
+    const r = baseReport();
+    r.players.push({ id: 3, name: "Benchwarmer", class: "Priest" });
+    // Void Reaver's roster is [1, 2] — Benchwarmer was on the bench for it.
+    r.fights = r.fights.map((f) => (f.id === 2 ? { ...f, friendlyPlayers: [1, 2] } : f));
+    const boss = { ...r, fights: r.fights.filter((f) => f.isBoss && !f.name.includes("Kalecgos")) };
+    expect(rpbConsumables(boss, [hastePotion])!.rows.map((x) => x.playerName)).not.toContain("Benchwarmer");
+  });
 });

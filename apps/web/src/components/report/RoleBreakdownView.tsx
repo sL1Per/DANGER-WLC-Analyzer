@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { detectRole, type ReportData, type Role } from "@wcl/core";
+import { detectRole, scopedRoster, type ReportData, type Role } from "@wcl/core";
 import { buildRpbConfig } from "../../lib/analysisConfig";
+import { scopeReportToFight } from "../../lib/scopeReport";
 import { RoleSheetTable } from "./RoleSheetTable";
 import { RoleCastsTable } from "./RoleCastsTable";
 
@@ -46,13 +47,16 @@ export function RoleBreakdownView({
     setParams(p, { replace: false });
   };
 
-  // Player count per role, for the role-tab badges (report-wide, like role detection).
+  // Player count per role, for the role-tab badges — restricted to this fight's
+  // actual roster so the badge matches the table below it.
   const roleCounts = useMemo(() => {
     const cfg = buildRpbConfig();
+    const scoped = scopeReportToFight(report, fightId);
+    const roster = scopedRoster(scoped, scoped.fights);
     const counts: Record<Role, number> = { tank: 0, healer: 0, caster: 0, physical: 0 };
-    for (const p of report.players) counts[detectRole(p.id, report, cfg.roles)]++;
+    for (const p of roster) counts[detectRole(p.id, report, cfg.roles)]++;
     return counts;
-  }, [report]);
+  }, [report, fightId]);
 
   return (
     <div className="role-breakdown-view">

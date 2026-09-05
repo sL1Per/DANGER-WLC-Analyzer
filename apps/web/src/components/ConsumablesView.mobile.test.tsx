@@ -12,7 +12,7 @@ vi.mock("@wcl/core", async (orig) => {
       rows: [{
         playerId: 1, playerName: "Thrall", totalAverage: 0.9, elixirOrFlask: 1,
         battleElixir: 0, battleElixirNames: [], guardianElixir: 0, guardianElixirNames: [],
-        flask: 1, flaskNames: ["Flask of Relentless Assault"], food: 1, scrolls: "",
+        flask: 1, flaskNames: ["Flask of Relentless Assault"], food: 1, foodNames: [], scrolls: "", scrollNames: [],
         weaponEnhancement: 1, jcNeck: { equipped: false, usedOnFights: 0, inactiveOnFights: 0 },
         suboptimal: [],
       }],

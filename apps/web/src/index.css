@@ -552,6 +552,9 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 }
 .empty-toggle input { cursor: pointer; margin: 0; }
 
+.flags-view h2 { margin-top: 0; }
+.flags-view__wip { color: var(--danger); }
+
 /* RPB Role Breakdown — transposed tables (players = columns, metrics = rows).
    Size to content instead of stretching to 100% (the global table width), so a
    table with 1 player doesn't blow its single column across the page. Player
@@ -589,14 +592,15 @@ tr td.sev-minor, tr td.sev-ok { background: var(--positive-bg); color: var(--pos
 /* Air-totem twist timeline — one compact strip per fight showing which totem
    (Windfury = warm, Grace of Air = cool) held the single air-totem slot. */
 .twist-timelines { margin-top: 18px; }
+.twist-timelines h3 { margin: 0 0 12px; font-size: 1.05rem; }
 .twist-timeline { margin: 0; }
+.twist-timeline + .twist-timeline { margin-top: 20px; }
 .twist-timeline figcaption {
   font-size: 0.82rem;
   color: var(--text-muted);
   margin-bottom: 8px;
 }
 .twist-timeline .twist-who { font-weight: 700; color: var(--text); }
-.twist-timeline .twist-key { font-weight: 600; }
 .twist-timeline .twist-wf { color: var(--parse-legendary); }
 .twist-timeline .twist-goa { color: var(--parse-rare); }
 .twist-strip {
@@ -723,19 +727,21 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 /* Color the player name by class (matches the consumables matrix); persists on hover. */
 .player-cell .player-link, .player-cell .player-link:hover { color: var(--class-color, inherit); font-weight: 600; }
 
-/* consumable counts matrix (RPB General tab): consumables down, players across.
-   Players are angled column headers (class-colored); each row is a heatmap. */
-.consumable-card {
+/* shared "player matrix" look: players are angled, class-colored column headers
+   across the top; metrics/items are row labels down the left (sticky). Used by
+   the Consumables, Gear, Buff consumables and Resistances tabs so every
+   per-player table in the report reads the same way. */
+.player-matrix-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   padding: 14px 16px 16px;
 }
-.consumable-matrix { border-collapse: collapse; }
+.player-matrix { border-collapse: collapse; }
 
 /* top-left corner label */
-.consumable-matrix th.consumable-corner {
+.player-matrix th.matrix-corner {
   text-align: left;
   vertical-align: bottom;
   font-size: 0.68rem;
@@ -749,7 +755,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 }
 
 /* vertical, class-colored player headers */
-.consumable-matrix th.player-col {
+.player-matrix th.player-col {
   height: 118px;
   padding: 0 0 8px;
   vertical-align: bottom;
@@ -757,7 +763,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   background: var(--surface);
   border-bottom: 2px solid var(--class-color, var(--border));
 }
-.consumable-matrix th.player-col .player-col__name {
+.player-matrix th.player-col .player-col__name {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   white-space: nowrap;
@@ -768,7 +774,7 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   color: var(--class-color, var(--text-muted));
 }
 
-.consumable-matrix th.consumable-label {
+.player-matrix th.matrix-row-label {
   text-align: left;
   white-space: nowrap;
   font-weight: 550;
@@ -780,12 +786,16 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
   left: 0;
   background: var(--surface);
 }
-.consumable-matrix td { text-align: center; font-variant-numeric: tabular-nums; }
+.player-matrix td { text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Resistances tab: values are short ("~30 SR", "+24 SR"), so pack columns tighter
+   than the shared player-matrix padding to help the table fit without horizontal scroll. */
+.sr-matrix td { padding-left: 4px; padding-right: 4px; white-space: nowrap; }
 
 /* thin vertical column separators, matching the horizontal hairline between rows */
-.consumable-matrix th,
-.consumable-matrix td { border-right: 1px solid var(--hairline); }
-.consumable-matrix tr > *:last-child { border-right: none; }
+.player-matrix th,
+.player-matrix td { border-right: 1px solid var(--hairline); }
+.player-matrix tr > *:last-child { border-right: none; }
 
 /* cards view */
 .cardgrid { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -968,6 +978,10 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 /* ── summary rankings ─────────────────────────────────────── */
 .intro, .notice { color: var(--text-muted); font-size: 13px; margin: 0 0 14px; }
 .notice { color: var(--warn); }
+
+/* Resistances tab: two stacked notices — keep them close together, each on its own line. */
+.sr-notices .notice { margin-bottom: 2px; }
+.sr-notices__hint { margin: 2px 0 14px; }
 .player-link { color: inherit; font: inherit; }
 .rank-table th:first-child, .rank-table td:first-child { position: sticky; left: 0; background: var(--surface); }
 .rank-table thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .04em; color: var(--text-subtle); white-space: normal; overflow-wrap: anywhere; vertical-align: bottom; }
@@ -995,36 +1009,16 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .role-band[data-role="physical"] { border-color: var(--role-physical); }
 .role-count { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-sunken); color: var(--text-muted); }
 
-/* ── gear matrix ──────────────────────────────────────────── */
-.gear-matrix th:first-child, .gear-matrix td:first-child { position: sticky; left: 0; background: var(--surface); }
-/* Wrap the long header labels onto multiple lines so columns stay narrow and the
-   table fits the viewport (the .scroll-x wrapper still scrolls if it can't), and
-   give the two column kinds uniform widths so the layout reads evenly:
-   .col-num = compact, centered percentage columns; .col-name = wider text columns. */
-/* Fill the available width (global table width:100%), with every column given an
-   explicit base width so the slack is shared across all of them instead of pooling
-   into the player column. Widths act as minimums under auto layout — columns grow
-   to use the right-side space; .scroll-x scrolls only if content can't fit. */
-.buff-consumables { width: 100%; }
-/* Wrap header labels at spaces only (no mid-word breaks like "ENHA-NCEM-ENT"). */
-.buff-consumables thead th { white-space: normal; overflow-wrap: normal; vertical-align: bottom; }
-.buff-consumables thead th:first-child,
-.buff-consumables tbody td:first-child { width: 9em; } /* player column */
-.buff-consumables .col-num { width: 6.5em; text-align: center; }
-.buff-consumables .col-name { width: 12em; text-align: left; }
 /* The generic `tbody tr:hover td` (0,1,3) outranks `tr td.sev-*` (0,1,2), so without
    this it would blank colored cells to the (transparent) hover bg. Re-assert the cell
-   colors on hover for the matrix tables at higher specificity. */
-.gear-matrix tbody tr:hover td.sev-major,
-.consumable-matrix tbody tr:hover td.sev-major { background: var(--danger-bg); }
-.gear-matrix tbody tr:hover td.sev-moderate,
-.consumable-matrix tbody tr:hover td.sev-moderate { background: var(--warn-bg); }
-.gear-matrix tbody tr:hover td.sev-minor,
-.gear-matrix tbody tr:hover td.sev-ok,
-.consumable-matrix tbody tr:hover td.sev-minor,
-.consumable-matrix tbody tr:hover td.sev-ok { background: var(--positive-bg); }
-.gear-issue-cell { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; text-decoration: none; }
-.gear-issue-cell:hover { background: none; color: inherit; }
+   colors on hover for every player-matrix table at higher specificity. */
+.player-matrix tbody tr:hover td.sev-major { background: var(--danger-bg); }
+.player-matrix tbody tr:hover td.sev-moderate { background: var(--warn-bg); }
+.player-matrix tbody tr:hover td.sev-minor,
+.player-matrix tbody tr:hover td.sev-ok { background: var(--positive-bg); }
+/* fills a matrix <td> so the whole cell is the click target, opening a detail modal (Gear/Buff consumables tabs) */
+.cell-btn { display: block; width: 100%; height: 100%; min-height: 1.4em; background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: inherit; text-decoration: none; }
+.cell-btn:hover { background: none; color: inherit; }
 
 /* ── modal ────────────────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(10, 12, 24, 0.55); backdrop-filter: blur(2px); }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import type { ReportData } from "@wcl/core";
+import { SR_BOSSES, type ReportData } from "@wcl/core";
 import { useIsPhone } from "../../lib/useMediaQuery";
 import { ReportHeader } from "../ReportHeader";
 import { ReportDrawer } from "./ReportDrawer";
@@ -18,17 +18,19 @@ import { EmptyToggle } from "./EmptyToggle";
 import { ShadowResView } from "../ShadowResView";
 
 const CATEGORIES = [
-  ["flags", "Flags"],
   ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
   ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
+  ["flags", "Improvements"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
 // Tabs sourced from combatantInfo have no data on trash fights (WCL only records
 // combatantInfo at boss pull), so the TRASH card hides them rather than showing
 // empty tables. Rankings are handled separately — they only show on the combined
-// BOSSES card (see below).
-const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["gear", "shadowresi"]);
+// BOSSES card; Resistances has its own relevance rule (see below).
+const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["gear"]);
+
+const isSrBoss = (name: string): boolean => (SR_BOSSES as readonly string[]).includes(name);
 
 // Tabs that aggregate across all boss pulls (CLA report-wide audits): they only
 // make sense on the combined BOSSES card, not on a single pull or the TRASH card.
@@ -48,11 +50,20 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
   const fightId = Number(params.get("fight")) || ALL_FIGHTS; // ALL card by default
 
   const isTrash = fightId === ALL_TRASH;
+  // Resistances only matters for the three SR-relevant boss encounters: shown on
+  // an individual pull of one of them, or on the combined BOSSES card when the
+  // report has one of those kills/wipes at all (never on TRASH or an unrelated
+  // single boss pull, e.g. Gurtogg Bloodboil).
+  const currentFight = fightId === ALL_FIGHTS || isTrash ? undefined : report.fights.find((f) => f.id === fightId);
+  const showResistances = currentFight
+    ? currentFight.isBoss && isSrBoss(currentFight.name)
+    : fightId === ALL_FIGHTS && report.fights.some((f) => f.isBoss && isSrBoss(f.name));
   // Rankings (WCL boss-encounter percentiles) only make sense for the combined
   // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
-  const categories = CATEGORIES.filter(([key]) =>
-    BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key)),
-  );
+  const categories = CATEGORIES.filter(([key]) => {
+    if (key === "shadowresi") return showResistances;
+    return BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key));
+  });
   const requestedCat = (params.get("cat") as Cat) ?? "flags";
   // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
   // fall back to the first visible tab so the body is never blank.
@@ -128,7 +139,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
             {cat === "gear" && <GearMatrix report={report} fightId={fightId} />}
             {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} />}
             {cat === "buffconsumables" && <ConsumablesView report={report} />}
-            {cat === "shadowresi" && <ShadowResView report={report} />}
+            {cat === "shadowresi" && <ShadowResView report={report} fightId={fightId} />}
           </EmptyToggle>
         </div>
       </div>

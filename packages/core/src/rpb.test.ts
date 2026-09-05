@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rpb, type RpbConfig } from "./rpb";
+import { rpb, scopedRoster, type RpbConfig } from "./rpb";
 import { reportFixture } from "./fixtures/report.fixture";
 import type { RpbRow } from "./rpb";
 
@@ -116,5 +116,29 @@ describe("rpb", () => {
     expect(p1.oilOfImmolationDamage).toBe(250); // only fight-3 oil dmg, not the 5000 on Kalecgos
     // activity should not have counted the Kalecgos cast: only the single fight-3 cast (2.5s) remains
     expect(p1.activity!.secondsActiveST).toBeCloseTo(2.5);
+  });
+
+  it("excludes a player benched for the scoped pull, even though they raided elsewhere in the report", () => {
+    const r = structuredClone(reportFixture);
+    r.players.push({ id: 3, name: "Benchwarmer", class: "Priest" });
+    // In on fight 5 (The Lurker Below), out on fight 3 (Hydross kill) — matches
+    // a raid that swapped a healer between pulls.
+    r.fights = r.fights.map((f) =>
+      f.id === 3 ? { ...f, friendlyPlayers: [1, 2] }
+        : f.id === 5 ? { ...f, friendlyPlayers: [1, 2, 3] }
+          : f,
+    );
+
+    const hydrossOnly = { ...r, fights: r.fights.filter((f) => f.id === 3) };
+    expect(rpb(hydrossOnly, cfg)!.rows.map((row) => row.playerName)).not.toContain("Benchwarmer");
+
+    const lurkerOnly = { ...r, fights: r.fights.filter((f) => f.id === 5) };
+    expect(rpb(lurkerOnly, cfg)!.rows.map((row) => row.playerName)).toContain("Benchwarmer");
+  });
+
+  it("scopedRoster falls back to every report player when no scoped fight carries a roster", () => {
+    // reportFixture's fights have no friendlyPlayers set at all (pre-fix cache
+    // shape) — scopedRoster must not zero out the table in that case.
+    expect(scopedRoster(reportFixture, reportFixture.fights)).toEqual(reportFixture.players);
   });
 });

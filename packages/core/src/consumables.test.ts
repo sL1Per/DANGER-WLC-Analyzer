@@ -56,8 +56,10 @@ describe("consumables — category uptimes", () => {
     expect(p1.guardianElixir).toBe(0);
     expect(p1.elixirOrFlask).toBe(1);
     expect(p1.food).toBe(1); // present on the single boss fight — count-based, NOT 50% of fight time
+    expect(p1.foodNames).toEqual(["Well Fed (+20 Str)"]);
     expect(p1.scrolls).toBe("");
     expect(p1.scrollUptime).toBe(0);
+    expect(p1.scrollNames).toEqual([]);
   });
   it("lists the flask name(s) the player had at boss pulls", () => {
     const p1 = rowFor(baseReport(), "Playerone"); // Flask of Relentless Assault in pull auras
@@ -180,6 +182,7 @@ describe("consumables — scrolls", () => {
     const p1 = rowFor(report, "Playerone");
     expect(p1.scrollUptime).toBe(1);
     expect(p1.scrolls).toBe("100% (Agi*)");
+    expect(p1.scrollNames).toEqual(["Scroll of Agility V", "Scroll of Agility IV"]);
   });
   it("omits the * when only max-level scrolls were used, count-based across fights", () => {
     // Two boss fights; the scroll is in the fight-3 pull auras only → 1/2 = 0.5.
@@ -250,6 +253,15 @@ describe("consumables — edge cases", () => {
   it("sorts rows by player name", () => {
     const names = consumables(baseReport(), cfg)!.rows.map((r) => r.playerName);
     expect(names).toEqual(["Playerone", "Playertwo"]);
+  });
+  it("excludes a player not on any scoped boss pull's WCL roster", () => {
+    const report = baseReport();
+    report.players.push({ id: 3, name: "Benchwarmer", class: "Priest" });
+    // Only fight 3 is a boss fight here (see baseReport); Benchwarmer never
+    // shows up in its friendlyPlayers roster — they were on the bench.
+    report.fights = report.fights.map((f) => (f.id === 3 ? { ...f, friendlyPlayers: [1, 2] } : f));
+    const names = consumables(report, cfg)!.rows.map((r) => r.playerName);
+    expect(names).not.toContain("Benchwarmer");
   });
 });
 

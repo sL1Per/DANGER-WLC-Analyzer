@@ -18,7 +18,7 @@ export function FlagsView({ report, fightId }: { report: ReportData; fightId: nu
 
   return (
     <div className="flags-view">
-      <h2>Flags</h2>
+      <h2 className="flags-view__wip">Tab is work in progress</h2>
       {summary.rows.length === 0 ? (
         <p className="notice">No flags — everyone's clean on this pull.</p>
       ) : (

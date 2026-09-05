@@ -121,19 +121,11 @@ export function RoleSheetTable({
           }),
         },
         {
-          label: "Demoralizing Shout casts",
-          cell: (r) => ({ content: r.demoShoutCasts > 0 ? r.demoShoutCasts : "—", className: "mono" }),
-        },
-        {
           label: "Expose Armor uptime%",
           cell: (r) => ({
             content: r.exposeArmorUptime > 0 ? `${Math.round(r.exposeArmorUptime * 100)}%` : "—",
             className: "mono",
           }),
-        },
-        {
-          label: "Expose Armor casts",
-          cell: (r) => ({ content: r.exposeArmorCasts > 0 ? r.exposeArmorCasts : "—", className: "mono" }),
         },
         {
           label: "Windfury Totem uptime% (air slot)",
@@ -142,14 +134,6 @@ export function RoleSheetTable({
         {
           label: "Grace of Air Totem uptime% (air slot)",
           cell: (r) => ({ content: r.twist ? fmtPct(r.twist.graceUptime) : "—", className: "mono" }),
-        },
-        {
-          label: "Windfury Totem casts",
-          cell: (r) => ({ content: r.twist && r.twist.windfuryCasts > 0 ? r.twist.windfuryCasts : "—", className: "mono" }),
-        },
-        {
-          label: "Grace of Air Totem casts",
-          cell: (r) => ({ content: r.twist && r.twist.graceCasts > 0 ? r.twist.graceCasts : "—", className: "mono" }),
         },
         hitRow("Out: Crit", (hs) => hs.outgoing.crit),
         hitRow("Out: Dodge", (hs) => hs.outgoing.dodge),
@@ -222,12 +206,11 @@ export function RoleSheetTable({
   const twisters = rows.filter((r) => r.twist && r.twist.segments.length > 0);
   const timelines = twisters.length > 0 && (
     <div className="twist-timelines">
+      <h3>Totem twist timeline</h3>
       {twisters.map((r) => (
         <TwistTimeline
           key={r.playerId}
           playerName={r.playerName}
-          windfuryUptime={r.twist!.windfuryUptime}
-          graceUptime={r.twist!.graceUptime}
           segments={r.twist!.segments}
         />
       ))}

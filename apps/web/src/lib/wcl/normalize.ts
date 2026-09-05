@@ -312,6 +312,7 @@ export function normalizeReport(
     kill: f.encounterID !== 0 ? (f.kill ?? false) : undefined,
     startTime: f.startTime,
     endTime: f.endTime,
+    friendlyPlayers: f.friendlyPlayers ?? [],
   }));
   const buffEvents = events.buffEvents ?? [];
   const drumBuffIds = new Set(events.drumBuffIds ?? []);
