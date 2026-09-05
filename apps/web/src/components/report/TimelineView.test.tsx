@@ -72,13 +72,36 @@ describe("TimelineView", () => {
     expect(findRow(/Playertwo dies to Frostbolt/)).toBeTruthy();
   });
 
-  it("hides a category's rows when its filter pill is toggled off", async () => {
+  it("isolates to just that category when clicked from the all-selected state", async () => {
     render(<TimelineView report={reportFixture} fightId={FIGHT_ID} />);
     await waitFor(() => expect(findRow(/Playerone casts Arcane Blast/)).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Casts" }));
+    // Every pill starts checked; the first click isolates rather than just
+    // removing that one category, so only Deaths' own rows remain.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Deaths" }));
+    expect(screen.getByRole("checkbox", { name: "Deaths" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Casts" })).not.toBeChecked();
     expect(findRow(/Playerone casts Arcane Blast/)).toBeFalsy();
     expect(findRow(/Playertwo dies to Frostbolt/)).toBeTruthy();
+  });
+
+  it("adds to the current selection (doesn't re-isolate) once it isn't the all-selected state", async () => {
+    render(<TimelineView report={reportFixture} fightId={FIGHT_ID} />);
+    await waitFor(() => expect(findRow(/Playerone casts Arcane Blast/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Deaths" })); // isolate -> {Deaths}
+    fireEvent.click(screen.getByRole("checkbox", { name: "Interrupts" })); // additive -> {Deaths, Interrupts}
+    expect(screen.getByRole("checkbox", { name: "Deaths" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Interrupts" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Casts" })).not.toBeChecked();
+    expect(findRow(/Playertwo dies to Frostbolt/)).toBeTruthy();
+    expect(findRow(/Playerone casts Arcane Blast/)).toBeFalsy();
+
+    // Clicking an already-active category (not the all-selected state) removes just that one.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Deaths" }));
+    expect(screen.getByRole("checkbox", { name: "Deaths" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Interrupts" })).toBeChecked();
+    expect(findRow(/Playertwo dies to Frostbolt/)).toBeFalsy();
   });
 
   it("starts with every category on, including damage dealt and damage taken", async () => {

@@ -128,8 +128,14 @@ export function TimelineView({ report, fightId }: { report: ReportData; fightId:
     return () => { cancelled = true; };
   }, [report, fightId]);
 
+  // Everything selected is the "no filter applied yet" state, so the first
+  // click isolates — turn every other category off and show just this one
+  // (a fast way to focus on e.g. only Deaths). From then on, selections are
+  // additive/subtractive like normal checkboxes: clicking another category
+  // adds it alongside what's already picked, clicking an active one removes it.
   const toggle = (key: TimelineCategory) => {
     setActive((prev) => {
+      if (prev.size === CATEGORIES.length) return new Set([key]);
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
