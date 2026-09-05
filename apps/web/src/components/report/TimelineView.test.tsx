@@ -73,7 +73,7 @@ describe("TimelineView", () => {
     expect(findRow(/Playertwo dies to Frostbolt/)).toBeTruthy();
   });
 
-  it("starts with 'Damage taken' on and 'Damage dealt' off", async () => {
+  it("starts with every category on, including damage dealt and damage taken", async () => {
     const report = {
       ...reportFixture,
       damageTakenEvents: [{ ...reportFixture.damageTakenEvents![0]!, timestamp: 151_400 }],
@@ -82,12 +82,8 @@ describe("TimelineView", () => {
     await waitFor(() => expect(findRow(/Playerone casts Arcane Blast/)).toBeTruthy());
 
     expect(screen.getByRole("checkbox", { name: "Damage taken" })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "Damage dealt" })).not.toBeChecked();
-    // Damage taken is on by default, so its row is already visible with no extra click.
+    expect(screen.getByRole("checkbox", { name: "Damage dealt" })).toBeChecked();
     expect(findRow(/Environment hits Playerone with Frostbolt/)).toBeTruthy();
-    // Damage dealt is off, so its (unrelated, unclaimed) row is hidden until toggled on.
-    expect(findRow(/Playerone hits #900 with Spell #11350/)).toBeFalsy();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Damage dealt" }));
     expect(findRow(/Playerone hits #900 with Spell #11350/)).toBeTruthy();
   });
 

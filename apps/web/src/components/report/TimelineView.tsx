@@ -15,13 +15,11 @@ const CATEGORIES: { key: TimelineCategory; label: string; cls: string }[] = [
   { key: "damage-taken", label: "Damage taken", cls: "tl-damage-taken" },
 ];
 const CLASS_BY_CATEGORY = new Map(CATEGORIES.map((c) => [c.key, c.cls]));
-// Damage-dealt (every player's every melee swing/spell hit — often several
-// thousand rows for one pull) is off by default so the tab opens readable.
-// Damage-taken (boss abilities landing on players) is far lower volume and is
-// exactly what a raid-awareness "what hit us" pass wants, so it starts on.
-const DEFAULT_ACTIVE = new Set<TimelineCategory>(
-  CATEGORIES.map((c) => c.key).filter((k) => k !== "damage-dealt"),
-);
+// Every category starts on, including damage-dealt (every player's every
+// melee swing/spell hit — often several thousand rows for one pull); the
+// pagination cap below (PAGE_SIZE) is what keeps that from mounting a huge
+// DOM tree, and the search box is the intended way to cut through the volume.
+const DEFAULT_ACTIVE = new Set<TimelineCategory>(CATEGORIES.map((c) => c.key));
 // Plain list, no virtualization — cap how many rows mount at once so a huge
 // pull (thousands of damage-dealt rows) doesn't dump that many DOM nodes.
 const PAGE_SIZE = 300;
@@ -63,13 +61,13 @@ function fmtClock(ms: number, fightStart: number): string {
 
 /** Chronological combat-log timeline for a single boss pull (casts merged with
  *  their resulting hit, deaths, interrupts, buff gains, boss debuffs landing on
- *  players, damage taken from enemies including melee) — a wipefest-style
- *  "Timeline" tab. "Damage dealt" (every player's every melee/spell hit) is
- *  off by default since it dwarfs every other category; everything else,
- *  damage-taken included, starts on. ReportView only mounts this when one
- *  specific boss fight is selected, so `fightId` is always a real boss pull,
- *  never ALL/TRASH. Casts, deaths, interrupts and damage come from data the
- *  report already has; buffs/debuffs are fetched lazily, scoped to just this
+ *  players, damage dealt/taken including melee) — a wipefest-style "Timeline"
+ *  tab. Every category starts on; the row-count cap + search box (not a
+ *  category toggle) are what keep a high-volume pull like "damage dealt"
+ *  browsable. ReportView only mounts this when one specific boss fight is
+ *  selected, so `fightId` is always a real boss pull, never ALL/TRASH. Casts,
+ *  deaths, interrupts and damage come from data the report already has;
+ *  buffs/debuffs are fetched lazily, scoped to just this
  *  fight, the first time it's viewed. */
 export function TimelineView({ report, fightId }: { report: ReportData; fightId: number }) {
   const fight = report.fights.find((f) => f.id === fightId);
