@@ -278,13 +278,13 @@ describe("normalizeReport — RPB events", () => {
   it("normalizes RPB events into ReportData", () => {
     const data = normalizeReport("abc", rawRpb, [], {}, {
       allCasts: [
-        { timestamp: 100, type: "cast", sourceID: 1, abilityGameID: 30451, fight: 2 },
+        { timestamp: 100, type: "cast", sourceID: 1, abilityGameID: 30451, fight: 2, targetID: 800 },
       ],
       damageDone: [
-        { timestamp: 120, type: "damage", sourceID: 1, targetID: 900, abilityGameID: 30451, amount: 50, fight: 2 },
+        { timestamp: 120, type: "damage", sourceID: 1, targetID: 900, abilityGameID: 30451, amount: 50, fight: 2, hitType: 2 },
       ],
       damageTaken: [
-        { timestamp: 130, type: "damage", sourceID: 800, targetID: 1, abilityGameID: 13022, amount: 75, fight: 2 },
+        { timestamp: 130, type: "damage", sourceID: 800, targetID: 1, abilityGameID: 13022, amount: 75, fight: 2, hitType: 1 },
       ],
       interrupts: [
         // player 1 interrupts enemy 800 (Hydross): source = interrupter, target = enemy caster.
@@ -309,21 +309,30 @@ describe("normalizeReport — RPB events", () => {
     expect(data.playerTotals?.find((t) => t.playerId === 1)?.damageTaken).toBe(75);
     // one cast event for player 1
     expect(data.playerCasts).toHaveLength(1);
-    expect(data.playerCasts?.[0]).toMatchObject({ playerId: 1, spellId: 30451, fightId: 2 });
+    expect(data.playerCasts?.[0]).toMatchObject({
+      playerId: 1, spellId: 30451, fightId: 2,
+      targetId: 800, targetName: "Hydross the Unstable",
+    });
     // interrupt sourceName resolved from actorNames
     expect(data.interrupts).toHaveLength(1);
     expect(data.interrupts?.[0]?.sourceName).toBe("Hydross the Unstable");
     expect(data.interrupts?.[0]?.interruptedSpellId).toBe(12471);
+    expect(data.interrupts?.[0]?.timestamp).toBe(140);
     // death of player 2
     expect(data.playerDeaths).toHaveLength(1);
     expect(data.playerDeaths?.[0]?.playerId).toBe(2);
     expect(data.playerDeaths?.[0]?.fightId).toBe(2);
     // damage taken event
     expect(data.damageTakenEvents).toHaveLength(1);
-    expect(data.damageTakenEvents?.[0]).toMatchObject({ targetPlayerId: 1, amount: 75, fromFriendly: false });
+    expect(data.damageTakenEvents?.[0]).toMatchObject({
+      targetPlayerId: 1, amount: 75, fromFriendly: false, timestamp: 130, hitType: 1,
+    });
     // player damage event
     expect(data.playerDamage).toHaveLength(1);
-    expect(data.playerDamage?.[0]).toMatchObject({ sourceId: 1, amount: 50, selfInflicted: false, targetHostilePlayer: false });
+    expect(data.playerDamage?.[0]).toMatchObject({
+      sourceId: 1, amount: 50, selfInflicted: false, targetHostilePlayer: false,
+      targetName: "#900", hitType: 2,
+    });
   });
 
   it("attributes pet damage and healing to the owner player (matches WCL)", () => {

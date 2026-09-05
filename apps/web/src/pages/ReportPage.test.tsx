@@ -136,6 +136,14 @@ describe("ReportPage — category / tab behaviour (via ReportView)", () => {
     // Other combatantInfo tabs still show on a boss pull.
     expect(screen.getByRole("button", { name: /^Gear$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Summary$/i })).toBeInTheDocument();
+    // Timeline needs one specific boss pull in view, so it shows here.
+    expect(screen.getByRole("button", { name: /^Timeline$/i })).toBeInTheDocument();
+  });
+  it("hides Timeline on the combined BOSSES card and the TRASH card", () => {
+    renderAt("/report/abc");
+    expect(screen.queryByRole("button", { name: /^Timeline$/i })).not.toBeInTheDocument();
+    renderAt("/report/abc?fight=-2");
+    expect(screen.queryByRole("button", { name: /^Timeline$/i })).not.toBeInTheDocument();
   });
   it("shows Buff consumables only on the BOSSES card and renders the table", async () => {
     renderAt("/report/abc");

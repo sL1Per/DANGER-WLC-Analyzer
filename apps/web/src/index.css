@@ -979,6 +979,44 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 .intro, .notice { color: var(--text-muted); font-size: 13px; margin: 0 0 14px; }
 .notice { color: var(--warn); }
 
+/* ── timeline tab ──────────────────────────────────────────── */
+.timeline-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.timeline-controls > .pill-toggle { margin-bottom: 0; }
+.timeline-search {
+  flex: 0 1 240px; margin-left: auto; padding: 7px 12px;
+  border-radius: var(--radius-control); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: .85rem;
+}
+.timeline-search:focus { outline: 2px solid var(--primary-tint); border-color: var(--primary); }
+.timeline-list { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.timeline-more { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--text-muted); font-size: 13px; }
+.timeline-row { display: flex; gap: 12px; padding: 6px 12px; border-left: 3px solid transparent; border-bottom: 1px solid var(--hairline); }
+.timeline-row:last-child { border-bottom: none; }
+.timeline-row:hover { background: var(--row-tint); }
+.timeline-time { flex: 0 0 auto; width: 3.5em; color: var(--text-subtle); font-size: 12px; }
+.timeline-text { color: var(--text); font-size: 13px; }
+/* player names use the app-wide class-color convention (classColorVar); ability
+   names are tinted per event category, matching that row's left border. */
+.tl-player { color: var(--class-color, var(--text)); font-weight: 600; }
+.tl-spell { font-weight: 600; }
+.tl-spell-cast { color: var(--primary); }
+.tl-spell-death { color: var(--danger); }
+.tl-spell-interrupt { color: var(--warn); }
+.tl-spell-buff { color: var(--positive); }
+.tl-spell-debuff { color: var(--parse-epic); }
+.tl-spell-damage-dealt { color: var(--parse-rare); }
+.tl-spell-damage-taken { color: var(--parse-legendary); }
+/* hit result (crit/miss/dodge/parry/block/immune) — plain, muted, never the focal point */
+.timeline-result { color: var(--text-subtle); font-weight: 400; font-style: italic; }
+.timeline-row.tl-cast { border-left-color: var(--primary); }
+.timeline-row.tl-death { border-left-color: var(--danger); }
+.timeline-row.tl-death .timeline-text { color: var(--danger); }
+.timeline-row.tl-interrupt { border-left-color: var(--warn); }
+.timeline-row.tl-buff { border-left-color: var(--positive); }
+.timeline-row.tl-debuff { border-left-color: var(--parse-epic); }
+.timeline-row.tl-damage-dealt { border-left-color: var(--parse-rare); }
+.timeline-row.tl-damage-taken { border-left-color: var(--parse-legendary); }
+
 /* Resistances tab: two stacked notices — keep them close together, each on its own line. */
 .sr-notices .notice { margin-bottom: 2px; }
 .sr-notices__hint { margin: 2px 0 14px; }
@@ -1086,7 +1124,6 @@ tr td.parse-artifact { color: var(--parse-artifact); font-weight: 700; }
 
 /* ── settings ─────────────────────────────────────────────── */
 .settings-col { max-width: 620px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
-.app-theme { position: fixed; right: 14px; bottom: 14px; z-index: 40; }
 
 /* Performance summary — WCL-style four-panel layout */
 .perf-summary {

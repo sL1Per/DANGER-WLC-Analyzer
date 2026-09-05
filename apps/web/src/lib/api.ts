@@ -20,7 +20,10 @@ export interface ReportResponse { data: ReportData; cachedAt: number; stale?: bo
 // Exchange the user's stored credentials for a WCL access token, directly with
 // WCL (CORS-enabled) — the secret never touches any server we host. Returns null
 // when no credentials are stored, so callers can surface a needsKey error.
-async function ensureToken(): Promise<string | null> {
+// Exported so features that need a raw WCL token for an ad-hoc browser-side
+// fetch (e.g. the Timeline tab's lazy per-fight event fetch) can reuse the
+// same credential flow as the main report load, instead of duplicating it.
+export async function ensureToken(): Promise<string | null> {
   const existing = loadToken();
   if (existing) return existing.accessToken;
   const creds = loadCredentials();

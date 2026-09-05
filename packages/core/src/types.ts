@@ -32,8 +32,12 @@
  *  11 — Fight gained friendlyPlayers (WCL's per-pull roster); RPB/role-breakdown
  *       tables now restrict their player columns to that pull's actual roster
  *       instead of every player who ever appeared anywhere in the report.
+ *  12 — InterruptEvent gained timestamp (report-relative ms), for the Timeline tab.
+ *  13 — PlayerCast gained targetId/targetName; DamageTakenEvent gained timestamp
+ *       and hitType; PlayerDamageEvent gained targetName and hitType — all for
+ *       the Timeline tab's damage-dealt/damage-taken rows (melee included).
  */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 13;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */
@@ -208,6 +212,8 @@ export interface InterruptEvent {
   interruptedSpellId: number;
   /** display name of the enemy whose cast was interrupted (the WCL event target) */
   sourceName: string;
+  /** event timestamp, report-relative ms; undefined on pre-v12 caches */
+  timestamp?: number;
 }
 
 /** A damage-taken event on a player, with classification flags. */
@@ -223,10 +229,22 @@ export interface DamageTakenEvent {
   sourceName?: string;
   /** damage before mitigation — the workbook's "Raw avoidable damage". */
   unmitigatedAmount?: number;
+  /** event timestamp, report-relative ms; undefined on pre-v13 caches (Timeline tab) */
+  timestamp?: number;
+  /** WCL hit-type code (0 miss, 1 hit, 2 crit, 4/5 blocked, 7 dodge, 8 parry, 10
+   *  immune); undefined on pre-v13 caches (Timeline tab) */
+  hitType?: number;
 }
 
 /** A player's cast (for activity). */
-export interface PlayerCast { fightId: number; playerId: number; spellId: number; timestamp: number; }
+export interface PlayerCast {
+  fightId: number; playerId: number; spellId: number; timestamp: number;
+  /** the cast's target actor id (player or NPC); undefined when WCL reports none
+   *  (e.g. some self/no-target casts). Pre-v13 caches also lack it. */
+  targetId?: number;
+  /** resolved display name of targetId; undefined on pre-v13 caches */
+  targetName?: string;
+}
 
 /** A player's outgoing damage instance (for AoE hit-counting + engineering/oil). */
 export interface PlayerDamageEvent {
@@ -236,6 +254,10 @@ export interface PlayerDamageEvent {
   targetHostilePlayer: boolean;
   /** true when the source is also the target (self/reflected) */
   selfInflicted: boolean;
+  /** resolved display name of targetId; undefined on pre-v13 caches (Timeline tab) */
+  targetName?: string;
+  /** WCL hit-type code, see DamageTakenEvent.hitType; undefined on pre-v13 caches */
+  hitType?: number;
 }
 
 /** An absorb credited to a player. */

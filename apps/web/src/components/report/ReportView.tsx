@@ -16,11 +16,12 @@ import { ConsumablesCategory } from "./ConsumablesCategory";
 import { ConsumablesView } from "../ConsumablesView";
 import { EmptyToggle } from "./EmptyToggle";
 import { ShadowResView } from "../ShadowResView";
+import { TimelineView } from "./TimelineView";
 
 const CATEGORIES = [
   ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
   ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
-  ["flags", "Improvements"],
+  ["timeline", "Timeline"], ["flags", "Improvements"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
@@ -62,6 +63,9 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
   // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
   const categories = CATEGORIES.filter(([key]) => {
     if (key === "shadowresi") return showResistances;
+    // Timeline needs one specific boss pull in view — meaningless on the
+    // combined BOSSES/TRASH cards, and trash pulls aren't individually selectable.
+    if (key === "timeline") return currentFight !== undefined;
     return BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key));
   });
   const requestedCat = (params.get("cat") as Cat) ?? "flags";
@@ -140,6 +144,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
             {cat === "consumables" && <ConsumablesCategory report={report} fightId={fightId} />}
             {cat === "buffconsumables" && <ConsumablesView report={report} />}
             {cat === "shadowresi" && <ShadowResView report={report} fightId={fightId} />}
+            {cat === "timeline" && currentFight && <TimelineView report={report} fightId={currentFight.id} />}
           </EmptyToggle>
         </div>
       </div>

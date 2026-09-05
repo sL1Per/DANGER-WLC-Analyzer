@@ -203,6 +203,7 @@ function buildRpb(
       fightId: i.fight, interrupterPlayerId: i.sourceID,
       interruptedSpellId: i.extraAbilityGameID ?? 0,
       sourceName: names[i.targetID] ?? `#${i.targetID}`,
+      timestamp: i.timestamp,
     }));
 
   const damageTakenEvents: DamageTakenEvent[] = (events.damageTaken ?? [])
@@ -212,11 +213,15 @@ function buildRpb(
       amount: d.amount, fromFriendly: d.sourceIsFriendly === true,
       sourceName: names[d.sourceID] ?? "Environment",
       unmitigatedAmount: d.unmitigatedAmount,
+      timestamp: d.timestamp, hitType: d.hitType,
     }));
 
   const playerCasts: PlayerCast[] = (events.allCasts ?? [])
     .filter((c) => playerIds.has(c.sourceID) && fightIds.has(c.fight))
-    .map((c) => ({ fightId: c.fight, playerId: c.sourceID, spellId: c.abilityGameID, timestamp: c.timestamp }));
+    .map((c) => ({
+      fightId: c.fight, playerId: c.sourceID, spellId: c.abilityGameID, timestamp: c.timestamp,
+      targetId: c.targetID, targetName: c.targetID != null ? (names[c.targetID] ?? `#${c.targetID}`) : undefined,
+    }));
 
   const playerDamage: PlayerDamageEvent[] = (events.damageDone ?? [])
     .map((d) => ({ d, src: ownerOf(d.sourceID) }))
@@ -226,6 +231,7 @@ function buildRpb(
       targetId: d.targetID, amount: d.amount, timestamp: d.timestamp,
       targetHostilePlayer: playerIds.has(d.targetID) && d.targetID !== src,
       selfInflicted: d.targetID === src,
+      targetName: names[d.targetID] ?? `#${d.targetID}`, hitType: d.hitType,
     }));
 
   const healingEvents: HealingEvent[] = (events.healingDone ?? [])

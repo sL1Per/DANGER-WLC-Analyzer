@@ -138,6 +138,8 @@ export interface RawBuffEvent {
 }
 export interface RawCastEvent {
   timestamp: number; type: string; sourceID: number; abilityGameID: number; fight: number;
+  /** WCL includes this on most targeted casts; absent for some self/no-target casts */
+  targetID?: number;
 }
 
 async function fetchEvents(
@@ -253,6 +255,26 @@ export async function fetchEnemyDebuffs(
   // E2E), collapsing enemy-debuff uptime to ~0.
   return await fetchAllEvents(code, accessToken, "Debuffs",
     new Set(["applydebuff", "removedebuff", "refreshdebuff"]), fightIds, "Enemies") as unknown as RawDebuffEvent[];
+}
+
+/** Buff-gain events on players (any ability, no filter) for one fight — used by
+ *  the Timeline tab. Only "applybuff" is kept (initial gains, not every
+ *  refresh/stack tick) to match a wipefest-style "X gains Y" log. */
+export async function fetchFriendlyBuffs(
+  code: string, accessToken: string, fightIds: number[],
+): Promise<RawBuffEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Buffs",
+    new Set(["applybuff"]), fightIds, "Friendlies") as unknown as RawBuffEvent[];
+}
+
+/** Debuff-gain events landing ON players (boss abilities), for one fight — used
+ *  by the Timeline tab. hostilityType: Friendlies is WCL's default for Debuffs,
+ *  but pass it explicitly (mirrors fetchEnemyDebuffs's explicit "Enemies"). */
+export async function fetchFriendlyDebuffs(
+  code: string, accessToken: string, fightIds: number[],
+): Promise<RawDebuffEvent[]> {
+  return await fetchAllEvents(code, accessToken, "Debuffs",
+    new Set(["applydebuff"]), fightIds, "Friendlies") as unknown as RawDebuffEvent[];
 }
 
 /** Absorb amounts on players. WCL surfaces shield absorbs as DamageTaken events
