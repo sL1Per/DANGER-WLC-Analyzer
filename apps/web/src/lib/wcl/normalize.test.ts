@@ -505,7 +505,12 @@ describe("normalizeReport — rankings", () => {
     expect(data.rankings).toEqual([]);
   });
 
-  it("drops a character whose rankPercent isn't a usable number (WCL has no percentile for them yet)", () => {
+  it("keeps a character whose rankPercent isn't a usable number, as NaN (WCL hasn't ranked them yet)", () => {
+    // WCL sends a placeholder like "-" instead of omitting the field when a
+    // report hasn't been folded into its ranking pipeline yet. The character
+    // must stay on the roster — only buildRankingsGrid (in @wcl/core) decides
+    // whether to show a dash for this boss — so it's kept here with NaN
+    // rather than dropped from the array.
     const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
       rankings: [{
         encounter: { id: 623, name: "Hydross the Unstable" },
@@ -522,7 +527,8 @@ describe("normalizeReport — rankings", () => {
         },
       }],
     });
-    expect(data.rankings![0]!.dps.map((c) => c.name)).toEqual(["Dpsone"]);
+    expect(data.rankings![0]!.dps.map((c) => c.name)).toEqual(["Unranked", "Dpsone"]);
+    expect(data.rankings![0]!.dps[0]!.rankPercent).toBeNaN();
   });
 
   it("drops entries missing fightID or encounter id", () => {

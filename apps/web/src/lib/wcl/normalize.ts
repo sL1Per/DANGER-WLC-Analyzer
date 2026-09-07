@@ -273,30 +273,30 @@ function buildRpb(
 }
 
 function buildRankings(entries: RawRankingEntry[]): ReportRanking[] {
-  // WCL sometimes has no percentile for a character on a boss (e.g. a
-  // brand-new bracket without an established population) and sends a
-  // non-numeric placeholder instead of omitting the field. Drop those rather
-  // than let them round to NaN and poison the grid.
-  const mapChars = (chars: RawRankingCharacter[] | undefined): RankingCharacter[] =>
-    (chars ?? [])
-      .filter((c) => Number.isFinite(c.rankPercent))
-      .map((c) => ({
-        name: c.name,
-        class: c.class ?? c.type ?? "Unknown",
-        spec: c.spec,
-        rankPercent: Math.round(c.rankPercent!),
-        bracketPercent: Math.round(c.bracketPercent ?? 0),
-        parse: Math.round(c.amount ?? 0),
-      }));
+  // WCL sometimes has no percentile for a character on a boss yet — a report
+  // that hasn't been folded into WCL's ranking pipeline yet (can take a day
+  // or more after upload) gets a non-numeric placeholder ("-") instead of a
+  // real rankPercent. Keep the character (they still belong on the roster —
+  // buildRankingsGrid in @wcl/core is what decides whether to show a percent
+  // or a dash for this boss) but don't let the placeholder round to a bogus
+  // number: leave it NaN, which is the same "no percentile" signal.
+  const mapChar = (c: RawRankingCharacter): RankingCharacter => ({
+    name: c.name,
+    class: c.class ?? c.type ?? "Unknown",
+    spec: c.spec,
+    rankPercent: Number.isFinite(c.rankPercent) ? Math.round(c.rankPercent!) : NaN,
+    bracketPercent: Math.round(c.bracketPercent ?? 0),
+    parse: Math.round(c.amount ?? 0),
+  });
   return entries
     .filter((e) => e.fightID != null && e.encounter?.id != null)
     .map((e) => ({
       fightID: e.fightID!,
       encounterId: e.encounter!.id!,
       encounterName: e.encounter!.name ?? `Boss ${e.encounter!.id}`,
-      tanks: mapChars(e.roles?.tanks?.characters),
-      healers: mapChars(e.roles?.healers?.characters),
-      dps: mapChars(e.roles?.dps?.characters),
+      tanks: (e.roles?.tanks?.characters ?? []).map(mapChar),
+      healers: (e.roles?.healers?.characters ?? []).map(mapChar),
+      dps: (e.roles?.dps?.characters ?? []).map(mapChar),
     }));
 }
 

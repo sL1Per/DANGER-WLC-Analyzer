@@ -56,6 +56,21 @@ describe("buildRankingsGrid", () => {
     expect(neyyd.overall).toBe(0);
   });
 
+  it("still returns a grid (roster with dashes) when every character's rankPercent is NaN — a fresh report WCL hasn't ranked yet is not the same as no kills", () => {
+    const rankings = [
+      {
+        fightID: 3, encounterId: 623, encounterName: "Hydross",
+        dps: [{ name: "Neyyd", class: "Druid", rankPercent: NaN, bracketPercent: 0, parse: 678 }],
+        healers: [], tanks: [],
+      },
+    ];
+    const grid = buildRankingsGrid(rankings);
+    expect(grid).not.toBeNull();
+    const dps = grid!.sections.find((s) => s.role === "dps")!;
+    expect(dps.players.map((p) => p.name)).toEqual(["Neyyd"]);
+    expect(dps.players[0]!.perBoss[3]).toBeUndefined();
+  });
+
   it("sorts players within a section by overall parse descending", () => {
     const rankings = [
       {
