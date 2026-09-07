@@ -38,6 +38,24 @@ describe("buildRankingsGrid", () => {
     expect(tank.perBoss[5]).toBeUndefined(); // no Lurker tank entry
   });
 
+  it("excludes a boss entry whose rankPercent is NaN (WCL had no percentile for that character)", () => {
+    const rankings = [
+      {
+        fightID: 3, encounterId: 623, encounterName: "Hydross",
+        dps: [
+          { name: "Neyyd", class: "Druid", rankPercent: NaN, bracketPercent: 0, parse: 678 },
+          { name: "High", class: "Mage", rankPercent: 90, bracketPercent: 90, parse: 900 },
+        ],
+        healers: [], tanks: [],
+      },
+    ];
+    const grid = buildRankingsGrid(rankings)!;
+    const dps = grid.sections.find((s) => s.role === "dps")!;
+    const neyyd = dps.players.find((p) => p.name === "Neyyd")!;
+    expect(neyyd.perBoss[3]).toBeUndefined();
+    expect(neyyd.overall).toBe(0);
+  });
+
   it("sorts players within a section by overall parse descending", () => {
     const rankings = [
       {

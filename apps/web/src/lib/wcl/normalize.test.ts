@@ -505,6 +505,26 @@ describe("normalizeReport — rankings", () => {
     expect(data.rankings).toEqual([]);
   });
 
+  it("drops a character whose rankPercent isn't a usable number (WCL has no percentile for them yet)", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [{
+        encounter: { id: 623, name: "Hydross the Unstable" },
+        fightID: 3,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: {
+            characters: [
+              { name: "Unranked", type: "Druid", spec: "Balance", rankPercent: "-" as unknown as number, bracketPercent: 0, amount: 678 },
+              { name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: 95.8, bracketPercent: 88.4, amount: 1234.6 },
+            ],
+          },
+        },
+      }],
+    });
+    expect(data.rankings![0]!.dps.map((c) => c.name)).toEqual(["Dpsone"]);
+  });
+
   it("drops entries missing fightID or encounter id", () => {
     const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
       rankings: [

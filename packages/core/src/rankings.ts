@@ -51,6 +51,12 @@ export function buildRankingsGrid(rankings: ReportRanking[] | undefined): Rankin
           p = { name: ch.name, class: ch.class, spec: ch.spec, perBoss: {}, overall: 0 };
           byName.set(ch.name, p);
         }
+        // WCL sometimes has no percentile for a character on a boss (e.g. a
+        // brand-new bracket without an established population) and sends a
+        // non-numeric placeholder instead of omitting the field, which the
+        // rest of the pipeline turns into NaN. Treat that the same as the
+        // character not having a parse for this boss at all.
+        if (!Number.isFinite(ch.rankPercent)) continue;
         p.perBoss[r.fightID] = { rankPercent: ch.rankPercent, bracketPercent: ch.bracketPercent };
       }
     }
