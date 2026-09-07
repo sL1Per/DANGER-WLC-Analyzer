@@ -531,6 +531,67 @@ describe("normalizeReport — rankings", () => {
     expect(data.rankings![0]!.dps[0]!.rankPercent).toBeNaN();
   });
 
+  it("falls back to the Today bracket for a character Historical hasn't ranked yet", () => {
+    // Confirmed live 2026-09-07: a report uploaded a day earlier had
+    // rankPercent "-" / totalParses 0 under Historical for every character,
+    // while the exact same character's Today bracket (and WCL's own site,
+    // which defaults to Today) already had a real percentile.
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [{
+        encounter: { id: 623, name: "Hydross the Unstable" },
+        fightID: 3,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: {
+            characters: [
+              { name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: "-" as unknown as number, bracketPercent: 0, amount: 1234.6 },
+            ],
+          },
+        },
+      }],
+      rankingsToday: [{
+        encounter: { id: 623, name: "Hydross the Unstable" },
+        fightID: 3,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: {
+            characters: [
+              { name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: 82.3, bracketPercent: 70.1, amount: 1234.6 },
+            ],
+          },
+        },
+      }],
+    });
+    const dps = data.rankings![0]!.dps[0]!;
+    expect(dps.rankPercent).toBe(82);
+    expect(dps.bracketPercent).toBe(70);
+    // the actual parse metric always comes from Historical (it's the raw
+    // output, unaffected by which bracket ranks it) — not silently swapped.
+    expect(dps.parse).toBe(1235);
+  });
+
+  it("leaves rankPercent NaN when neither Historical nor the Today fallback has a real number for a character", () => {
+    const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
+      rankings: [{
+        encounter: { id: 623, name: "Hydross the Unstable" },
+        fightID: 3,
+        roles: {
+          tanks: { characters: [] },
+          healers: { characters: [] },
+          dps: {
+            characters: [
+              { name: "Dpsone", type: "Mage", spec: "Fire", rankPercent: "-" as unknown as number, bracketPercent: 0, amount: 1234.6 },
+            ],
+          },
+        },
+      }],
+      rankingsToday: [],
+    });
+    expect(data.rankings![0]!.dps[0]!.rankPercent).toBeNaN();
+  });
+
   it("drops entries missing fightID or encounter id", () => {
     const data = normalizeReport("a1B2c3D4e5F6g7H8", rankRaw, [], {}, {
       rankings: [

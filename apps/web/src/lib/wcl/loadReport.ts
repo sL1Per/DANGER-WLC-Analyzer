@@ -82,11 +82,12 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
   let enemyDebuffs: RawDebuffEvent[] = [];
   let absorbEvents: RawDamageEvent[] = [];
   let rankings: RawRankingEntry[] = [];
+  let rankingsToday: RawRankingEntry[] = [];
   const allFightIds = rawReport.fights.map((f) => f.id);
   const hasBoss = bossFightIds.length > 0;
   if (allFightIds.length > 0) {
     const none = Promise.resolve([]);
-    const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR] = await Promise.allSettled([
+    const [intR, dtR, ddR, castR, ddtR, htR, dttR, edR, absR, rankR, hdR, rankTodayR] = await Promise.allSettled([
       fetchInterrupts(id, token, allFightIds),
       fetchDamageTaken(id, token, allFightIds),
       fetchDamageDone(id, token, allFightIds),
@@ -98,6 +99,10 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
       fetchAbsorbs(id, token, allFightIds),
       hasBoss ? fetchRankings(id, token) : none,
       fetchHealingDone(id, token, allFightIds),
+      // Fallback for characters WCL hasn't folded into the Historical
+      // ranking snapshot yet (a very recently uploaded report) — see
+      // buildRankings in normalize.ts.
+      hasBoss ? fetchRankings(id, token, "Today") : none,
     ]);
     if (intR.status === "fulfilled") interrupts = intR.value as RawInterruptEvent[];
     if (dtR.status === "fulfilled") damageTaken = dtR.value as RawDamageEvent[];
@@ -110,6 +115,7 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     if (absR.status === "fulfilled") absorbEvents = absR.value as RawDamageEvent[];
     if (rankR.status === "fulfilled") rankings = rankR.value as RawRankingEntry[];
     if (hdR.status === "fulfilled") healingDone = hdR.value as RawDamageEvent[];
+    if (rankTodayR.status === "fulfilled") rankingsToday = rankTodayR.value as RawRankingEntry[];
     logIfRejected("interrupts", intR);
     logIfRejected("damageTaken", dtR);
     logIfRejected("damageDone", ddR);
@@ -121,6 +127,7 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     logIfRejected("absorbs", absR);
     logIfRejected("rankings", rankR);
     logIfRejected("healingDone", hdR);
+    logIfRejected("rankingsToday", rankTodayR);
   }
 
   const actorNames: Record<number, string> = {};
@@ -136,6 +143,6 @@ export async function loadReport(id: string, token: string): Promise<ReportData>
     trackedBuffIds: TRACKED_BUFF_IDS, drumBuffIds: DRUM_BUFF_IDS,
     interrupts, damageTaken, damageDone, allCasts,
     damageDoneTable, healingTable, damageTakenTable, actorNames,
-    enemyDebuffs, absorbEvents, rankings, healingDone, abilityMeta, petOwners,
+    enemyDebuffs, absorbEvents, rankings, rankingsToday, healingDone, abilityMeta, petOwners,
   });
 }

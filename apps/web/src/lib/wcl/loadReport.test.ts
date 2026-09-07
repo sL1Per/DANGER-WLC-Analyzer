@@ -76,8 +76,11 @@ describe("loadReport", () => {
       expect(call[3]).toEqual(bossFightIds);
     }
 
-    // fetchRankings must be called (hasBoss = true)
-    expect(wcl.fetchRankings as ReturnType<typeof vi.fn>).toHaveBeenCalledOnce();
+    // fetchRankings must be called for both timeframes (hasBoss = true) —
+    // Today is the fallback for characters Historical hasn't ranked yet.
+    const rankCalls = (wcl.fetchRankings as ReturnType<typeof vi.fn>).mock.calls;
+    expect(rankCalls).toHaveLength(2);
+    expect(rankCalls[1]![2]).toBe("Today");
 
     // --- All-fights fetchers must receive ALL fight ids ---
     // fetchInterrupts(code, token, fightIds)

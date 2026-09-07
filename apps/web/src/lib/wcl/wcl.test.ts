@@ -378,4 +378,14 @@ describe("fetchRankings", () => {
     const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
     expect(body.query).toContain("timeframe: Historical");
   });
+
+  it("requests Today timeframe when explicitly asked (Historical fallback for very fresh reports)", async () => {
+    const mock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: { reportData: { report: { rankings: { data: [] } } } } })),
+    );
+    const { fetchRankings } = await import("./wcl");
+    await fetchRankings("abc", "tok", "Today");
+    const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    expect(body.query).toContain("timeframe: Today");
+  });
 });

@@ -36,8 +36,12 @@
  *  13 — PlayerCast gained targetId/targetName; DamageTakenEvent gained timestamp
  *       and hitType; PlayerDamageEvent gained targetName and hitType — all for
  *       the Timeline tab's damage-dealt/damage-taken rows (melee included).
+ *  14 — RankingCharacter.rankPercent: a non-numeric WCL placeholder (report's
+ *       Historical ranking snapshot not computed yet) no longer round-trips
+ *       to a bogus number; falls back to the Today bracket per character,
+ *       else NaN (rendered as "—", not dropped from the roster).
  */
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

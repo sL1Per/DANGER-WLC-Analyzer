@@ -57,6 +57,9 @@ export interface NormalizeEventInputs {
   absorbEvents?: RawDamageEvent[];
   /** raw WCL rankings entries (per boss, grouped by role); undefined = not fetched */
   rankings?: RawRankingEntry[];
+  /** same shape, Today's live bracket — fallback for a character whose Historical
+   *  percentile isn't computed yet (WCL lags after upload); undefined = not fetched */
+  rankingsToday?: RawRankingEntry[];
   /** effective healing-done events by players (performance breakdown) */
   healingDone?: RawDamageEvent[];
   /** abilityGameID → name, from masterData (performance breakdown) */
@@ -272,31 +275,50 @@ function buildRpb(
   };
 }
 
-function buildRankings(entries: RawRankingEntry[]): ReportRanking[] {
+const RANKING_ROLES = ["tanks", "healers", "dps"] as const;
+
+function buildRankings(entries: RawRankingEntry[], todayEntries: RawRankingEntry[] = []): ReportRanking[] {
   // WCL sometimes has no percentile for a character on a boss yet — a report
-  // that hasn't been folded into WCL's ranking pipeline yet (can take a day
-  // or more after upload) gets a non-numeric placeholder ("-") instead of a
-  // real rankPercent. Keep the character (they still belong on the roster —
-  // buildRankingsGrid in @wcl/core is what decides whether to show a percent
-  // or a dash for this boss) but don't let the placeholder round to a bogus
-  // number: leave it NaN, which is the same "no percentile" signal.
-  const mapChar = (c: RawRankingCharacter): RankingCharacter => ({
-    name: c.name,
-    class: c.class ?? c.type ?? "Unknown",
-    spec: c.spec,
-    rankPercent: Number.isFinite(c.rankPercent) ? Math.round(c.rankPercent!) : NaN,
-    bracketPercent: Math.round(c.bracketPercent ?? 0),
-    parse: Math.round(c.amount ?? 0),
-  });
+  // that hasn't been folded into WCL's Historical ranking snapshot yet (can
+  // take a day or more after upload) gets a non-numeric placeholder ("-")
+  // instead of a real rankPercent, even though WCL's own site already shows
+  // real numbers under its live Today bracket. Fall back to that per
+  // character when Historical hasn't caught up, keyed by fight + role + name
+  // since that's the only stable join WCL gives us across the two queries.
+  const todayByKey = new Map<string, RawRankingCharacter>();
+  for (const e of todayEntries) {
+    if (e.fightID == null) continue;
+    for (const role of RANKING_ROLES) {
+      for (const c of e.roles?.[role]?.characters ?? []) {
+        todayByKey.set(`${e.fightID}:${role}:${c.name}`, c);
+      }
+    }
+  }
+
+  // Characters still without a percentile after that fallback (WCL truly has
+  // no data yet, e.g. Today lagging too) stay on the roster with rankPercent
+  // NaN — buildRankingsGrid in @wcl/core is what decides whether to show a
+  // percent or a dash for this boss, so they aren't dropped from the array.
+  const mapChar = (c: RawRankingCharacter, fightID: number, role: (typeof RANKING_ROLES)[number]): RankingCharacter => {
+    const source = Number.isFinite(c.rankPercent) ? c : (todayByKey.get(`${fightID}:${role}:${c.name}`) ?? c);
+    return {
+      name: c.name,
+      class: c.class ?? c.type ?? "Unknown",
+      spec: c.spec,
+      rankPercent: Number.isFinite(source.rankPercent) ? Math.round(source.rankPercent!) : NaN,
+      bracketPercent: Math.round(source.bracketPercent ?? 0),
+      parse: Math.round(c.amount ?? 0),
+    };
+  };
   return entries
     .filter((e) => e.fightID != null && e.encounter?.id != null)
     .map((e) => ({
       fightID: e.fightID!,
       encounterId: e.encounter!.id!,
       encounterName: e.encounter!.name ?? `Boss ${e.encounter!.id}`,
-      tanks: (e.roles?.tanks?.characters ?? []).map(mapChar),
-      healers: (e.roles?.healers?.characters ?? []).map(mapChar),
-      dps: (e.roles?.dps?.characters ?? []).map(mapChar),
+      tanks: (e.roles?.tanks?.characters ?? []).map((c) => mapChar(c, e.fightID!, "tanks")),
+      healers: (e.roles?.healers?.characters ?? []).map((c) => mapChar(c, e.fightID!, "healers")),
+      dps: (e.roles?.dps?.characters ?? []).map((c) => mapChar(c, e.fightID!, "dps")),
     }));
 }
 
@@ -375,7 +397,7 @@ export function normalizeReport(
       })),
     ...buildRpb(events, new Set(players.map((p) => p.id)), fights),
     ...buildHitStatsByFight(events, new Set(players.map((p) => p.id)), new Set(fights.filter((f) => f.isBoss).map((f) => f.id))),
-    rankings: events.rankings ? buildRankings(events.rankings) : undefined,
+    rankings: events.rankings ? buildRankings(events.rankings, events.rankingsToday) : undefined,
     itemMeta,
     abilityMeta: events.abilityMeta ?? {},
   };

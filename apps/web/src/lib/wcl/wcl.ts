@@ -404,11 +404,18 @@ export async function fetchCastsTable(
 // that successfully fetched rankings for the same report elsewhere. Keeping
 // this argument explicit rather than relying on an undocumented server
 // default.
-const RANKINGS_QUERY = `
+//
+// Historical isn't always populated though: WCL takes time after a report is
+// uploaded before that snapshot exists (confirmed live 2026-09-07 — a report
+// one day old had rankPercent "-"/totalParses 0 under Historical while its
+// own Today bracket, and a four-day-old report's Historical bracket, both had
+// real data). fetchRankings therefore also supports Today so the caller can
+// fall back per-character when Historical hasn't caught up yet.
+const RANKINGS_QUERY = (timeframe: "Historical" | "Today") => `
 query Rankings($code: String!) {
   reportData {
     report(code: $code) {
-      rankings(timeframe: Historical)
+      rankings(timeframe: ${timeframe})
     }
   }
 }`;
@@ -437,9 +444,11 @@ export interface RawRankingEntry {
 
 /** Fetch WCL parse rankings (one JSON field, grouped per boss by role).
  *  Returns [] when the report has no rankings. */
-export async function fetchRankings(code: string, accessToken: string): Promise<RawRankingEntry[]> {
+export async function fetchRankings(
+  code: string, accessToken: string, timeframe: "Historical" | "Today" = "Historical",
+): Promise<RawRankingEntry[]> {
   const data = await gql<{ reportData?: { report?: { rankings?: { data?: RawRankingEntry[] } | null } } }>(
-    RANKINGS_QUERY, { code }, accessToken);
+    RANKINGS_QUERY(timeframe), { code }, accessToken);
   return data.reportData?.report?.rankings?.data ?? [];
 }
 
