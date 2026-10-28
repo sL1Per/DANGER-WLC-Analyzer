@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app";
 import { createMemoryShareStore } from "./shareStore";
+import { createMemoryIngestStore } from "./ingestStore";
 
 // The API stores/serves opaque gzip blobs; compress/decompress here to mirror
 // what the browser client does around it.
@@ -69,5 +70,41 @@ describe("share endpoints", () => {
     // ...while the configured origin is echoed back.
     const ok = await app.request("/api/share/x", { headers: { Origin: "https://app.example" } });
     expect(ok.headers.get("access-control-allow-origin")).toBe("https://app.example");
+  });
+});
+
+describe("ingest state endpoints", () => {
+  const token = "s3cret-token";
+  const auth = { Authorization: `Bearer ${token}` };
+  const make = () => createApp(createMemoryShareStore(), { ingestToken: token, ingestStore: createMemoryIngestStore() });
+
+  it("answers 503 when no ingest token is configured", async () => {
+    const app = createApp(createMemoryShareStore(), { ingestStore: createMemoryIngestStore() });
+    expect((await app.request("/api/ingest/state", { headers: auth })).status).toBe(503);
+  });
+
+  it("rejects a missing or wrong bearer token with 401", async () => {
+    const app = make();
+    expect((await app.request("/api/ingest/state")).status).toBe(401);
+    expect((await app.request("/api/ingest/state", { headers: { Authorization: "Bearer nope" } })).status).toBe(401);
+    expect((await app.request("/api/ingest/state", {
+      method: "PUT", headers: { Authorization: `Bearer ${token}x` }, body: "{}",
+    })).status).toBe(401);
+  });
+
+  it("returns null before any state is stored, then round-trips PUT → GET", async () => {
+    const app = make();
+    expect(await (await app.request("/api/ingest/state", { headers: auth })).json()).toBeNull();
+    const state = { since: 1, posted: { abc: "share1" }, pending: {} };
+    const put = await app.request("/api/ingest/state", { method: "PUT", headers: auth, body: JSON.stringify(state) });
+    expect(put.status).toBe(200);
+    expect(await (await app.request("/api/ingest/state", { headers: auth })).json()).toEqual(state);
+  });
+
+  it("rejects non-object bodies with 400", async () => {
+    const app = make();
+    for (const body of ["not json", "[1,2]", "null"]) {
+      expect((await app.request("/api/ingest/state", { method: "PUT", headers: auth, body })).status).toBe(400);
+    }
   });
 });

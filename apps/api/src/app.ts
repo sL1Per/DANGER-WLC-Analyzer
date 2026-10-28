@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
 import { createMemoryShareStore, type ShareStore } from "./shareStore";
+import type { IngestStore } from "./ingestStore";
 
 // The stored blob is a gzipped ReportData JSON. A full raid report serializes to
 // tens of MB — past Cloudflare KV's 25 MiB per-value ceiling — so the browser
@@ -18,6 +19,22 @@ export interface AppOptions {
   maxBodyBytes?: number;
   /** Restrict CORS to this exact web origin. Unset → "*" (dev only). */
   corsOrigin?: string;
+  /** Bearer token the auto-ingest job must send to /api/ingest/*. Unset → those
+   *  routes answer 503, so the state store is never open by default. */
+  ingestToken?: string;
+  ingestStore?: IngestStore;
+}
+
+const MAX_INGEST_STATE_BYTES = 64 * 1024;
+
+// Constant-time comparison so the token can't be guessed byte-by-byte from
+// response timing. (crypto.subtle.timingSafeEqual is Workers-only.)
+function tokenMatches(given: string, expected: string): boolean {
+  const a = new TextEncoder().encode(given);
+  const b = new TextEncoder().encode(expected);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) diff |= (a[i] ?? 0) ^ b[i]!;
+  return diff === 0;
 }
 
 // gzip streams start with the magic bytes 0x1f 0x8b. Cheap O(1) guard so the open
@@ -49,6 +66,34 @@ export function createApp(store: ShareStore = createMemoryShareStore(), opts: Ap
     if (!bytes) return c.json({ error: "Snapshot not found" }, 404);
     // Served as-is; the browser decompresses (see fetchSnapshot).
     return c.body(bytes.buffer as ArrayBuffer, 200, { "Content-Type": "application/gzip" });
+  });
+
+  // State for the scheduled auto-ingest job (apps/web/scripts/autoIngest.ts):
+  // which guild reports it has already posted. Called server-to-server only,
+  // so no CORS beyond the default; guarded by a shared bearer token.
+  app.use("/api/ingest/*", async (c, next) => {
+    if (!opts.ingestToken || !opts.ingestStore) return c.json({ error: "Auto-ingest is not configured" }, 503);
+    const auth = c.req.header("Authorization") ?? "";
+    if (!auth.startsWith("Bearer ") || !tokenMatches(auth.slice(7), opts.ingestToken)) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+    await next();
+  });
+
+  app.get("/api/ingest/state", async (c) => {
+    const json = await opts.ingestStore!.get();
+    return c.body(json ?? "null", 200, { "Content-Type": "application/json" });
+  });
+
+  app.put("/api/ingest/state", bodyLimit({ maxSize: MAX_INGEST_STATE_BYTES }), async (c) => {
+    const text = await c.req.text();
+    let parsed: unknown;
+    try { parsed = JSON.parse(text); } catch { parsed = undefined; }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return c.json({ error: "Expected a JSON object" }, 400);
+    }
+    await opts.ingestStore!.put(text);
+    return c.json({ ok: true });
   });
 
   return app;
