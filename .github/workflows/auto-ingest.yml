@@ -15,6 +15,9 @@ on:
         description: "Optional start date (e.g. 2026-10-20) to include older raids"
         type: string
         default: ""
+# The job only reads the repo; it talks to WCL/Discord/the API with its own secrets.
+permissions:
+  contents: read
 # Never let two runs overlap, or the same raid could be posted twice.
 concurrency:
   group: auto-ingest
@@ -25,7 +28,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      # Third-party action pinned to a commit: this job holds the WCL key and Discord webhook.
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
