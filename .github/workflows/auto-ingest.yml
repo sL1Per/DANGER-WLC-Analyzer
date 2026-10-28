@@ -25,6 +25,8 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    # The secrets and variables below are scoped to the "prod" environment.
+    environment: prod
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
