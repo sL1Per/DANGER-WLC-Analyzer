@@ -391,10 +391,9 @@ describe("fetchRankings", () => {
 });
 
 describe("fetchGuildReports", () => {
-  it("lists a guild's reports since a time, with fights and players", async () => {
+  it("lists a guild's reports since a time, with their fights", async () => {
     const report = { code: "9Hm81wRDyJkvTaWX", title: "BT / Hyjal", startTime: 1, endTime: 2,
-      zone: { name: "BT / Hyjal" }, fights: [{ encounterID: 601, kill: true }],
-      masterData: { actors: [{ name: "Tank" }] } };
+      zone: { name: "BT / Hyjal" }, fights: [{ encounterID: 601, kill: true, startTime: 0 }] };
     const mock = vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ data: { reportData: { reports: { data: [report] } } } }), { status: 200 }));
     vi.stubGlobal("fetch", mock);

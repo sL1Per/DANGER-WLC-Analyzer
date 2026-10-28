@@ -83,8 +83,8 @@ export async function fetchRawReport(code: string, accessToken: string): Promise
 
 // A guild's recent uploads, for the scheduled auto-ingest job (apps/web/scripts).
 // The classic endpoint also lists fresh-realm guilds (verified 2026-10-28 for
-// guild 811975). Player names let the job tell two loggers of the same raid
-// apart from two different raids running at once.
+// guild 811975). Fight start times let the job spot two raiders logging the
+// same raid (identical boss pulls) vs. two different raids running at once.
 const GUILD_REPORTS_QUERY = `
 query GuildReports($guildID: Int!, $startTime: Float!) {
   reportData {
@@ -92,8 +92,7 @@ query GuildReports($guildID: Int!, $startTime: Float!) {
       data {
         code title startTime endTime
         zone { name }
-        fights { encounterID kill }
-        masterData { actors(type: "Player") { name } }
+        fights { encounterID kill startTime }
       }
     }
   }
@@ -106,8 +105,8 @@ export interface GuildReport {
   /** grows while a log is still being live-logged/uploaded */
   endTime: number;
   zone: { name: string } | null;
-  fights: { encounterID: number; kill: boolean | null }[];
-  masterData: { actors: { name: string }[] } | null;
+  /** startTime is relative to the report's startTime, like everywhere in WCL */
+  fights: { encounterID: number; kill: boolean | null; startTime: number }[];
 }
 
 export async function fetchGuildReports(

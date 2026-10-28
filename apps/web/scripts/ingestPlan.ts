@@ -16,8 +16,8 @@ export interface IngestState {
 }
 
 const POSTED_HISTORY_MAX = 200;
-/** share of the smaller roster two overlapping logs must have in common to be the same raid */
-const SAME_RAID_ROSTER_OVERLAP = 0.5;
+/** two logs' pulls of the same boss starting this close together are the same pull */
+const SAME_PULL_TOLERANCE_MS = 60_000;
 
 export function initialState(now: number): IngestState {
   return { since: now, posted: {}, pending: {} };
@@ -33,15 +33,17 @@ export function markPosted(state: IngestState, code: string, shareId: string | n
 
 const bossFights = (r: GuildReport) => r.fights.filter((f) => f.encounterID !== 0).length;
 
+const bossPulls = (r: GuildReport) =>
+  r.fights.filter((f) => f.encounterID !== 0).map((f) => ({ id: f.encounterID, at: r.startTime + f.startTime }));
+
 // Two people often log the same raid. Overlapping time alone isn't enough — a
-// guild can run two groups at once — so also require a shared roster.
+// guild can run two groups at once — and WCL's player lists include bystanders,
+// so match on the raid itself: the logs share at least one boss pull.
 function sameRaid(a: GuildReport, b: GuildReport): boolean {
   if (a.startTime > b.endTime || b.startTime > a.endTime) return false;
-  const namesA = new Set((a.masterData?.actors ?? []).map((x) => x.name));
-  const namesB = (b.masterData?.actors ?? []).map((x) => x.name);
-  if (namesA.size === 0 || namesB.length === 0) return a.zone?.name === b.zone?.name;
-  const shared = namesB.filter((n) => namesA.has(n)).length;
-  return shared >= SAME_RAID_ROSTER_OVERLAP * Math.min(namesA.size, namesB.length);
+  const pullsB = bossPulls(b);
+  return bossPulls(a).some((p) =>
+    pullsB.some((q) => q.id === p.id && Math.abs(q.at - p.at) <= SAME_PULL_TOLERANCE_MS));
 }
 
 /** Decide what to post. A log is "finished" once its endTime has stayed the same

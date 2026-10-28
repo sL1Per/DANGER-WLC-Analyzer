@@ -6,12 +6,10 @@ const MIN = 60_000;
 const SETTLE = 30 * MIN;
 const T0 = 1_000_000_000_000;
 
-const roster = (names: string) => ({ actors: names.split("").map((n) => ({ name: n })) });
-
 function report(over: Partial<GuildReport> & { code: string }): GuildReport {
   return {
     title: over.code, startTime: T0, endTime: T0 + 120 * MIN, zone: { name: "BT / Hyjal" },
-    fights: [{ encounterID: 601, kill: true }], masterData: roster("ABCDEFGHIJ"), ...over,
+    fights: [{ encounterID: 601, kill: true, startTime: 0 }], ...over,
   };
 }
 
@@ -52,7 +50,7 @@ describe("planIngest", () => {
   });
 
   it("does not post a settled log that has no boss fights", () => {
-    const r = report({ code: "trash", fights: [{ encounterID: 0, kill: null }] });
+    const r = report({ code: "trash", fights: [{ encounterID: 0, kill: null, startTime: 0 }] });
     const { toPost, nextState } = planIngest([r], seen(initialState(T0), r, now - SETTLE), now, SETTLE);
     expect(toPost).toEqual([]);
     expect(nextState.pending.trash).toBeDefined();
@@ -70,8 +68,8 @@ describe("planIngest", () => {
   });
 
   it("orders posts oldest first", () => {
-    const a = report({ code: "a", startTime: T0 + 200 * MIN, endTime: T0 + 250 * MIN, masterData: roster("ABC") });
-    const b = report({ code: "b", startTime: T0 + 10 * MIN, endTime: T0 + 60 * MIN, masterData: roster("XYZ") });
+    const a = report({ code: "a", startTime: T0 + 200 * MIN, endTime: T0 + 250 * MIN });
+    const b = report({ code: "b", startTime: T0 + 10 * MIN, endTime: T0 + 60 * MIN });
     let s = seen(initialState(T0), a, now - SETTLE);
     s = seen(s, b, now - SETTLE);
     expect(planIngest([a, b], s, now, SETTLE).toPost.map((x) => x.code)).toEqual(["b", "a"]);
@@ -92,13 +90,15 @@ describe("planIngest", () => {
   });
 
   describe("two loggers of the same raid", () => {
-    // Mirrors guild 811975 on 2026-10-25: a full-night log and a shorter log of
-    // the same raid by another raider, overlapping in time and roster.
-    const full = report({ code: "full", startTime: T0, endTime: T0 + 176 * MIN,
-      fights: Array.from({ length: 14 }, () => ({ encounterID: 601, kill: true })) });
+    // Mirrors guild 811975 on 2026-10-25: a full-night log (Hyjal then ZA) and a
+    // second raider's Hyjal-only log with the same 7 pulls, a few seconds apart.
+    const hyjal = (offsetMs: number) => [601, 602, 603, 604, 605, 605, 605].map((id, i) =>
+      ({ encounterID: id, kill: true, startTime: offsetMs + i * 10 * MIN }));
+    const za = [1189, 1190, 1191, 1192, 1193, 1194].map((id, i) =>
+      ({ encounterID: id, kill: true, startTime: 90 * MIN + i * 10 * MIN }));
+    const full = report({ code: "full", startTime: T0, endTime: T0 + 176 * MIN, fights: [...hyjal(30 * MIN), ...za] });
     const part = report({ code: "part", startTime: T0 + 18 * MIN, endTime: T0 + 104 * MIN,
-      fights: Array.from({ length: 7 }, () => ({ encounterID: 618, kill: true })),
-      masterData: roster("ABCDEFGHIK") });
+      fights: hyjal(12 * MIN + 5_000) });
 
     it("waits while any overlapping log is still growing", () => {
       const s = seen(seen(initialState(T0), part, now - SETTLE), full, now - MIN);
@@ -120,8 +120,9 @@ describe("planIngest", () => {
       expect(nextState.posted.part).toBeNull();
     });
 
-    it("treats overlapping logs with different rosters as separate raids", () => {
-      const other = { ...part, code: "other", masterData: roster("PQRSTUVWXY") };
+    it("treats overlapping logs with different boss pulls as separate raids", () => {
+      const other = report({ code: "other", startTime: T0 + 18 * MIN, endTime: T0 + 104 * MIN,
+        fights: [{ encounterID: 601, kill: true, startTime: 40 * MIN }] });
       const s = seen(seen(initialState(T0), other, now - SETTLE), full, now - SETTLE);
       expect(planIngest([full, other], s, now, SETTLE).toPost.map((x) => x.code)).toEqual(["full", "other"]);
     });
