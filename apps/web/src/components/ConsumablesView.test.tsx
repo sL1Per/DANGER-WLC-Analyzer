@@ -33,7 +33,7 @@ describe("ConsumablesView", () => {
     expect(elixirOrFlask.className).toContain("sev-minor");
     expect(screen.getByText("Playertwo")).toBeTruthy();
   });
-  it("does not render separate 'name' rows or a suboptimal row (moved into the cell-click modal / Improvements tab)", () => {
+  it("does not render separate 'name' rows or a suboptimal row (moved into the cell-click modal)", () => {
     render(<ConsumablesView report={baseReport()} />);
     expect(screen.queryByText(/flask name/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/battle elixir name/i)).not.toBeInTheDocument();

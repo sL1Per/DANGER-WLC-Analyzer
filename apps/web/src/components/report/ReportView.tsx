@@ -6,7 +6,6 @@ import { ReportHeader } from "../ReportHeader";
 import { ReportDrawer } from "./ReportDrawer";
 import { LensBar } from "../LensBar";
 import { ALL_FIGHTS, ALL_TRASH } from "../../lib/scopeReport";
-import { FlagsView } from "./FlagsView";
 import { SummaryRankings } from "./SummaryRankings";
 import { PerformanceView } from "./PerformanceView";
 import { RoleBreakdownView } from "./RoleBreakdownView";
@@ -21,7 +20,7 @@ import { TimelineView } from "./TimelineView";
 const CATEGORIES = [
   ["summary", "Rankings"], ["performance", "Summary"], ["roles", "Role breakdown"], ["gear", "Gear"],
   ["consumables", "Consumables"], ["buffconsumables", "Buff consumables"], ["shadowresi", "Resistances"],
-  ["timeline", "Timeline"], ["flags", "Improvements"],
+  ["timeline", "Timeline"],
 ] as const;
 type Cat = (typeof CATEGORIES)[number][0];
 
@@ -69,8 +68,7 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
     return BOSSES_ONLY_CATS.has(key) ? fightId === ALL_FIGHTS : !(isTrash && TRASH_HIDDEN_CATS.has(key));
   });
   // Default landing tab is Rankings; on cards where it's hidden (TRASH, an
-  // individual pull) the fallback below lands on Summary instead, since
-  // neither "flags"/Improvements nor anything else should greet a fresh visit.
+  // individual pull) the fallback below lands on Summary instead.
   const requestedCat = (params.get("cat") as Cat) ?? "summary";
   // If the active tab is hidden for this card (e.g. Gear on the TRASH card),
   // fall back to the first visible tab so the body is never blank.
@@ -139,7 +137,6 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
         </nav>
         <div className="report-content">
           <EmptyToggle>
-            {cat === "flags" && <FlagsView report={report} fightId={fightId} />}
             {cat === "summary" && <SummaryRankings report={report} />}
             {cat === "roles" && <RoleBreakdownView report={report} fightId={fightId} />}
             {cat === "performance" && <PerformanceView report={report} fightId={fightId} />}

@@ -9,9 +9,9 @@ export interface FightAnalysis {
   gearRows: PlayerGearIssues[];
 }
 
-/** Shared per-fight analyzer pass (RPB + consumables + gear issues) used by
- *  both FightHeader's stat bar and FlagsView's flag list, so the heaviest
- *  analysis in the app runs once per render, not once per consumer. */
+/** Per-fight analyzer pass (RPB + consumables + gear issues) behind
+ *  FightHeader's stat bar, memoized so the heaviest analysis in the app runs
+ *  once per scope change, not on every render. */
 export function useFightAnalysis(report: ReportData, fightId: number): FightAnalysis {
   const scoped = useMemo(() => scopeReportToFight(report, fightId), [report, fightId]);
   return useMemo(() => {
