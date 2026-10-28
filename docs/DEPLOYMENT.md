@@ -76,6 +76,43 @@ You can drive the whole thing from the browser via **Workers Builds** (Git-conne
 
 > Dashboard vs. config, at a glance: **KV namespace** → created in UI, ID pasted into `wrangler.jsonc`. **KV binding + `WEB_ORIGIN`** → `apps/api/wrangler.jsonc`. **`VITE_API_BASE`** → dashboard build variable. **Build/deploy commands + repo connection** → dashboard.
 
+## Auto-posting new raids to Discord
+
+`.github/workflows/auto-ingest.yml` checks the guild every 15 minutes and posts
+each newly finished raid's share link to Discord (see
+[ARCHITECTURE.md](ARCHITECTURE.md#auto-posting-new-raids-appswebscriptsautoingestts)).
+The guild is hard-coded there as `GUILD_ID: "811975"` — edit it to watch another guild.
+
+One-time setup:
+
+1. **WCL client for the job.** Create a separate client at
+   [classic.warcraftlogs.com/api/clients](https://classic.warcraftlogs.com/api/clients/)
+   (don't reuse a personal one, so it can be revoked on its own).
+2. **Ingest token.** Generate one: `openssl rand -hex 32`. Set it on the API Worker:
+   `cd apps/api && npx wrangler secret put INGEST_TOKEN`. Then deploy the API
+   (the `/api/ingest/state` route is new).
+3. **GitHub → repo → Settings → Secrets and variables → Actions**:
+   - Secrets: `WCL_CLIENT_ID`, `WCL_CLIENT_SECRET`, `DISCORD_WEBHOOK_URL`,
+     `INGEST_TOKEN` (same value as step 2).
+   - Variables: `API_BASE` = the API Worker's origin, `WEB_ORIGIN` = the web app's
+     origin (both without a trailing slash).
+4. **Dry run.** Actions → *auto-ingest* → *Run workflow*, leaving `dry_run` on and
+   setting `since` to a recent date. The log shows which raids it would post and
+   the exact Discord messages. Nothing is published or saved.
+5. **Go live.** The 15-minute schedule starts on its own once the workflow is on
+   the default branch. The first live run saves `since = now`, so past raids are
+   not posted. To post a recent raid anyway, run the workflow manually with
+   `dry_run` off and `since` set. Point `DISCORD_WEBHOOK_URL` at a test channel
+   first if you want to see a real post before the guild does.
+
+Notes:
+- GitHub can start scheduled runs 5–20 min late, and **disables schedules after 60
+  days without repo activity**. If posts stop, re-enable the workflow in the
+  Actions tab.
+- To reset the job's state (e.g. after changing guild), delete the `ingest:state`
+  key from the `SHARE_KV` namespace in the Cloudflare dashboard.
+- Locally: `GUILD_ID=… WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/web ingest --dry-run --since=2026-10-20 --settle-minutes=0`.
+
 ## Snapshots are gzip-compressed (free-tier constraint)
 
 A full raid report serializes to **tens of MB** — past Cloudflare KV's **25 MiB** per-value ceiling — and a free-tier Worker gets only **~10 ms CPU**, far too little to decompress/parse it server-side. So:

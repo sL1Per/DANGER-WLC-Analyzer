@@ -244,6 +244,33 @@ webhook (if configured) is called directly from the browser — Discord webhook
 endpoints send permissive CORS — and the webhook URL is stored in `localStorage`
 only.
 
+## Auto-posting new raids (`apps/web/scripts/autoIngest.ts`)
+
+A scheduled GitHub Actions workflow
+([`.github/workflows/auto-ingest.yml`](../.github/workflows/auto-ingest.yml),
+every 15 min, guild ID hard-coded there) posts a guild's newly finished raid
+logs to Discord with no one in the loop. It runs the browser pipeline under
+Node — `fetchGuildReports` → `loadReport` → `publishSnapshotTo`
+(`lib/shareCore.ts`, the Node-safe half of `share.ts`) → `postToDiscord` — with a
+**dedicated service WCL key held only in GitHub secrets**.
+
+The decisions live in a pure planner (`scripts/ingestPlan.ts`):
+
+- **Finished** = the report's `endTime` has stayed the same for 30 min (WCL lists a
+  report as soon as live logging/upload starts) and it has ≥ 1 boss fight.
+- **No backfill**: the first run records `since = now`; older raids are ignored.
+- **Duplicate logs** of one raid (two raiders logging) share a boss pull — same
+  encounter, start within 60 s. Only the log with the most boss fights is posted,
+  once all of them have finished. Player lists aren't used: WCL includes
+  bystanders in them.
+- A report is marked posted only after Discord accepts the message, so failures
+  retry on the next run.
+
+The job's state (posted/pending codes) is one JSON document in `SHARE_KV`
+(`ingest:state`, no expiry), read and written through
+`GET`/`PUT /api/ingest/state`, which require `Authorization: Bearer <INGEST_TOKEN>`
+and answer 503 when the Worker has no `INGEST_TOKEN`.
+
 ## Security posture
 
 - WCL credentials and tokens live **only** in the user's `localStorage`; they
@@ -252,6 +279,9 @@ only.
   covered by a test) and are shared deliberately by the user.
 - The Discord webhook URL is user-supplied and currently validated only
   client-side (host allow-list regex).
+- The auto-post job is the one exception to "keys only in the browser": its own
+  dedicated WCL client and Discord webhook are GitHub secrets, never sent to the
+  API or stored in KV. Its state endpoint is bearer-token protected.
 - Outstanding before any public deployment: lock down the snapshot `POST`
   endpoint (auth / size cap / eviction / rate-limit) and CORS for the deployed
   origin.
