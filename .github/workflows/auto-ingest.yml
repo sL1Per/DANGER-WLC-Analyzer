@@ -1,0 +1,47 @@
+name: auto-ingest
+# Posts the guild's newly finished WCL raid logs to Discord (apps/web/scripts/autoIngest.ts).
+# GitHub may start scheduled runs late, and disables schedules after 60 days without
+# repo activity — re-enable from the Actions tab if posts stop.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Load and print, but don't publish, post or save state"
+        type: boolean
+        default: true
+      since:
+        description: "Optional start date (e.g. 2026-10-20) to include older raids"
+        type: string
+        default: ""
+# Never let two runs overlap, or the same raid could be posted twice.
+concurrency:
+  group: auto-ingest
+  cancel-in-progress: false
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Ingest new raid logs
+        run: |
+          args=()
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ -n "$SINCE" ]; then args+=("--since=$SINCE"); fi
+          pnpm --filter @wcl/web ingest "${args[@]}"
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          SINCE: ${{ inputs.since }}
+          GUILD_ID: "811975"
+          WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
+          WCL_CLIENT_SECRET: ${{ secrets.WCL_CLIENT_SECRET }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          API_BASE: ${{ vars.API_BASE }}
+          WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
