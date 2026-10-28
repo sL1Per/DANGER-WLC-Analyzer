@@ -81,6 +81,43 @@ export async function fetchRawReport(code: string, accessToken: string): Promise
   return report;
 }
 
+// A guild's recent uploads, for the scheduled auto-ingest job (apps/web/scripts).
+// The classic endpoint also lists fresh-realm guilds (verified 2026-10-28 for
+// guild 811975). Player names let the job tell two loggers of the same raid
+// apart from two different raids running at once.
+const GUILD_REPORTS_QUERY = `
+query GuildReports($guildID: Int!, $startTime: Float!) {
+  reportData {
+    reports(guildID: $guildID, startTime: $startTime, limit: 25) {
+      data {
+        code title startTime endTime
+        zone { name }
+        fights { encounterID kill }
+        masterData { actors(type: "Player") { name } }
+      }
+    }
+  }
+}`;
+
+export interface GuildReport {
+  code: string;
+  title: string;
+  startTime: number;
+  /** grows while a log is still being live-logged/uploaded */
+  endTime: number;
+  zone: { name: string } | null;
+  fights: { encounterID: number; kill: boolean | null }[];
+  masterData: { actors: { name: string }[] } | null;
+}
+
+export async function fetchGuildReports(
+  guildID: number, startTime: number, accessToken: string,
+): Promise<GuildReport[]> {
+  const data = await gql<{ reportData?: { reports?: { data?: GuildReport[] | null } } }>(
+    GUILD_REPORTS_QUERY, { guildID, startTime }, accessToken);
+  return data.reportData?.reports?.data ?? [];
+}
+
 const COMBATANT_QUERY = `
 query CombatantInfo($code: String!, $fightIds: [Int], $start: Float) {
   reportData {

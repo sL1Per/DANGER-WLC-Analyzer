@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone, fetchHitTable, fetchCastsTable } from "./wcl";
+import { fetchToken, fetchRawReport, fetchCombatantInfo, fetchItemMeta, fetchBuffEvents, fetchCastEvents, fetchInterrupts, fetchAllCasts, fetchEnemyDebuffs, fetchHealingDone, fetchHitTable, fetchCastsTable, fetchGuildReports } from "./wcl";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -387,5 +387,25 @@ describe("fetchRankings", () => {
     await fetchRankings("abc", "tok", "Today");
     const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
     expect(body.query).toContain("timeframe: Today");
+  });
+});
+
+describe("fetchGuildReports", () => {
+  it("lists a guild's reports since a time, with fights and players", async () => {
+    const report = { code: "9Hm81wRDyJkvTaWX", title: "BT / Hyjal", startTime: 1, endTime: 2,
+      zone: { name: "BT / Hyjal" }, fights: [{ encounterID: 601, kill: true }],
+      masterData: { actors: [{ name: "Tank" }] } };
+    const mock = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ data: { reportData: { reports: { data: [report] } } } }), { status: 200 }));
+    vi.stubGlobal("fetch", mock);
+    expect(await fetchGuildReports(811975, 1000, "tok")).toEqual([report]);
+    const body = JSON.parse(mock.mock.calls[0]![1]!.body as string);
+    expect(body.variables).toEqual({ guildID: 811975, startTime: 1000 });
+    expect(body.query).toContain("reports(guildID: $guildID");
+  });
+  it("returns [] when WCL has no report page", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ data: { reportData: { reports: { data: null } } } }), { status: 200 })));
+    expect(await fetchGuildReports(811975, 0, "tok")).toEqual([]);
   });
 });
