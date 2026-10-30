@@ -9,9 +9,9 @@ vi.mock("@wcl/core", async (orig) => {
   const actual = await orig<typeof import("@wcl/core")>();
   return {
     ...actual,
-    shadowResistance: () => ({
-      boss: "Mother Shahraz", isKill: true,
-      players: [{ playerId: 1, name: "Thrall", total: 60, fromGear: 45, fromBuffs: 15, severity: "ok", slots: { 0: "Hood (~30 SR)" } }],
+    resistance: () => ({
+      boss: "Mother Shahraz", school: "shadow", isKill: true,
+      players: [{ playerId: 1, name: "Thrall", total: 60, fromGear: 45, fromBuffs: 15, severity: "minor", slots: { 0: "~30 SR" } }],
     }),
   };
 });

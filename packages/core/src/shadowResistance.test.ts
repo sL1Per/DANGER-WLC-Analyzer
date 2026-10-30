@@ -1,17 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { shadowResistance, type ShadowResConfig } from "./shadowResistance";
+import { resistance, type ResistanceConfig } from "./shadowResistance";
 import type { ReportData } from "./types";
 
-const cfg: ShadowResConfig = {
-  itemShadowRes: { "34204": 30 },   // Pendant of Shadow's End
-  enchantShadowRes: {
-    "2664": 15, // (test-local enchant id) cloak +15 SR
-    "3009": 20, // Glyph of Shadow Warding (head)
-    "2984": 8,  // Shadow Armor Kit (chest/legs/hands/feet)
+const cfg: ResistanceConfig = {
+  shadow: {
+    items: { "34204": 30 },   // Pendant of Shadow's End
+    enchants: {
+      "2664": 15, // (test-local enchant id) cloak +15 SR
+      "3009": 20, // Glyph of Shadow Warding (head)
+      "2984": 8,  // Shadow Armor Kit (chest/legs/hands/feet)
+    },
+    gems: { "22459": 4 },     // Void Sphere (+4 all resist)
+    buffs: { "25433": 70 },   // Shadow Protection
+    softTarget: 100,
   },
-  gemShadowRes: { "22459": 4 },     // Void Sphere (+4 all resist)
-  buffShadowRes: { "25433": 70 },   // Shadow Protection
-  softTarget: 100,
+  fire: {
+    items: { "30773": 60 },   // Inferno Forged Hauberk
+    enchants: { "2619": 15 }, // Greater Fire Resistance (cloak)
+    gems: { "22459": 4 },
+    buffs: { "27153": 70 },   // Fire Resistance Aura
+    softTarget: 300,
+    gearedOnly: true,
+  },
 };
 
 function report(fights: ReportData["fights"]): ReportData {
@@ -35,9 +45,9 @@ function report(fights: ReportData["fights"]): ReportData {
 }
 const KILL = { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: true, startTime: 400_000, endTime: 560_000 };
 
-describe("shadowResistance", () => {
+describe("resistance", () => {
   it("sums SR from gear (items + enchants) and from buffs on the kill fight", () => {
-    const r = shadowResistance(report([KILL]), cfg)!;
+    const r = resistance(report([KILL]), cfg)!;
     expect(r.boss).toBe("Mother Shahraz");
     expect(r.isKill).toBe(true);
     const p = r.players.find((x) => x.name === "Playertwo")!;
@@ -50,7 +60,7 @@ describe("shadowResistance", () => {
   });
 
   it("counts SR from head/hands/feet enchants and from socketed gems", () => {
-    const r = shadowResistance(report([KILL]), cfg)!;
+    const r = resistance(report([KILL]), cfg)!;
     const p = r.players.find((x) => x.name === "Playertwo")!;
     expect(p.slots[0]).toBe("+20 SR"); // head enchant (Glyph of Shadow Warding)
     expect(p.slots[7]).toBe("+8 SR");  // feet enchant (Shadow Armor Kit)
@@ -58,11 +68,11 @@ describe("shadowResistance", () => {
   });
   it("returns null when the report has none of the SR bosses", () => {
     const noBoss = report([{ id: 1, name: "Najentus", encounterId: 601, isBoss: true, kill: true, startTime: 0, endTime: 100 }]);
-    expect(shadowResistance(noBoss, cfg)).toBeNull();
+    expect(resistance(noBoss, cfg)).toBeNull();
   });
   it("without a fightId, analyzes the longest wipe when there is no kill (the combined BOSSES card)", () => {
     // two Shahraz wipes; the gear snapshot is on fight 60 (the longer wipe)
-    const r = shadowResistance(report([
+    const r = resistance(report([
       { id: 59, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 0, endTime: 30_000 },
       { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 100_000, endTime: 260_000 },
     ]), cfg)!;
@@ -73,7 +83,7 @@ describe("shadowResistance", () => {
   it("a fightId pins the analysis to that exact pull, not the kill/longest-wipe default", () => {
     // the shorter wipe (59) has no gear snapshot — requesting it explicitly
     // must NOT fall back to fight 60's snapshot.
-    const r = shadowResistance(report([
+    const r = resistance(report([
       { id: 59, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 0, endTime: 30_000 },
       { id: 60, name: "Mother Shahraz", encounterId: 602, isBoss: true, kill: false, startTime: 100_000, endTime: 260_000 },
     ]), cfg, { fightId: 59 })!;
@@ -87,7 +97,36 @@ describe("shadowResistance", () => {
       { id: 1, name: "Trash", encounterId: 0, isBoss: false, startTime: 0, endTime: 100 },
       { id: 2, name: "Najentus", encounterId: 601, isBoss: true, kill: true, startTime: 100, endTime: 200 },
     ]);
-    expect(shadowResistance(r, cfg, { fightId: 1 })).toBeNull();
-    expect(shadowResistance(r, cfg, { fightId: 2 })).toBeNull();
+    expect(resistance(r, cfg, { fightId: 1 })).toBeNull();
+    expect(resistance(r, cfg, { fightId: 2 })).toBeNull();
+  });
+
+  it("on Illidan, reports Fire Resistance and only colours players wearing FR gear (the Flame tanks)", () => {
+    const r = report([{ id: 60, name: "Illidan Stormrage", encounterId: 609, isBoss: true, kill: true, startTime: 0, endTime: 100 }]);
+    r.players.push({ id: 3, name: "Tankthree", class: "Warrior" });
+    r.gear.push({
+      fightId: 60, playerId: 3, auras: [27153],
+      items: [
+        { slot: 4, itemId: 30773, gemIds: [] },                              // chest: ~60 innate FR
+        { slot: 14, itemId: 30001, gemIds: [], permanentEnchantId: 2619 },   // cloak: +15 FR
+      ],
+    });
+    const res = resistance(r, cfg)!;
+    expect(res.boss).toBe("Illidan Stormrage");
+    expect(res.school).toBe("fire");
+    const tank = res.players.find((x) => x.name === "Tankthree")!;
+    expect(tank.fromGear).toBe(75);
+    expect(tank.fromBuffs).toBe(70);
+    expect(tank.slots[4]).toBe("~60 FR");
+    expect(tank.slots[14]).toBe("+15 FR");
+    expect(tank.severity).toBe("major"); // 145 < 60% of 300
+    // Playertwo has only an all-resist Void Sphere (+4) — counted, but no FR
+    // item, so not expected to stack fire
+    const other = res.players.find((x) => x.name === "Playertwo")!;
+    expect(other.fromGear).toBe(4);
+    expect(other.severity).toBeUndefined();
+  });
+  it("on Shahraz, reports Shadow Resistance", () => {
+    expect(resistance(report([KILL]), cfg)!.school).toBe("shadow");
   });
 });

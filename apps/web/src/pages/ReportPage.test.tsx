@@ -186,6 +186,16 @@ describe("ReportPage — category / tab behaviour (via ReportView)", () => {
       renderAt("/report/abc");
       expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
     });
+    it("shows Resistances on an Illidan Stormrage pull", () => {
+      const srFixture = structuredClone(reportFixture);
+      srFixture.fights.push({
+        id: 98, name: "Illidan Stormrage", encounterId: 609, isBoss: true, kill: true,
+        startTime: 600_000, endTime: 900_000,
+      });
+      mockHookState = { result: { data: srFixture, stale: false }, error: null, loading: false, reload: vi.fn() };
+      renderAt("/report/abc?fight=98");
+      expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
+    });
     it("still hides Resistances on an unrelated pull, even though the report has Shahraz elsewhere", () => {
       loadSrFixture();
       renderAt("/report/abc?fight=3"); // Hydross the Unstable

@@ -43,8 +43,10 @@
  *  15 — Consumables: Shattrath flask pull-aura ids (41604–41607, 46838,
  *       46840) now count as flasks (previously missed → flask/elixirOrFlask
  *       too low); Shattrath Mighty Restoration flagged suboptimal too.
+ *  16 — Resistances tab is per school: Illidan Stormrage added as a fire
+ *       boss (Flame tank FR from gear/enchants/auras); result carries `school`.
  */
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 16;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

@@ -3,7 +3,7 @@ import { roleSignals, hasteBuffs, engineeringDamageIds } from "./rpb";
 import { itemSockets, itemShadowRes, spellHaste, badEnchants, excludedItems, gemQuality } from "./index";
 import { spellCastTimes } from "./index";
 import { consumableBuffs, drumSpells, jcNecks, suboptimalConsumables, weaponEnhancementEnchantIds } from "./index";
-import { shadowResEnchants, shadowResGems, shadowResBuffs, SR_SOFT_TARGET } from "./index";
+import { shadowResEnchants, shadowResGems, shadowResBuffs, SR_SOFT_TARGET, itemFireRes, fireResEnchants, fireResBuffs, FR_SOFT_TARGET } from "./index";
 import { classAbilities } from "./classAbilities";
 
 describe("reference data", () => {
@@ -173,5 +173,26 @@ describe("classAbilities (M7: verified against TBC 2.5.4 client DB)", () => {
       const maxIds = a.ranks.filter((r) => r.rank === maxRank).map((r) => r.spellId);
       for (const id of maxIds) expect(a.spellIds).toContain(id);
     }
+  });
+});
+
+describe("fire resistance reference data", () => {
+  it("maps item innate FR (Illidan Flame-tank sets)", () => {
+    expect(itemFireRes["30772"]).toBe(55); // Inferno Forged Leggings
+    expect(itemFireRes["30773"]).toBe(60); // Inferno Forged Hauberk
+  });
+  it("maps FR permanent enchants by ENCHANTMENT id (not spell id)", () => {
+    expect(fireResEnchants["2619"]).toBe(15); // Enchant Cloak - Greater Fire Resistance
+    expect(fireResEnchants["3007"]).toBe(20); // Glyph of Fire Warding (head)
+    expect(fireResEnchants["2985"]).toBe(8);  // Flame Armor Kit
+    expect(fireResEnchants["25081"]).toBeUndefined(); // the casting spell id
+  });
+  it("maps FR buff auras by the applied aura id, not the totem cast", () => {
+    expect(fireResBuffs["27153"]).toBe(70); // Fire Resistance Aura (max rank)
+    expect(fireResBuffs["25562"]).toBe(70); // Fire Resistance Totem aura (max rank)
+    expect(fireResBuffs["25563"]).toBeUndefined(); // the totem cast
+  });
+  it("exposes an advisory soft target", () => {
+    expect(FR_SOFT_TARGET).toBeGreaterThan(SR_SOFT_TARGET);
   });
 });

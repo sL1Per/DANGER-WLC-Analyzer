@@ -1,5 +1,6 @@
 import { ENCHANTABLE_SLOTS, QUALITY_NAMES, REQUIRED_SLOTS, SLOT_NAMES } from "./slots";
 import { itemName } from "./itemName";
+import { SR_BOSSES } from "./shadowResistance";
 import type { GearItem, ReportData } from "./types";
 
 export interface GearIssueConfig {
@@ -30,7 +31,7 @@ export interface GearIssue { itemId: number; itemName: string; issue: string; se
 export interface PlayerGearIssues { playerId: number; playerName: string; issues: GearIssue[]; }
 
 /** Boss names where shadow-resistance gear is legitimate, not "useless". */
-const SR_FIGHT_NAMES = new Set(["Mother Shahraz", "Kaz'rogal", "Azgalor"]);
+const SR_FIGHT_NAMES: ReadonlySet<string> = new Set(SR_BOSSES);
 const SHAHRAZ = "Mother Shahraz";
 
 export function gearIssues(report: ReportData, cfg: GearIssueConfig): PlayerGearIssues[] {

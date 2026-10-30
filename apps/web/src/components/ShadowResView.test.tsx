@@ -33,8 +33,20 @@ describe("ShadowResView", () => {
     expect(screen.getByText("Playertwo")).toBeTruthy();
     expect(screen.getByText(/snapshot per pull.*Mother Shahraz.*kill/i)).toBeTruthy();
   });
+  it("names the school per boss: Shadow on Shahraz, Fire on Illidan", () => {
+    render(<ShadowResView report={srReport()} fightId={60} />);
+    expect(screen.getByText("Shadow Resistance")).toBeTruthy();
+    cleanup();
+    const illidan = srReport();
+    illidan.fights = [{ id: 60, name: "Illidan Stormrage", encounterId: 609, isBoss: true, kill: true, startTime: 0, endTime: 100 }];
+    illidan.gear = [{ fightId: 60, playerId: 2, auras: [], items: [{ slot: 4, itemId: 30773, gemIds: [] }] }]; // Inferno Forged Hauberk
+    render(<ShadowResView report={illidan} fightId={60} />);
+    expect(screen.getByText("Fire Resistance")).toBeTruthy();
+    expect(screen.getByText(/FR from gear \+ buffs/i)).toBeTruthy();
+    expect(screen.getByText("~60 FR")).toBeTruthy();
+  });
   it("shows a notice when the report has no SR bosses", () => {
     render(<ShadowResView report={reportFixture} fightId={ALL_FIGHTS} />); // fixture has no SR boss
-    expect(screen.getByText(/no shadow-resistance boss/i)).toBeTruthy();
+    expect(screen.getByText(/no resistance boss/i)).toBeTruthy();
   });
 });

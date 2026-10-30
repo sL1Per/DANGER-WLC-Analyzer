@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { SR_BOSSES, type ReportData } from "@wcl/core";
+import { isResBoss, type ReportData } from "@wcl/core";
 import { useIsPhone } from "../../lib/useMediaQuery";
 import { ReportHeader } from "../ReportHeader";
 import { ReportDrawer } from "./ReportDrawer";
@@ -30,8 +30,6 @@ type Cat = (typeof CATEGORIES)[number][0];
 // BOSSES card; Resistances has its own relevance rule (see below).
 const TRASH_HIDDEN_CATS: ReadonlySet<Cat> = new Set(["gear"]);
 
-const isSrBoss = (name: string): boolean => (SR_BOSSES as readonly string[]).includes(name);
-
 // Tabs that aggregate across all boss pulls (CLA report-wide audits): they only
 // make sense on the combined BOSSES card, not on a single pull or the TRASH card.
 const BOSSES_ONLY_CATS: ReadonlySet<Cat> = new Set(["summary", "buffconsumables"]);
@@ -50,14 +48,14 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
   const fightId = Number(params.get("fight")) || ALL_FIGHTS; // ALL card by default
 
   const isTrash = fightId === ALL_TRASH;
-  // Resistances only matters for the three SR-relevant boss encounters: shown on
+  // Resistances only matters for the resistance boss encounters (RES_BOSSES): shown on
   // an individual pull of one of them, or on the combined BOSSES card when the
   // report has one of those kills/wipes at all (never on TRASH or an unrelated
   // single boss pull, e.g. Gurtogg Bloodboil).
   const currentFight = fightId === ALL_FIGHTS || isTrash ? undefined : report.fights.find((f) => f.id === fightId);
   const showResistances = currentFight
-    ? currentFight.isBoss && isSrBoss(currentFight.name)
-    : fightId === ALL_FIGHTS && report.fights.some((f) => f.isBoss && isSrBoss(f.name));
+    ? currentFight.isBoss && isResBoss(currentFight.name)
+    : fightId === ALL_FIGHTS && report.fights.some((f) => f.isBoss && isResBoss(f.name));
   // Rankings (WCL boss-encounter percentiles) only make sense for the combined
   // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
   const categories = CATEGORIES.filter(([key]) => {

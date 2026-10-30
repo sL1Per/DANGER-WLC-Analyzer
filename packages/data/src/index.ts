@@ -1,5 +1,6 @@
 import itemSocketsJson from "../json/item-sockets.json";
 import itemShadowResJson from "../json/item-shadow-res.json";
+import itemFireResJson from "../json/item-fire-res.json";
 import spellHasteJson from "../json/spell-haste.json";
 import badEnchantsJson from "../json/bad-enchants.json";
 import excludedItemsJson from "../json/excluded-items.json";
@@ -11,6 +12,8 @@ export interface ExcludedItem { itemId: number; name: string; }
 
 export const itemSockets: Record<string, number> = itemSocketsJson;
 export const itemShadowRes: Record<string, number> = itemShadowResJson;
+/** itemId → innate Fire Resistance, from wago.tools ItemSparse (scripts/extract_fire_res.py). */
+export const itemFireRes: Record<string, number> = itemFireResJson;
 export const spellHaste: Record<string, number> = spellHasteJson;
 /** spell id -> base cast time in deci-seconds (Base ms / 100), from wago.tools
  *  SpellMisc x SpellCastTimes for TBC 2.5.4. Used by activity() for active-time. */
@@ -23,6 +26,7 @@ export const excludedItems: ExcludedItem[] = excludedItemsJson;
 
 export * from "./consumables";
 export * from "./shadowResistance";
+export * from "./fireResistance";
 export * from "./rpb";
 export * from "./classAbilities";
 export * from "./classAbilityCatalog";
