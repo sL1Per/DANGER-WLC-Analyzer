@@ -46,7 +46,7 @@ export const shadowResEnchants: Record<string, number> = {
 /**
  * Socketed-gem itemId → Shadow Resistance granted. WCL combatantInfo reports
  * each socket's gem itemId in `gems[].id`; only Void Sphere carries resistance
- * among gems raiders actually slot for Shahraz/Kaz'rogal/Azgalor.
+ * among gems raiders actually slot for Shahraz.
  *   22459  Void Sphere — epic prismatic gem, "+4 Resist All" (full value counts
  *          toward Shadow); verified wowhead.com/tbc/item=22459 on 2026-08-31.
  */
@@ -98,6 +98,6 @@ export const shadowResBuffs: Record<string, number> = {
 
 /**
  * Advisory soft target for colouring a player's TOTAL SR. NOT an official
- * threshold — Shahraz/Kaz'rogal/Azgalor have no hard SR gate; this is guidance.
+ * threshold — Shahraz has no hard SR gate; this is guidance.
  */
 export const SR_SOFT_TARGET = 100;

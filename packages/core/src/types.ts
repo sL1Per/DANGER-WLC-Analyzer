@@ -45,8 +45,11 @@
  *       too low); Shattrath Mighty Restoration flagged suboptimal too.
  *  16 — Resistances tab is per school: Illidan Stormrage added as a fire
  *       boss (Flame tank FR from gear/enchants/auras); result carries `school`.
+ *  17 — Kaz'rogal/Azgalor dropped from resistance bosses: Resistances tab is
+ *       Shahraz (shadow) + Illidan (fire) only; SR gear on Hyjal is no longer
+ *       exempt from Gear issues.
  */
-export const SCHEMA_VERSION = 16;
+export const SCHEMA_VERSION = 17;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

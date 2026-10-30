@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resistance, type ResistanceConfig } from "./shadowResistance";
+import { isResBoss, resistance, type ResistanceConfig } from "./shadowResistance";
 import type { ReportData } from "./types";
 
 const cfg: ResistanceConfig = {
@@ -128,5 +128,14 @@ describe("resistance", () => {
   });
   it("on Shahraz, reports Shadow Resistance", () => {
     expect(resistance(report([KILL]), cfg)!.school).toBe("shadow");
+  });
+});
+
+describe("isResBoss", () => {
+  it("is only the bosses that need resist gear: Shahraz and Illidan, not Hyjal", () => {
+    expect(isResBoss("Mother Shahraz")).toBe(true);
+    expect(isResBoss("Illidan Stormrage")).toBe(true);
+    expect(isResBoss("Kaz'rogal")).toBe(false);
+    expect(isResBoss("Azgalor")).toBe(false);
   });
 });

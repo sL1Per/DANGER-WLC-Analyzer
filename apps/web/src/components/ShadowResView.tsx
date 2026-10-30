@@ -51,7 +51,7 @@ export function ShadowResView({ report, fightId }: { report: ReportData; fightId
   }, [result, classOf]);
 
   if (result === null) {
-    return <p>This report has no resistance boss (Mother Shahraz, Illidan Stormrage, Kaz'rogal, or Azgalor).</p>;
+    return <p>This report has no resistance boss (Mother Shahraz or Illidan Stormrage).</p>;
   }
 
   const abbr = RES_ABBR[result.school];
@@ -59,8 +59,10 @@ export function ShadowResView({ report, fightId }: { report: ReportData; fightId
   const sevClass = (p: { severity?: string }) => (p.severity ? `sev-${p.severity}` : undefined);
   const schoolNotice = (
     <p className="notice">
-      {result.boss}: <strong>{schoolName}</strong>
-      {result.school === "fire" && " — worn by the Flame of Azzinoth tanks; only players with FR gear are coloured."}
+      Showing <strong>{schoolName}</strong> for {result.boss}
+      {result.school === "fire"
+        ? " — worn by the Flame of Azzinoth tanks; only players with FR gear are coloured."
+        : " — worn by the whole raid."}
     </p>
   );
 

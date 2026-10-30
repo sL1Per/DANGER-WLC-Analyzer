@@ -1,14 +1,13 @@
 import type { Fight, ReportData } from "./types";
 import type { IssueSeverity } from "./gearIssues";
 
-/** Resistance school worn per encounter. Shahraz (whole raid) and Kaz'rogal/
- *  Azgalor (Hyjal) are shadow; on Illidan the Flame of Azzinoth tanks stack fire.
+/** Resistance school worn per encounter — only bosses that call for resist
+ *  gear: Shahraz (whole raid) is shadow; on Illidan the Flame of Azzinoth tanks
+ *  stack fire.
  *  Key order is the fallback order on the combined BOSSES card. */
 export const RES_BOSSES = {
   "Mother Shahraz": "shadow",
   "Illidan Stormrage": "fire",
-  "Kaz'rogal": "shadow",
-  "Azgalor": "shadow",
 } as const satisfies Record<string, ResSchool>;
 export type ResSchool = "shadow" | "fire";
 export type ResBoss = keyof typeof RES_BOSSES;
