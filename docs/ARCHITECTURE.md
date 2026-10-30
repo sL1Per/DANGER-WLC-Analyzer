@@ -246,9 +246,11 @@ only.
 
 ## Auto-posting new raids (`apps/web/scripts/autoIngest.ts`)
 
-A scheduled GitHub Actions workflow
+A GitHub Actions workflow
 ([`.github/workflows/auto-ingest.yml`](../.github/workflows/auto-ingest.yml),
-every 15 min, guild ID hard-coded there) posts a guild's newly finished raid
+guild ID hard-coded there) — started every 15 min by the API Worker's Cloudflare
+Cron Trigger (`apps/api/src/dispatchIngest.ts`, since GitHub's own schedule runs
+hours late; that schedule remains as a backup) — posts a guild's newly finished raid
 logs to Discord with no one in the loop. It runs the browser pipeline under
 Node — `fetchGuildReports` → `loadReport` → `publishSnapshotTo`
 (`lib/shareCore.ts`, the Node-safe half of `share.ts`) → `postToDiscord` — with a

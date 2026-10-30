@@ -106,10 +106,22 @@ One-time setup:
    48 hours. Point `DISCORD_WEBHOOK_URL` at a test channel first if you want to
    see a real post before the guild does.
 
+6. **Reliable 15-minute runs.** GitHub's own `schedule` is best-effort (observed:
+   every 4–7 h), so the API Worker has a Cloudflare Cron Trigger
+   (`apps/api/wrangler.jsonc` → `triggers.crons`, `src/dispatchIngest.ts`) that
+   starts the workflow every 15 min as a live run. It needs one secret:
+   - GitHub → your avatar → Settings → Developer settings → Personal access
+     tokens → **Fine-grained tokens** → Generate new token. Repository access:
+     **Only select repositories** → this repo. Permissions → Repository →
+     **Actions: Read and write** (nothing else).
+   - `cd apps/api && npx wrangler secret put GITHUB_DISPATCH_TOKEN` and paste it.
+   - Fine-grained tokens expire (max 1 year): set a reminder to renew it. Until
+     it is set (or after it expires) the Worker logs "dispatch skipped"/an error
+     and only GitHub's own schedule runs.
+
 Notes:
-- GitHub can start scheduled runs 5–20 min late, and **disables schedules after 60
-  days without repo activity**. If posts stop, re-enable the workflow in the
-  Actions tab.
+- GitHub's schedule stays on as a backup. It's **disabled after 60 days without
+  repo activity**; the Cloudflare trigger isn't affected by that.
 - To reset the job's state (e.g. after changing guild), delete the `ingest:state`
   key from the `SHARE_KV` namespace in the Cloudflare dashboard.
 - Locally: `GUILD_ID=… WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/web ingest --dry-run --recheck-seconds=10`.

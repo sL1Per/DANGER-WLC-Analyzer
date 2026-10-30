@@ -14,6 +14,12 @@
   // Lock /api/* CORS to the deployed web app. Update to your web origin,
   // e.g. https://danger-wlc-analyzer.<your-subdomain>.workers.dev
   "vars": {
-    "WEB_ORIGIN": "https://danger-wlc-analyzer.slipviegas.workers.dev"
-  }
+    "WEB_ORIGIN": "https://danger-wlc-analyzer.slipviegas.workers.dev",
+    // Repo whose auto-ingest workflow the cron below starts. Also needs the
+    // secret GITHUB_DISPATCH_TOKEN (see docs/DEPLOYMENT.md).
+    "GITHUB_REPO": "sL1Per/DANGER-WLC-Analyzer"
+  },
+  // Start the auto-ingest GitHub workflow every 15 min (GitHub's own schedule
+  // runs hours late). See src/dispatchIngest.ts.
+  "triggers": { "crons": ["*/15 * * * *"] }
 }
