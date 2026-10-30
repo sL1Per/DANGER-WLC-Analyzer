@@ -181,10 +181,10 @@ describe("ReportPage — category / tab behaviour (via ReportView)", () => {
       renderAt("/report/abc?fight=99");
       expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
     });
-    it("shows Resistances on the combined BOSSES card", () => {
+    it("hides Resistances on the combined BOSSES card, even though the report has Shahraz", () => {
       loadSrFixture();
       renderAt("/report/abc");
-      expect(screen.getByRole("button", { name: /^Resistances$/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Resistances$/i })).not.toBeInTheDocument();
     });
     it("shows Resistances on an Illidan Stormrage pull", () => {
       const srFixture = structuredClone(reportFixture);

@@ -48,14 +48,11 @@ export function ReportView({ report, stale = false, onRefresh, shareActions }: R
   const fightId = Number(params.get("fight")) || ALL_FIGHTS; // ALL card by default
 
   const isTrash = fightId === ALL_TRASH;
-  // Resistances only matters for the resistance boss encounters (RES_BOSSES): shown on
-  // an individual pull of one of them, or on the combined BOSSES card when the
-  // report has one of those kills/wipes at all (never on TRASH or an unrelated
-  // single boss pull, e.g. Gurtogg Bloodboil).
+  // Resistances only matters for the resistance boss encounters (RES_BOSSES): shown
+  // only on an individual pull of one of them — never on the combined BOSSES card,
+  // TRASH, or an unrelated single boss pull (e.g. Gurtogg Bloodboil).
   const currentFight = fightId === ALL_FIGHTS || isTrash ? undefined : report.fights.find((f) => f.id === fightId);
-  const showResistances = currentFight
-    ? currentFight.isBoss && isResBoss(currentFight.name)
-    : fightId === ALL_FIGHTS && report.fights.some((f) => f.isBoss && isResBoss(f.name));
+  const showResistances = currentFight !== undefined && currentFight.isBoss && isResBoss(currentFight.name);
   // Rankings (WCL boss-encounter percentiles) only make sense for the combined
   // BOSSES card — hide the tab on the TRASH card and on individual boss pulls.
   const categories = CATEGORIES.filter(([key]) => {
