@@ -43,6 +43,20 @@ describe("consumable reference data", () => {
     expect(consumableBuffs.find((b) => b.spellId === 28497)?.category).toBe("battleElixir"); // Elixir of Major Agility
     expect(consumableBuffs.find((b) => b.spellId === 28520)?.category).toBe("flask"); // Relentless Assault
   });
+  it("counts both the regular and the Shattrath version of each flask", () => {
+    // regular aura id → Shattrath pull-aura id (WCL gameData, 2026-10-30)
+    const pairs = [
+      [28518, 41607], // Fortification
+      [28519, 41605], // Mighty Restoration
+      [17628, 41604], // Supreme Power
+      [28520, 41606], // Relentless Assault
+      [28540, 46838], // Pure Death
+      [28521, 46840], // Blinding Light
+    ];
+    for (const ids of pairs) {
+      for (const id of ids) expect(consumableBuffs.find((b) => b.spellId === id)?.category).toBe("flask");
+    }
+  });
   it("scroll entries carry type and level", () => {
     const agi5 = consumableBuffs.find((b) => b.scroll?.type === "Agi" && b.scroll.level === 5);
     expect(agi5).toBeDefined();

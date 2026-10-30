@@ -40,8 +40,11 @@
  *       Historical ranking snapshot not computed yet) no longer round-trips
  *       to a bogus number; falls back to the Today bracket per character,
  *       else NaN (rendered as "—", not dropped from the roster).
+ *  15 — Consumables: Shattrath flask pull-aura ids (41604–41607, 46838,
+ *       46840) now count as flasks (previously missed → flask/elixirOrFlask
+ *       too low); Shattrath Mighty Restoration flagged suboptimal too.
  */
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 /** A cached report is stale when its stamped version differs from the current
  *  one. Pre-versioning caches have no `schemaVersion` (undefined) → stale. */

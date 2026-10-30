@@ -48,6 +48,17 @@ export const consumableBuffs: ConsumableBuff[] = [
   { spellId: 28521, name: "Flask of Blinding Light", category: "flask" },
   { spellId: 28540, name: "Flask of Pure Death", category: "flask" },
   { spellId: 42735, name: "Flask of Chromatic Wonder", category: "flask" },
+  // Shattrath flasks: each has two same-named spells — the item's use spell
+  // (41608–41611, 46837, 46839) and the buff aura it applies, which is what
+  // combatantInfo pull auras report (41604–41607, 46838, 46840). Names checked
+  // via WCL gameData.ability on 2026-10-30; 41606/46838/46840 also seen as pull
+  // auras in a live BT/Hyjal log. The use-spell ids are kept as a fallback.
+  { spellId: 41607, name: "Shattrath Flask of Fortification", category: "flask" },
+  { spellId: 41605, name: "Shattrath Flask of Mighty Restoration", category: "flask" },
+  { spellId: 41604, name: "Shattrath Flask of Supreme Power", category: "flask" },
+  { spellId: 41606, name: "Shattrath Flask of Relentless Assault", category: "flask" },
+  { spellId: 46838, name: "Shattrath Flask of Pure Death", category: "flask" },
+  { spellId: 46840, name: "Shattrath Flask of Blinding Light", category: "flask" },
   { spellId: 41609, name: "Shattrath Flask of Fortification", category: "flask" },
   { spellId: 41610, name: "Shattrath Flask of Mighty Restoration", category: "flask" },
   { spellId: 41611, name: "Shattrath Flask of Supreme Power", category: "flask" },
@@ -169,6 +180,8 @@ export const suboptimalConsumables: SuboptimalConsumable[] = [
   // --- always suboptimal: outdated or strictly worse than the current best ---
   { kind: "buff", id: 17538, name: "Elixir of the Mongoose" }, // vanilla elixir, beaten by Elixir of Major Agility
   { kind: "buff", id: 28519, name: "Flask of Mighty Restoration" }, // weak mp5 flask
+  { kind: "buff", id: 41605, name: "Shattrath Flask of Mighty Restoration" }, // same flask, Shattrath pull aura
+  { kind: "buff", id: 41610, name: "Shattrath Flask of Mighty Restoration" }, // same flask, use-spell id fallback
   { kind: "buff", id: 35272, name: "Well Fed (generic, +20 Sta/Spi)" }, // a stat food beats it for every role
   { kind: "buff", id: 3166, name: "Elixir of Wisdom" }, // UNVERIFIED: original flags "Increased Intellect"; exact buff id it meant is unclear
   { kind: "buff", id: 11396, name: "Elixir of Greater Intellect" }, // low-level int elixir
