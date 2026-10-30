@@ -12,7 +12,7 @@ on:
         type: boolean
         default: true
       since:
-        description: "Optional start date (e.g. 2026-10-20) to include older raids"
+        description: "Optional start date (e.g. 2026-10-20) to look further back than LOOKBACK_HOURS"
         type: string
         default: ""
 # The job only reads the repo; it talks to WCL/Discord/the API with its own secrets.
@@ -45,6 +45,8 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           SINCE: ${{ inputs.since }}
           GUILD_ID: "811975"
+          # Each run posts every finished, not-yet-posted log from this window.
+          LOOKBACK_HOURS: "48"
           WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
           WCL_CLIENT_SECRET: ${{ secrets.WCL_CLIENT_SECRET }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

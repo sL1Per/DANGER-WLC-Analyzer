@@ -82,6 +82,8 @@ You can drive the whole thing from the browser via **Workers Builds** (Git-conne
 each newly finished raid's share link to Discord (see
 [ARCHITECTURE.md](ARCHITECTURE.md#auto-posting-new-raids-appswebscriptsautoingestts)).
 The guild is hard-coded there as `GUILD_ID: "811975"` — edit it to watch another guild.
+Each run looks back `LOOKBACK_HOURS` (48) and posts every finished log there that
+it hasn't posted before, so a raid uploaded the next morning is still picked up.
 
 One-time setup:
 
@@ -96,14 +98,13 @@ One-time setup:
      `INGEST_TOKEN` (same value as step 2).
    - Variables: `API_BASE` = the API Worker's origin, `WEB_ORIGIN` = the web app's
      origin (both without a trailing slash).
-4. **Dry run.** Actions → *auto-ingest* → *Run workflow*, leaving `dry_run` on and
-   setting `since` to a recent date. The log shows which raids it would post and
-   the exact Discord messages. Nothing is published or saved.
+4. **Dry run.** Actions → *auto-ingest* → *Run workflow*, leaving `dry_run` on.
+   The log shows which raids it would post and the exact Discord messages.
+   Nothing is published or saved. Set `since` to preview older raids.
 5. **Go live.** The 15-minute schedule starts on its own once the workflow is on
-   the default branch. The first live run saves `since = now`, so past raids are
-   not posted. To post a recent raid anyway, run the workflow manually with
-   `dry_run` off and `since` set. Point `DISCORD_WEBHOOK_URL` at a test channel
-   first if you want to see a real post before the guild does.
+   the default branch; the first live run posts the finished raids from the last
+   48 hours. Point `DISCORD_WEBHOOK_URL` at a test channel first if you want to
+   see a real post before the guild does.
 
 Notes:
 - GitHub can start scheduled runs 5–20 min late, and **disables schedules after 60
@@ -111,7 +112,7 @@ Notes:
   Actions tab.
 - To reset the job's state (e.g. after changing guild), delete the `ingest:state`
   key from the `SHARE_KV` namespace in the Cloudflare dashboard.
-- Locally: `GUILD_ID=… WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/web ingest --dry-run --since=2026-10-20 --settle-minutes=0`.
+- Locally: `GUILD_ID=… WCL_CLIENT_ID=… WCL_CLIENT_SECRET=… pnpm --filter @wcl/web ingest --dry-run --recheck-seconds=10`.
 
 ## Snapshots are gzip-compressed (free-tier constraint)
 

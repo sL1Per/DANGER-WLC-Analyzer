@@ -256,9 +256,12 @@ Node — `fetchGuildReports` → `loadReport` → `publishSnapshotTo`
 
 The decisions live in a pure planner (`scripts/ingestPlan.ts`):
 
-- **Finished** = the report's `endTime` has stayed the same for 30 min (WCL lists a
-  report as soon as live logging/upload starts) and it has ≥ 1 boss fight.
-- **No backfill**: the first run records `since = now`; older raids are ignored.
+- **Window**: each run lists the guild's logs from the last `LOOKBACK_HOURS` (48,
+  set in the workflow) — logs are often uploaded the morning after — and posts
+  every finished one not posted before.
+- **Finished** = the log's last event is ≥ 30 min old (a live-logged raid keeps
+  `endTime` near now) and it has ≥ 1 boss fight. A log caught mid-upload looks
+  old too, so the run lists again 2 min later and only posts logs that didn't grow.
 - **Duplicate logs** of one raid (two raiders logging) share a boss pull — same
   encounter, start within 60 s. Only the log with the most boss fights is posted,
   once all of them have finished. Player lists aren't used: WCL includes
@@ -266,7 +269,7 @@ The decisions live in a pure planner (`scripts/ingestPlan.ts`):
 - A report is marked posted only after Discord accepts the message, so failures
   retry on the next run.
 
-The job's state (posted/pending codes) is one JSON document in `SHARE_KV`
+The job's state (posted codes) is one JSON document in `SHARE_KV`
 (`ingest:state`, no expiry), read and written through
 `GET`/`PUT /api/ingest/state`, which require `Authorization: Bearer <INGEST_TOKEN>`
 and answer 503 when the Worker has no `INGEST_TOKEN`.

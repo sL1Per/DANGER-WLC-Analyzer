@@ -5,12 +5,8 @@ import type { GuildReport } from "../src/lib/wcl/wcl";
 // Discord this run. All I/O lives in the job; this only transforms state.
 
 export interface IngestState {
-  /** epoch ms; reports that started before this are never posted (no backfill) */
-  since: number;
   /** code → shareId once posted; null when skipped as another log of the same raid */
   posted: Record<string, string | null>;
-  /** code → last-seen endTime and when that endTime was first seen */
-  pending: Record<string, { endTime: number; seenAt: number }>;
   lastRunAt?: number;
   lastError?: string;
 }
@@ -19,16 +15,14 @@ const POSTED_HISTORY_MAX = 200;
 /** two logs' pulls of the same boss starting this close together are the same pull */
 const SAME_PULL_TOLERANCE_MS = 60_000;
 
-export function initialState(now: number): IngestState {
-  return { since: now, posted: {}, pending: {} };
+export function initialState(): IngestState {
+  return { posted: {} };
 }
 
-/** Record a successful post. Called only after Discord accepted the message, so
- *  a failed publish/post leaves the code pending and it's retried next run. */
+/** Record a post (or a skipped duplicate, shareId null). Called only after
+ *  Discord accepted the message, so a failed publish/post is retried next run. */
 export function markPosted(state: IngestState, code: string, shareId: string | null): IngestState {
-  const { [code]: _done, ...pending } = state.pending;
-  void _done;
-  return { ...state, pending, posted: { ...state.posted, [code]: shareId } };
+  return { ...state, posted: { ...state.posted, [code]: shareId } };
 }
 
 const bossFights = (r: GuildReport) => r.fights.filter((f) => f.encounterID !== 0).length;
@@ -46,25 +40,23 @@ function sameRaid(a: GuildReport, b: GuildReport): boolean {
     pullsB.some((q) => q.id === p.id && Math.abs(q.at - p.at) <= SAME_PULL_TOLERANCE_MS));
 }
 
-/** Decide what to post. A log is "finished" once its endTime has stayed the same
- *  for `settleMs` (WCL lists a report as soon as live logging/upload starts and
- *  it keeps growing until then) and it has at least one boss fight. When several
- *  logs cover the same raid, only the one with the most boss fights is posted,
- *  and only after all of them have finished. */
+/** Decide what to post from one listing of the guild's recent reports.
+ *
+ *  A log is "finished" once its last event is at least `quietMs` old: a raid
+ *  being live-logged keeps endTime near now, while a log uploaded the morning
+ *  after already ends hours ago. (A log caught mid-upload also looks old — the
+ *  job guards that by listing again and keeping only logs that didn't grow; see
+ *  `unchanged`.) It also needs a boss fight. When several logs cover the same
+ *  raid, only the one with the most boss fights is posted, once all are finished;
+ *  the rest are recorded as skipped duplicates. */
 export function planIngest(
-  reports: GuildReport[], state: IngestState, now: number, settleMs: number,
+  reports: GuildReport[], state: IngestState, now: number, quietMs: number,
 ): { toPost: GuildReport[]; nextState: IngestState } {
-  const candidates = reports.filter((r) => r.startTime >= state.since && !(r.code in state.posted));
+  const candidates = reports.filter((r) => !(r.code in state.posted));
   const alreadyPosted = reports.filter((r) => typeof state.posted[r.code] === "string");
+  const finished = (r: GuildReport) => now - r.endTime >= quietMs;
 
-  const pending: IngestState["pending"] = {};
-  for (const r of candidates) {
-    const prev = state.pending[r.code];
-    pending[r.code] = prev && prev.endTime === r.endTime ? prev : { endTime: r.endTime, seenAt: now };
-  }
-  const settled = (r: GuildReport) => now - pending[r.code]!.seenAt >= settleMs;
-
-  let nextState: IngestState = { ...state, pending };
+  let nextState = state;
   const toPost: GuildReport[] = [];
   const handled = new Set<string>();
   for (const r of candidates) {
@@ -76,7 +68,7 @@ export function planIngest(
       for (const o of group) nextState = markPosted(nextState, o.code, null);
       continue;
     }
-    if (!group.every(settled)) continue;
+    if (!group.every(finished)) continue;
     const best = [...group].sort((x, y) =>
       bossFights(y) - bossFights(x) || (y.endTime - y.startTime) - (x.endTime - x.startTime))[0]!;
     if (bossFights(best) === 0) continue;
@@ -91,4 +83,14 @@ export function planIngest(
   }
   toPost.sort((a, b) => a.startTime - b.startTime);
   return { toPost, nextState };
+}
+
+/** The reports from `before` that a later listing (`after`) shows unchanged —
+ *  same endTime and fight count — i.e. not still being uploaded. */
+export function unchanged(before: GuildReport[], after: GuildReport[]): GuildReport[] {
+  const later = new Map(after.map((r) => [r.code, r]));
+  return before.filter((r) => {
+    const o = later.get(r.code);
+    return o !== undefined && o.endTime === r.endTime && o.fights.length === r.fights.length;
+  });
 }

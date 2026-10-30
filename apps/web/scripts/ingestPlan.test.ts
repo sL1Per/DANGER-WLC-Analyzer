@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { GuildReport } from "../src/lib/wcl/wcl";
-import { initialState, markPosted, planIngest, type IngestState } from "./ingestPlan";
+import { initialState, markPosted, planIngest, unchanged } from "./ingestPlan";
 
 const MIN = 60_000;
-const SETTLE = 30 * MIN;
+const QUIET = 30 * MIN;
 const T0 = 1_000_000_000_000;
 
 function report(over: Partial<GuildReport> & { code: string }): GuildReport {
@@ -13,77 +13,51 @@ function report(over: Partial<GuildReport> & { code: string }): GuildReport {
   };
 }
 
-/** state where `r` was first seen with its current endTime `ago` ms before `now` */
-function seen(state: IngestState, r: GuildReport, at: number): IngestState {
-  return { ...state, pending: { ...state.pending, [r.code]: { endTime: r.endTime, seenAt: at } } };
-}
-
 describe("planIngest", () => {
   const now = T0 + 300 * MIN;
 
-  it("ignores reports that started before `since` (no backfill)", () => {
-    const r = report({ code: "old", startTime: T0 - 1 });
-    const { toPost, nextState } = planIngest([r], initialState(T0), now, SETTLE);
-    expect(toPost).toEqual([]);
-    expect(nextState.pending).toEqual({});
+  it("posts a log uploaded long after the raid ended", () => {
+    // Raid ended hours ago and was only uploaded the next morning.
+    const r = report({ code: "late", endTime: now - 12 * 60 * MIN });
+    expect(planIngest([r], initialState(), now, QUIET).toPost.map((x) => x.code)).toEqual(["late"]);
   });
 
-  it("puts a newly seen report into pending without posting it", () => {
-    const r = report({ code: "new" });
-    const { toPost, nextState } = planIngest([r], initialState(T0), now, SETTLE);
-    expect(toPost).toEqual([]);
-    expect(nextState.pending.new).toEqual({ endTime: r.endTime, seenAt: now });
+  it("waits while a log is still being live-logged", () => {
+    const r = report({ code: "live", endTime: now - 2 * MIN });
+    expect(planIngest([r], initialState(), now, QUIET).toPost).toEqual([]);
   });
 
-  it("restarts the settle clock when the log is still growing", () => {
-    const r = report({ code: "live" });
-    const state = { ...initialState(T0), pending: { live: { endTime: r.endTime - MIN, seenAt: now - 60 * MIN } } };
-    const { toPost, nextState } = planIngest([r], state, now, SETTLE);
-    expect(toPost).toEqual([]);
-    expect(nextState.pending.live).toEqual({ endTime: r.endTime, seenAt: now });
+  it("posts once the log has been quiet for the quiet period", () => {
+    const r = report({ code: "done", endTime: now - QUIET });
+    expect(planIngest([r], initialState(), now, QUIET).toPost.map((x) => x.code)).toEqual(["done"]);
   });
 
-  it("posts a report whose endTime has been unchanged for the settle period", () => {
-    const r = report({ code: "done" });
-    const { toPost } = planIngest([r], seen(initialState(T0), r, now - SETTLE), now, SETTLE);
-    expect(toPost.map((x) => x.code)).toEqual(["done"]);
-  });
-
-  it("does not post a settled log that has no boss fights", () => {
+  it("does not post a log that has no boss fights", () => {
     const r = report({ code: "trash", fights: [{ encounterID: 0, kill: null, startTime: 0 }] });
-    const { toPost, nextState } = planIngest([r], seen(initialState(T0), r, now - SETTLE), now, SETTLE);
-    expect(toPost).toEqual([]);
-    expect(nextState.pending.trash).toBeDefined();
-  });
-
-  it("with a zero settle period, posts a finished log on first sight", () => {
-    const r = report({ code: "now" });
-    expect(planIngest([r], initialState(T0), now, 0).toPost.map((x) => x.code)).toEqual(["now"]);
+    expect(planIngest([r], initialState(), now, QUIET).toPost).toEqual([]);
   });
 
   it("never re-posts a report already marked posted", () => {
     const r = report({ code: "done" });
-    const state = markPosted(seen(initialState(T0), r, now - SETTLE), "done", "share1");
-    expect(planIngest([r], state, now, SETTLE).toPost).toEqual([]);
+    const state = markPosted(initialState(), "done", "share1");
+    expect(planIngest([r], state, now, QUIET).toPost).toEqual([]);
+  });
+
+  it("does not change state for reports it posts (the job marks them after Discord accepts)", () => {
+    const r = report({ code: "done" });
+    expect(planIngest([r], initialState(), now, QUIET).nextState.posted).toEqual({});
   });
 
   it("orders posts oldest first", () => {
     const a = report({ code: "a", startTime: T0 + 200 * MIN, endTime: T0 + 250 * MIN });
     const b = report({ code: "b", startTime: T0 + 10 * MIN, endTime: T0 + 60 * MIN });
-    let s = seen(initialState(T0), a, now - SETTLE);
-    s = seen(s, b, now - SETTLE);
-    expect(planIngest([a, b], s, now, SETTLE).toPost.map((x) => x.code)).toEqual(["b", "a"]);
-  });
-
-  it("prunes pending entries for codes WCL no longer lists", () => {
-    const state = { ...initialState(T0), pending: { gone: { endTime: 1, seenAt: 1 } } };
-    expect(planIngest([], state, now, SETTLE).nextState.pending).toEqual({});
+    expect(planIngest([a, b], initialState(), now, QUIET).toPost.map((x) => x.code)).toEqual(["b", "a"]);
   });
 
   it("caps the posted history", () => {
-    let state = initialState(T0);
+    let state = initialState();
     for (let i = 0; i < 250; i++) state = markPosted(state, `c${i}`, `s${i}`);
-    const posted = planIngest([], state, now, SETTLE).nextState.posted;
+    const posted = planIngest([], state, now, QUIET).nextState.posted;
     expect(Object.keys(posted)).toHaveLength(200);
     expect(posted.c249).toBe("s249");
     expect(posted.c0).toBeUndefined();
@@ -101,21 +75,17 @@ describe("planIngest", () => {
       fights: hyjal(12 * MIN + 5_000) });
 
     it("waits while any overlapping log is still growing", () => {
-      const s = seen(seen(initialState(T0), part, now - SETTLE), full, now - MIN);
-      expect(planIngest([full, part], s, now, SETTLE).toPost).toEqual([]);
+      expect(planIngest([full, part], initialState(), T0 + 180 * MIN, QUIET).toPost).toEqual([]);
     });
 
     it("posts only the log with the most boss fights and marks the other as a duplicate", () => {
-      const s = seen(seen(initialState(T0), part, now - SETTLE), full, now - SETTLE);
-      const { toPost, nextState } = planIngest([full, part], s, now, SETTLE);
+      const { toPost, nextState } = planIngest([full, part], initialState(), now, QUIET);
       expect(toPost.map((x) => x.code)).toEqual(["full"]);
       expect(nextState.posted.part).toBeNull();
-      expect(nextState.pending.part).toBeUndefined();
     });
 
-    it("marks a later log of an already-posted raid as a duplicate", () => {
-      const s = seen(markPosted(initialState(T0), "full", "share1"), part, now - SETTLE);
-      const { toPost, nextState } = planIngest([full, part], s, now, SETTLE);
+    it("marks a later-uploaded log of an already-posted raid as a duplicate", () => {
+      const { toPost, nextState } = planIngest([full, part], markPosted(initialState(), "full", "share1"), now, QUIET);
       expect(toPost).toEqual([]);
       expect(nextState.posted.part).toBeNull();
     });
@@ -123,17 +93,20 @@ describe("planIngest", () => {
     it("treats overlapping logs with different boss pulls as separate raids", () => {
       const other = report({ code: "other", startTime: T0 + 18 * MIN, endTime: T0 + 104 * MIN,
         fights: [{ encounterID: 601, kill: true, startTime: 40 * MIN }] });
-      const s = seen(seen(initialState(T0), other, now - SETTLE), full, now - SETTLE);
-      expect(planIngest([full, other], s, now, SETTLE).toPost.map((x) => x.code)).toEqual(["full", "other"]);
+      expect(planIngest([full, other], initialState(), now, QUIET).toPost.map((x) => x.code)).toEqual(["full", "other"]);
     });
   });
 });
 
-describe("markPosted", () => {
-  it("moves a code from pending to posted", () => {
-    const state = { ...initialState(T0), pending: { a: { endTime: 1, seenAt: 1 } } };
-    const next = markPosted(state, "a", "share1");
-    expect(next.posted.a).toBe("share1");
-    expect(next.pending.a).toBeUndefined();
+describe("unchanged", () => {
+  it("keeps reports whose endTime and fight count didn't move between two listings", () => {
+    const a = report({ code: "a" });
+    const b = report({ code: "b" });
+    const bGrew = { ...b, endTime: b.endTime + MIN, fights: [...b.fights, { encounterID: 602, kill: true, startTime: 1 }] };
+    expect(unchanged([a, b], [a, bGrew]).map((r) => r.code)).toEqual(["a"]);
+  });
+
+  it("drops reports missing from the later listing", () => {
+    expect(unchanged([report({ code: "a" })], [])).toEqual([]);
   });
 });

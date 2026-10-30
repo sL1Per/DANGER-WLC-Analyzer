@@ -4,20 +4,23 @@
 // and post its /s/<shareId> link to Discord. Reuses the browser pipeline as-is —
 // Node 22 has fetch/btoa/CompressionStream — with a dedicated service WCL key.
 //
-//   pnpm --filter @wcl/web ingest [--dry-run] [--since=2026-10-20] [--settle-minutes=30]
+//   pnpm --filter @wcl/web ingest [--dry-run] [--since=2026-10-20] [--quiet-minutes=30] [--recheck-seconds=120]
 //
-// --dry-run loads the reports and prints the Discord messages, but publishes,
-// posts and saves nothing; with --since it can preview past raids.
+// Each run looks back LOOKBACK_HOURS (default 48) — raids are often uploaded
+// the morning after — and posts every finished log there not posted before.
+// --since replaces that window's start. --dry-run loads the reports and prints
+// the Discord messages, but publishes, posts and saves nothing.
 import { fetchToken, fetchGuildReports, type GuildReport } from "../src/lib/wcl/wcl";
 import { loadReport } from "../src/lib/wcl/loadReport";
 import { publishSnapshotTo, shareUrlFor } from "../src/lib/shareCore";
 import { buildShareMessage, isValidWebhookUrl, postToDiscord } from "../src/lib/discord";
-import { initialState, markPosted, planIngest, type IngestState } from "./ingestPlan";
+import { initialState, markPosted, planIngest, unchanged, type IngestState } from "./ingestPlan";
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const dryRun = args.includes("--dry-run");
-const settleMs = Number(flag("settle-minutes") ?? 30) * 60_000;
+const quietMs = Number(flag("quiet-minutes") ?? 30) * 60_000;
+const recheckMs = Number(flag("recheck-seconds") ?? 120) * 1000;
 const sinceOverride = flag("since") ? Date.parse(flag("since")!) : undefined;
 
 function env(name: string, required = true): string {
@@ -55,23 +58,33 @@ async function main(): Promise<void> {
   const webOrigin = env("WEB_ORIGIN", !dryRun);
   const ingestToken = env("INGEST_TOKEN", !dryRun);
 
+  const lookbackHours = Number(env("LOOKBACK_HOURS", false) || 48);
   const now = Date.now();
-  let state: IngestState | null = apiBase && ingestToken
-    ? await (await stateRequest(apiBase, ingestToken)).json() as IngestState | null
+  const since = sinceOverride ?? now - lookbackHours * 3_600_000;
+  const saved = apiBase && ingestToken
+    ? await (await stateRequest(apiBase, ingestToken)).json() as Partial<IngestState> | null
     : null;
-  // First ever run: start watching from now, so the channel isn't flooded
-  // with the guild's past raids.
-  if (!state) {
-    console.log("No saved state — starting fresh; only raids from now on will be posted.");
-    state = initialState(now);
-  }
-  if (sinceOverride !== undefined) state = { ...state, since: sinceOverride };
+  if (!saved) console.log("No saved state — every finished raid in the window will be posted.");
+  // Only `posted` carries over (older state versions also stored since/pending).
+  const state: IngestState = { ...initialState(), posted: saved?.posted ?? {} };
 
   const wcl = await fetchToken(env("WCL_CLIENT_ID"), env("WCL_CLIENT_SECRET"));
-  const reports = await fetchGuildReports(guildId, state.since, wcl.accessToken);
-  const { toPost, nextState } = planIngest(reports, state, now, settleMs);
-  console.log(`Guild ${guildId}: ${reports.length} report(s) since ${new Date(state.since).toISOString()}, `
-    + `${Object.keys(nextState.pending).length} pending, ${toPost.length} to post.`);
+  const reports = await fetchGuildReports(guildId, since, wcl.accessToken);
+  const plan = planIngest(reports, state, now, quietMs);
+  const { nextState } = plan;
+  let { toPost } = plan;
+  console.log(`Guild ${guildId}: ${reports.length} report(s) since ${new Date(since).toISOString()}, `
+    + `${toPost.length} finished and not yet posted.`);
+
+  // A log caught mid-upload also looks finished (its events are hours old), so
+  // list again shortly and only post logs that didn't grow in between.
+  if (toPost.length > 0 && recheckMs > 0) {
+    console.log(`Re-checking in ${recheckMs / 1000}s that they're fully uploaded…`);
+    await new Promise((resolve) => setTimeout(resolve, recheckMs));
+    const stable = unchanged(toPost, await fetchGuildReports(guildId, since, wcl.accessToken));
+    for (const r of toPost) if (!stable.includes(r)) console.log(`${r.code} is still uploading — next run.`);
+    toPost = stable;
+  }
 
   let next: IngestState = { ...nextState, lastRunAt: now, lastError: undefined };
   let failures = 0;
