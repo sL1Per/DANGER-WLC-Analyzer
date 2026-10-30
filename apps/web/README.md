@@ -1,6 +1,6 @@
 # @wcl/web
 
-The React 19 + Vite single-page app for the WCL Raid Analyzer.
+The React 19 + Vite single-page app for the DANGER Raid Analyzer.
 
 This is where **all WarcraftLogs work happens** — OAuth token exchange, v2 GraphQL
 fetching, normalization into `ReportData`, and per-browser IndexedDB caching all
@@ -28,3 +28,7 @@ pnpm --filter @wcl/web lint       # eslint
   storage, theme, helpers.
 - `src/components/report/` — the report view and its tabs.
 - `src/pages/` — routed pages (`Home`, `Settings`, `Report`, `SharedReport`).
+- `src/components/AppShell.tsx` / `AppFooter.tsx` — the layout wrapper and site
+  footer (credits, GitHub link, app version from the root `package.json`).
+- `scripts/` — the auto-post job (`autoIngest.ts`, `ingestPlan.ts`), run by
+  `pnpm --filter @wcl/web ingest` in GitHub Actions.

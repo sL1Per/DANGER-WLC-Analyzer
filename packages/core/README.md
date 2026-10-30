@@ -1,6 +1,6 @@
 # @wcl/core
 
-The pure analysis engine for the WCL Raid Analyzer. No I/O, no network, no
+The pure analysis engine for the DANGER Raid Analyzer. No I/O, no network, no
 imports of `@wcl/data` — it takes a normalized `ReportData` object (plus injected
 reference-data config where needed) and returns analysis results.
 

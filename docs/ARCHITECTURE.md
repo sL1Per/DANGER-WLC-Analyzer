@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the design of the WCL Raid Analyzer: how the pieces fit
+This document describes the design of the DANGER Raid Analyzer: how the pieces fit
 together, how data flows from WarcraftLogs to the screen, and the conventions and
 trade-offs behind the implementation.
 
@@ -60,7 +60,7 @@ depends on `core` only for shared types; `web` depends on both; `api` depends on
   Settings: WCL client id + secret  ──► localStorage (wcl.credentials)
                 │
                 ▼
-  api.ts: exchange id/secret ──► OAuth token (cached in localStorage)
+  api.ts: exchange id/secret ──► OAuth token (cached in sessionStorage)
                 │
                 ▼
   loadReport(id, token)                       lib/wcl/
@@ -78,8 +78,8 @@ depends on `core` only for shared types; `web` depends on both; `api` depends on
  ─────────────────────────────────────────────────────────────────
   PublishShare ──► POST /api/share (apps/api) ──► { shareId }
                                   │
-                                  ▼  stripCredentials()
-                          in-memory ShareStore
+                                  ▼  gzip blob
+                          ShareStore (KV in prod, memory in dev)
   /s/:shareId ──► GET /api/share/:id ──► ReportData ──► read-only ReportView
 ```
 
@@ -87,8 +87,9 @@ depends on `core` only for shared types; `web` depends on both; `api` depends on
 
 The user's WCL client id + secret are stored in `localStorage` (`wcl.credentials`)
 and exchanged in-browser for an OAuth client-credentials token (HTTP Basic auth
-against `warcraftlogs.com/oauth/token`). The token is cached in `localStorage`
-(`wcl.token`) and reused until it expires.
+against `warcraftlogs.com/oauth/token`). The token is cached in `sessionStorage`
+(`wcl.token`) and reused until it expires, so it isn't kept on disk between
+sessions.
 
 ### 2. Fetch (`apps/web/src/lib/wcl/wcl.ts`)
 
@@ -188,7 +189,7 @@ React 19 + Vite, React Router. Routes (`src/App.tsx`):
 
 | Route | Page |
 | --- | --- |
-| `/` | Home — enter a report, see rankings |
+| `/` | Home — enter a report URL or id |
 | `/settings` | WCL credentials + Discord webhook |
 | `/report/:reportId?cat=…` | Main report view |
 | `/s/:shareId` | Read-only shared snapshot |
@@ -200,12 +201,17 @@ React 19 + Vite, React Router. Routes (`src/App.tsx`):
 `ReportView` is the single presentational component for both the live report and
 shared snapshots. It is driven entirely by URL search params:
 
-- **Lens** (`lens=fight|player`) — audit a fight/card, or drill into one player.
 - **Fight card** (`fight=`) — a specific fight, all bosses (`ALL_FIGHTS`), or all
-  trash (`ALL_TRASH`).
-- **Category tab** (`cat=`) — Rankings, Summary, Role breakdown, Gear,
-  Consumables, Buff consumables, Resistances. Tabs hide themselves on cards where
-  they have no data.
+  trash (`ALL_TRASH`), chosen from the picker dropdown.
+- **Category tab** (`cat=`) — Rankings (default), Summary, Role breakdown, Gear,
+  Consumables, Buff consumables, Resistances, Timeline. Tabs hide themselves on
+  cards where they have no data: Rankings only on BOSSES, Timeline only on a single
+  fight, Resistances only on a Shahraz (shadow) or Illidan (fire) pull.
+
+`AppShell` wraps every route and renders the site footer (`AppFooter`: credits, a
+GitHub link, and the app version). The version is read from the root
+`package.json` at build time and injected as `__APP_VERSION__` by Vite's `define`
+(`vite.config.ts`; `vitest.config.ts` merges the same config).
 
 `ReportPage` is a thin loader (live data via the `useReport` hook);
 `SharedReportPage` renders the same `ReportView` read-only from a snapshot.
@@ -220,20 +226,24 @@ Every analysis tab assigns severities in core, not in the UI.
 ## The snapshot store (`apps/api`)
 
 A deliberately minimal [Hono](https://hono.dev) service. It does **no** live WCL
-fetching — that all moved to the browser. It exposes exactly two endpoints:
+fetching — that all moved to the browser. Its endpoints:
 
-- `POST /api/share` — accepts a `ReportData` body, runs `stripCredentials()` to
-  defensively drop any credential-like fields, stores it, and returns `{ shareId }`.
-- `GET /api/share/:shareId` — returns the stored snapshot, or 404.
+- `POST /api/share` — accepts a **gzip-compressed** `ReportData` body (checked by
+  its magic bytes, capped at 24 MB — just under KV's per-value limit), stores the
+  bytes as-is, and returns `{ shareId }`. The browser strips credential-like fields
+  (`stripCredentials` in `apps/web/src/lib/shareCore.ts`) and gzips before upload,
+  which keeps large raids within KV and free-tier CPU limits.
+- `GET /api/share/:shareId` — returns the stored gzip blob, or 404.
+- `GET` / `PUT /api/ingest/state` — the auto-post job's state (see
+  [Auto-posting new raids](#auto-posting-new-raids-appswebscriptsautoingestts)).
 
 The storage backend is a `ShareStore` interface (`put` / `get`) injected via
-`createApp(store)` for testability. The development adapter is an in-memory map
-(`createMemoryShareStore`).
-
-> **Production note.** The dev in-memory store is an unauthenticated, unbounded
-> write endpoint — fine locally, **not** for public deployment. A production
-> adapter (e.g. Cloudflare KV/R2) must add authentication, a payload size cap, an
-> eviction policy, and rate-limiting.
+`createApp(store, opts)` for testability. Production runs on Cloudflare Workers
+(`src/worker.ts`) with a KV adapter (`createKvShareStore`); local dev uses an
+in-memory map (`createMemoryShareStore`). Snapshots expire after 30 days in both.
+CORS on `/api/*` is restricted to `WEB_ORIGIN` in production (`*` only in dev).
+The Worker's scheduled handler also starts the auto-post workflow
+(`src/dispatchIngest.ts`). Deployment steps are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Sharing model
 
@@ -280,16 +290,17 @@ and answer 503 when the Worker has no `INGEST_TOKEN`.
 
 - WCL credentials and tokens live **only** in the user's `localStorage`; they
   are never sent to any server in this project.
-- Published snapshots are credential-free by construction (`stripCredentials`,
-  covered by a test) and are shared deliberately by the user.
+- Published snapshots are credential-free by construction (`stripCredentials` runs
+  in the browser before upload, covered by a test) and are shared deliberately by
+  the user.
 - The Discord webhook URL is user-supplied and currently validated only
   client-side (host allow-list regex).
 - The auto-post job is the one exception to "keys only in the browser": its own
   dedicated WCL client and Discord webhook are GitHub secrets, never sent to the
   API or stored in KV. Its state endpoint is bearer-token protected.
-- Outstanding before any public deployment: lock down the snapshot `POST`
-  endpoint (auth / size cap / eviction / rate-limit) and CORS for the deployed
-  origin.
+- The snapshot `POST` endpoint is open but bounded: gzip-only bodies, a 24 MB cap,
+  30-day expiry, and CORS limited to the deployed web origin. It has no auth or
+  rate limiting yet.
 
 ## Testing & CI
 

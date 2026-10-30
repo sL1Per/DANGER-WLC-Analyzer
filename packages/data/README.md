@@ -1,6 +1,6 @@
 # @wcl/data
 
-Reference data for the WCL Raid Analyzer, kept separate from analysis logic so
+Reference data for the DANGER Raid Analyzer, kept separate from analysis logic so
 `@wcl/core` stays pure. Two kinds:
 
 - **Extracted JSON** (`json/`) — item sockets, item shadow resistance, spell

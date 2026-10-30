@@ -43,7 +43,7 @@ export function HomePage() {
         </div>
         {error && <p role="alert" className="sev-major">{error}</p>}
         <div className="home-footer">
-          <span>Reports are cached for 24h.</span>
+          <span>Reports are cached in this browser.</span>
           <Link to="/settings">⚙ Settings</Link>
         </div>
       </form>

@@ -1,4 +1,6 @@
-# WCL Raid Analyzer
+# DANGER Raid Analyzer
+
+**Current release: 1.4.0** · [Changelog](CHANGELOG.md)
 
 A web app for analyzing **World of Warcraft Classic (TBC)** raid logs from
 [WarcraftLogs](https://classic.warcraftlogs.com). It audits raid hygiene and
@@ -23,18 +25,21 @@ spreadsheet generator.
   discipline on boss fights, JC-neck usage, and suboptimal-consumable callouts.
 - **Drums** — Leatherworking drum effectiveness, wasted "on Tinnitus" casts,
   averages and a weighted score.
-- **Resistances** — Shadow Resistance breakdown (gear + enchants + buffs) for
-  the SR-relevant bosses.
+- **Resistances** — the resistance that matters on each boss (gear + enchants +
+  buffs): Shadow on Mother Shahraz, Fire on Illidan.
 - **Role breakdown & Summary** — per-player metrics grouped by auto-detected role
   (tank / healer / caster / physical): activity, deaths, interrupts, avoidable
   damage, class-specific ability uptimes, and more.
 - **Totem twisting** — for shamans, an air-totem slot timeline: which totem
   (Windfury / Grace of Air) held the slot over each fight, with per-totem uptime.
 - **Rankings** — WCL parse-percentile grid (player × boss) in WCL's color scale.
-- **Lenses** — view any fight, all bosses, all trash, or drill into a single
-  player; everything is colour-coded red / yellow / green by severity.
+- **Timeline** — a per-boss timeline of casts and damage, with search and filters.
+- **Fight picker** — view any single pull, all bosses, or all trash; everything is
+  colour-coded red / yellow / green by severity.
 - **Share** — publish a credential-free snapshot to a `/s/<id>` link, optionally
   posted to a Discord webhook.
+- **Auto-post** — a scheduled job posts the guild's newly finished raid logs to
+  Discord with no one in the loop (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 
 ## Screenshots
 
@@ -72,7 +77,7 @@ Then:
 | Command | What it does |
 | --- | --- |
 | `pnpm dev` | Run web + snapshot API in parallel |
-| `pnpm test` | Run all test suites (508 tests) |
+| `pnpm test` | Run all test suites (585 tests) |
 | `pnpm typecheck` | Type-check every package (`tsc`) |
 | `pnpm build` | Build all packages |
 
@@ -87,9 +92,13 @@ A pnpm monorepo:
 | [`apps/web`](apps/web) | React 19 + Vite SPA. **All WarcraftLogs fetching, normalization, and caching happen here, in the browser.** |
 | [`apps/api`](apps/api) | Tiny Hono service — a credential-free snapshot store for sharing. Nothing else. |
 
-For the full design — data flow, the fetch/normalize/cache pipeline, the sharing
-model, conventions, and the security posture — see
-**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+Further docs:
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — data flow, the
+  fetch/normalize/cache pipeline, the sharing model, conventions, and security.
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — deploying to Cloudflare and
+  setting up the auto-post job.
+- **[CHANGELOG.md](CHANGELOG.md)** — release notes.
 
 ## How it works (in brief)
 
@@ -104,7 +113,7 @@ model, conventions, and the security posture — see
 ## Tech stack
 
 TypeScript · React 19 · Vite · React Router · Hono · pnpm workspaces · Vitest ·
-WarcraftLogs v2 GraphQL API.
+WarcraftLogs v2 GraphQL API · Cloudflare Workers + KV · GitHub Actions.
 
 ## Caveats
 
@@ -116,13 +125,27 @@ Inherent to WCL data, surfaced in the UI where relevant:
 - Many spell/enchant ids in `@wcl/data` are hand-curated and Wowhead-verified
   (the originals lived in the spreadsheet's Apps Script, not the data export).
 
+## Releases
+
+The app version lives in the root `package.json` and is shown in the site footer,
+linked to the [changelog](CHANGELOG.md). To cut a release:
+
+1. Move the `[Unreleased]` notes in `CHANGELOG.md` under a new version heading.
+2. Bump `version` in the root `package.json` and the "Current release" line at
+   the top of this file.
+3. Commit, then tag: `git tag vX.Y.Z && git push --tags`.
+
 ## Credits
 
 The original **Combat Log Analytics** and **Role Performance Breakdown** Google
 Sheets (v1.6.0a) are the work of **Shariva** (Discord: <https://discord.gg/nGvt5zH>).
 This project is an independent reimplementation that reuses none of the original
 code; it was built by studying the tools' published inputs, outputs, and
-behavior. All WoW data and names are property of Blizzard Entertainment.
+behavior. Log data comes from [Warcraft Logs](https://classic.warcraftlogs.com).
+All WoW data and names are property of Blizzard Entertainment. This project is not
+affiliated with Blizzard Entertainment or Warcraft Logs.
+
+Built by [Pedro Viegas](https://github.com/sL1Per).
 
 ## License
 

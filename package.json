@@ -1,6 +1,7 @@
 {
   "name": "wcl-raid-analyzer",
   "private": true,
+  "version": "1.4.0",
   "description": "Web app for analyzing WoW Classic TBC raid logs from WarcraftLogs — gear, consumables, drums, resistances, and per-player performance.",
   "license": "MIT",
   "scripts": {
